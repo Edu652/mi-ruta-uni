@@ -1,29 +1,67 @@
 <!DOCTYPE html>
-<html lang='es'>
+<html lang="es">
 <head>
-    <meta charset='UTF-8'>
-    <title>Mi Ruta Uni Ψ</title>
-    <link rel='stylesheet' href='/static/style.css'>
+    <meta charset="UTF-8">
+    <title>Mi Ruta Uni</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f9ff; padding: 20px; }
+        h1 { color: #2c3e50; }
+        .frase { font-size: 1.5em; margin-bottom: 20px; color: #2980b9; }
+        form { margin-bottom: 30px; }
+        select, button { padding: 10px; margin: 5px; font-size: 1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #3498db; color: white; }
+        tr:nth-child(even) { background-color: #ecf0f1; }
+    </style>
 </head>
 <body>
-    <h1>Mi Ruta Uni Ψ</h1>
-    <p class='frase'>{{ frase }}</p>
-    <form action='/buscar' method='post'>
-        <label>Origen:</label>
-        <select name='origen'>
-            {% for o in origenes %}<option value='{{ o }}'>{{ o }}</option>{% endfor %}
-        </select>
-        <label>Destino:</label>
-        <select name='destino'>
-            {% for d in destinos %}<option value='{{ d }}'>{{ d }}</option>{% endfor %}
-        </select>
-        <fieldset>
-            <legend>Filtrar por transporte:</legend>
-            {% for t in transportes %}
-                <label><input type='checkbox' name='transporte' value='{{ t }}'> {{ t }}</label>
+    <h1>Mi Ruta Uni</h1>
+    <div class="frase">🌟 {{ frase }}</div>
+
+    <form method="POST">
+        <label for="origen">Origen:</label>
+        <select name="origen" required>
+            {% for o in origenes %}
+            <option value="{{ o }}">{{ o }}</option>
             {% endfor %}
-        </fieldset>
-        <button type='submit'>Buscar ruta</button>
+        </select>
+
+        <label for="destino">Destino:</label>
+        <select name="destino" required>
+            {% for d in destinos %}
+            <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Buscar Ruta</button>
     </form>
+
+    {% if resultados %}
+    <table>
+        <thead>
+            <tr>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Transbordo</th>
+                <th>Salida</th>
+                <th>Llegada</th>
+                <th>Tiempo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resultados %}
+            <tr>
+                <td>{{ r.Origen }}</td>
+                <td>{{ r.Destino }}</td>
+                <td>{{ r.Transbordo }}</td>
+                <td>{{ r.Salida }}</td>
+                <td>{{ r.Llegada }}</td>
+                <td>{{ r.Tiempo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 </body>
 </html>
