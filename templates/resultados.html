@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados de Ruta</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f8ff; padding: 20px; }
+        h1 { color: #2c3e50; }
+        .frase { font-size: 1.5em; margin-bottom: 20px; color: #16a085; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #2980b9; color: white; }
+        tr:nth-child(even) { background-color: #ecf0f1; }
+    </style>
+</head>
+<body>
+    <h1>Resultado de tu ruta</h1>
+    <div class="frase">{{ frase }}</div>
+    {% if resultados %}
+    <table>
+        <thead>
+            <tr>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Transbordo</th>
+                <th>Salida</th>
+                <th>Llegada</th>
+                <th>Tiempo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resultados %}
+            <tr>
+                <td>{{ r.Origen }}</td>
+                <td>{{ r.Destino }}</td>
+                <td>{{ r.Transbordo }}</td>
+                <td>{{ r.Salida }}</td>
+                <td>{{ r.Llegada }}</td>
+                <td>{{ r.Tiempo }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No se encontraron rutas disponibles.</p>
+    {% endif %}
+</body>
+</html>
