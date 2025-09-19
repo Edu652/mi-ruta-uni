@@ -1,67 +1,80 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Mi Ruta Uni</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f9ff; padding: 20px; }
-        h1 { color: #2c3e50; }
-        .frase { font-size: 1.5em; margin-bottom: 20px; color: #2980b9; }
-        form { margin-bottom: 30px; }
-        select, button { padding: 10px; margin: 5px; font-size: 1em; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-        th { background-color: #3498db; color: white; }
-        tr:nth-child(even) { background-color: #ecf0f1; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Ruta Uni</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fff;
+      padding: 1rem;
+    }
+    .ruta-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    .tramo {
+      display: flex;
+      align-items: center;
+      background: #f0f8ff;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .emoticono {
+      font-size: 2rem;
+      margin-right: 1rem;
+    }
+    .info {
+      font-size: 1rem;
+      line-height: 1.4;
+         background: #e6ffe6;
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-    <h1>Mi Ruta Uni</h1>
-    <div class="frase">🌟 {{ frase }}</div>
+  <h1>Mi Ruta Uni 🚀</h1>
+  <div id="resultados" class="ruta-container"></div>
 
-    <form method="POST">
-        <label for="origen">Origen:</label>
-        <select name="origen" required>
-            {% for o in origenes %}
-            <option value="{{ o }}">{{ o }}</option>
-            {% endfor %}
-        </select>
+  <script>
+    fetch('/buscar?origen=Bollullos&destino=Facultad&coche=true')
+      .then(res => res.json())
+      .then(data => {
+        const cont = document.getElementById('resultados');
+        data.tramos.forEach(tramo => {
+          const div = document.createElement('div');
+          div.className = 'tramo';
+          div.innerHTML = `
+            <span class='emoticono'>
+              ${tramo.medio.includes('Coche') ? '🚗' : tramo.medio.includes('Tren') ? '🚆' : '🚌'}
+            </span>
+            <div class='info'>
+              <strong>${tramo.origen} → ${tramo.destino}</strong><br>
+              Salida: ${tramo.salida || '—'} · Llegada: ${tramo.llegada || '—'}<br>
+              Precio: ${tramo.precio.toFixed(2)} €
+            </div>
+          `;
+          cont.appendChild(div);
+        });
 
-        <label for="destino">Destino:</label>
-        <select name="destino" required>
-            {% for d in destinos %}
-            <option value="{{ d }}">{{ d }}</option>
-            {% endfor %}
-        </select>
-
-        <button type="submit">Buscar Ruta</button>
-    </form>
-
-    {% if resultados %}
-    <table>
-        <thead>
-            <tr>
-                <th>Origen</th>
-                <th>Destino</th>
-                <th>Transbordo</th>
-                <th>Salida</th>
-                <th>Llegada</th>
-                <th>Tiempo</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in resultados %}
-            <tr>
-                <td>{{ r.Origen }}</td>
-                <td>{{ r.Destino }}</td>
-                <td>{{ r.Transbordo }}</td>
-                <td>{{ r.Salida }}</td>
-                <td>{{ r.Llegada }}</td>
-                <td>{{ r.Tiempo }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
+        const resumen = document.createElement('div');
+        resumen.className = 'resumen';
+        resumen.innerHTML = `
+          ⏱️ <strong>Tiempo total:</strong> ${data.tiempo_total}<br>
+          💰 <strong>Precio total:</strong> ${data.precio_total} €<br>
+          🕘 <strong>Hora de llegada final:</strong> ${data.llegada_final}
+        `;
+        cont.appendChild(resumen);
+      });
+  </script>
 </body>
 </html>
