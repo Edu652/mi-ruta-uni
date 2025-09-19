@@ -7,16 +7,21 @@
 </head>
 <body>
     <h2>Resultado de tu ruta 🧭</h2>
-    {% for seg in segmentos %}
-    <div class="segmento">
-        🚌 <strong>{{ seg.origen }} → {{ seg.destino }}</strong><br>
-        ⏰ Salida: {{ seg.salida }} – Llegada: {{ seg.llegada }}<br>
-        💰 Precio: {{ seg.precio }} €
-    </div>
-    {% endfor %}
-    <hr>
-    <p>⏲️ <strong>Tiempo total:</strong> {{ tiempo_total }}</p>
-    <p>⌚ <strong>Hora de llegada final:</strong> {{ llegada_final }}</p>
-    <p>💰 <strong>Precio total:</strong> {{ precio_total }} €</p>
+
+    {% if segmentos %}
+        {% for seg in segmentos %}
+        <div class="segmento">
+            🚌 <strong>{{ seg.origen }} → {{ seg.destino }}</strong><br>
+            ⏰ Salida: {{ seg.salida }} – Llegada: {{ seg.llegada }}<br>
+            💰 Precio: {{ seg.precio }} €
+        </div>
+        {% endfor %}
+        <hr>
+        <p>⏲️ <strong>Tiempo total:</strong> {{ tiempo_total }}</p>
+        <p>⌚ <strong>Hora de llegada final:</strong> {{ llegada_final }}</p>
+        <p>💰 <strong>Precio total:</strong> {{ precio_total }} €</p>
+    {% else %}
+        <p>No se encontraron rutas disponibles entre los lugares seleccionados.</p>
+    {% endif %}
 </body>
 </html>
