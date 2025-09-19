@@ -15,7 +15,7 @@ with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
 @app.route("/")
 def index():
     lugares = sorted(set(rutas_df["Origen"]).union(set(rutas_df["Destino"])))
-    frase = frases[0]  # Se puede hacer aleatoria si se desea
+    frase = frases[0]  # Puedes usar random.choice(frases) si quieres que sea aleatoria
     return render_template("index.html", lugares=lugares, frase=frase)
 
 @app.route("/buscar", methods=["POST"])
@@ -23,26 +23,42 @@ def buscar():
     origen = request.form["origen"]
     destino = request.form["destino"]
 
-    # Filtrar rutas posibles
-    rutas_posibles = rutas_df[(rutas_df["Origen"] == origen) | (rutas_df["Destino"] == destino)]
+    # Buscar rutas directas
+    directas = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == destino)]
 
-    # Simular transbordos (simplificado)
+    # Buscar rutas con transbordo
+    intermedios = rutas_df[rutas_df["Origen"] == origen]["Destino"].unique()
+    transbordos = []
+    for punto in intermedios:
+        tramo1 = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == punto)]
+        tramo2 = rutas_df[(rutas_df["Origen"] == punto) & (rutas_df["Destino"] == destino)]
+        if not tramo1.empty and not tramo2.empty:
+            transbordos.append((tramo1.iloc[0], tramo2.iloc[0]))
+
     segmentos = []
-    actuales = rutas_df[rutas_df["Origen"] == origen]
-    for i, fila in actuales.iterrows():
-        segmento = {
-            "origen": fila["Origen"],
-            "destino": fila["Destino"],
-            "salida": fila["Salida"].strftime("%H:%M") if not pd.isna(fila["Salida"]) else "—",
-            "llegada": fila["Llegada"].strftime("%H:%M") if not pd.isna(fila["Llegada"]) else "—",
-            "precio": fila["Precio"]
-        }
-        segmentos.append(segmento)
+    if not directas.empty:
+        for _, fila in directas.iterrows():
+            segmentos.append({
+                "origen": fila["Origen"],
+                "destino": fila["Destino"],
+                "salida": fila["Salida"].strftime("%H:%M") if not pd.isna(fila["Salida"]) else "—",
+                "llegada": fila["Llegada"].strftime("%H:%M") if not pd.isna(fila["Llegada"]) else "—",
+                "precio": fila["Precio"]
+            })
+    elif transbordos:
+        for tramo1, tramo2 in transbordos:
+            for tramo in [tramo1, tramo2]:
+                segmentos.append({
+                    "origen": tramo["Origen"],
+                    "destino": tramo["Destino"],
+                    "salida": tramo["Salida"].strftime("%H:%M") if not pd.isna(tramo["Salida"]) else "—",
+                    "llegada": tramo["Llegada"].strftime("%H:%M") if not pd.isna(tramo["Llegada"]) else "—",
+                    "precio": tramo["Precio"]
+                })
 
-    # Calcular resumen
     tiempo_total = timedelta()
     precio_total = 0
-    llegada_final = None
+    llegada_final = "—"
     for seg in segmentos:
         try:
             h1 = datetime.strptime(seg["salida"], "%H:%M")
