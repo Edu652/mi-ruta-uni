@@ -1,127 +1,27 @@
 <!DOCTYPE html>
-<html lang='es'>
+<html lang="es">
 <head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-  <title>Mi Ruta Uni</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #fff;
-      padding: 1rem;
-    }
-    .formulario {
-      max-width: 600px;
-      margin: auto;
-      margin-bottom: 2rem;
-    }
-    select, label, button {
-      display: block;
-      margin: 0.5rem 0;
-      font-size: 1rem;
-    }
-    .ruta-container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      max-width: 600px;
-      margin: auto;
-    }
-    .tramo {
-      display: flex;
-      align-items: center;
-      background: #f0f8ff;
-      border-radius: 10px;
-      padding: 1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .emoticono {
-      font-size: 2rem;
-      margin-right: 1rem;
-    }
-    .info {
-      font-size: 1rem;
-      line-height: 1.4;
-    }
-    .resumen {
-      background: #e6ffe6;
-      border-radius: 10px;
-      padding: 1rem;
-      font-size: 1.1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Mi Ruta Uni 🚀</title>
+    /static/style.css
 </head>
 <body>
-  <h1>Mi Ruta Uni 🚀</h1>
-  <div class="formulario">
-    <label for="origen">Origen:</label>
-    <select id="origen">
-      <option value="Bollullos">Bollullos</option>
-      <option value="Benacazon">Benacazon</option>
-      <option value="Sanlucar">Sanlucar</option>
-      <option value="Plz. Armas">Plz. Armas</option>
-      <option value="Sta. Justa">Sta. Justa</option>
-      <option value="Huelva Bus">Huelva Bus</option>
-      <option value="Huelva Tren">Huelva Tren</option>
-      <option value="Facultad">Facultad</option>
-    </select>
-
-    <label for="destino">Destino:</label>
-    <select id="destino">
-      <option value="Facultad">Facultad</option>
-      <option value="Benacazon">Benacazon</option>
-      <option value="Sanlucar">Sanlucar</option>
-      <option value="Plz. Armas">Plz. Armas</option>
-      <option value="Sta. Justa">Sta. Justa</option>
-      <option value="Huelva Bus">Huelva Bus</option>
-      <option value="Huelva Tren">Huelva Tren</option>
-      <option value="Bollullos">Bollullos</option>
-    </select>
-
-    <label><input type="checkbox" id="coche"> Incluir coche propio</label>
-    <button onclick="buscarRuta()">Buscar ruta</button>
-  </div>
-
-  <div id="resultados" class="ruta-container"></div>
-
-  <script>
-    function buscarRuta() {
-      const origen = document.getElementById('origen').value;
-      const destino = document.getElementById('destino').value;
-      const coche = document.getElementById('coche').checked;
-      fetch(`/buscar?origen=${origen}&destino=${destino}&coche=${coche}`)
-        .then(res => res.json())
-        .then(data => {
-          const cont = document.getElementById('resultados');
-          cont.innerHTML = '';
-          data.tramos.forEach(tramo => {
-            const div = document.createElement('div');
-            div.className = 'tramo';
-            div.innerHTML = `
-              <span class='emoticono'>
-                ${tramo.medio.includes('Coche') ? '🚗' : tramo.medio.includes('Tren') ? '🚆' : '🚌'}
-              </span>
-              <div class='info'>
-                <strong>${tramo.origen} → ${tramo.destino}</strong><br>
-                Salida: ${tramo.salida || '—'} · Llegada: ${tramo.llegada || '—'}<br>
-                Precio: ${tramo.precio.toFixed(2)} €
-              </div>
-            `;
-            cont.appendChild(div);
-          });
-
-          const resumen = document.createElement('div');
-          resumen.className = 'resumen';
-          resumen.innerHTML = `
-            ⏱️ <strong>Tiempo total:</strong> ${data.tiempo_total}<br>
-            💰 <strong>Precio total:</strong> ${data.precio_total} €<br>
-            🕘 <strong>Hora de llegada final:</strong> ${data.llegada_final}
-          `;
-          cont.appendChild(resumen);
-        });
-    }
-  </script>
+    <h1>Mi Ruta Uni 🚀</h1>
+    <p class="frase">{{ frase }}</p>
+    /buscar
+        <label>Origen:</label>
+        <select name="origen">
+            {% for lugar in lugares %}
+            <option value="{{ lugar }}">{{ lugar }}</option>
+            {% endfor %}
+        </select>
+        <label>Destino:</label>
+        <select name="destino">
+            {% for lugar in lugares %}
+            <option value="{{ lugar }}">{{ lugar }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Buscar ruta</button>
+    </form>
 </body>
 </html>
-
