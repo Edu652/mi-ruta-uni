@@ -14,7 +14,7 @@ with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
 
 @app.route("/")
 def index():
-    lugares = sorted(set(rutas_df["origen"]).union(set(rutas_df["destino"])))
+    lugares = sorted(set(rutas_df["Origen"]).union(set(rutas_df["Destino"])))
     frase = frases[0]  # Se puede hacer aleatoria si se desea
     return render_template("index.html", lugares=lugares, frase=frase)
 
@@ -24,18 +24,18 @@ def buscar():
     destino = request.form["destino"]
 
     # Filtrar rutas posibles
-    rutas_posibles = rutas_df[(rutas_df["origen"] == origen) | (rutas_df["destino"] == destino)]
+    rutas_posibles = rutas_df[(rutas_df["Origen"] == origen) | (rutas_df["Destino"] == destino)]
 
     # Simular transbordos (simplificado)
     segmentos = []
-    actuales = rutas_df[rutas_df["origen"] == origen]
+    actuales = rutas_df[rutas_df["Origen"] == origen]
     for i, fila in actuales.iterrows():
         segmento = {
-            "origen": fila["origen"],
-            "destino": fila["destino"],
-            "salida": fila["salida"].strftime("%H:%M"),
-            "llegada": fila["llegada"].strftime("%H:%M"),
-            "precio": fila["precio"]
+            "origen": fila["Origen"],
+            "destino": fila["Destino"],
+            "salida": fila["Salida"].strftime("%H:%M") if not pd.isna(fila["Salida"]) else "—",
+            "llegada": fila["Llegada"].strftime("%H:%M") if not pd.isna(fila["Llegada"]) else "—",
+            "precio": fila["Precio"]
         }
         segmentos.append(segmento)
 
@@ -44,11 +44,14 @@ def buscar():
     precio_total = 0
     llegada_final = None
     for seg in segmentos:
-        h1 = datetime.strptime(seg["salida"], "%H:%M")
-        h2 = datetime.strptime(seg["llegada"], "%H:%M")
-        tiempo_total += (h2 - h1)
+        try:
+            h1 = datetime.strptime(seg["salida"], "%H:%M")
+            h2 = datetime.strptime(seg["llegada"], "%H:%M")
+            tiempo_total += (h2 - h1)
+            llegada_final = seg["llegada"]
+        except:
+            pass
         precio_total += seg["precio"]
-        llegada_final = seg["llegada"]
 
     return render_template("resultado.html", segmentos=segmentos,
                            tiempo_total=str(tiempo_total),
