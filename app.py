@@ -7,16 +7,33 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # --- Carga de Datos ---
-# Leemos el archivo Excel. Asegúrate que las columnas de hora son de tipo datetime.
+# Leemos el archivo Excel.
 try:
     rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    # Convertimos las columnas de hora a objetos de tiempo para poder compararlas
-    rutas_df["Salida"] = pd.to_datetime(rutas_df["Salida"], format='%H:%M').dt.time
-    rutas_df["Llegada"] = pd.to_datetime(rutas_df["Llegada"], format='%H:%M').dt.time
+    
+    # Convertimos las columnas de hora a objetos de tiempo.
+    # Usamos `errors='coerce'` para que cualquier valor que no se pueda convertir
+    # se transforme en 'NaT' (Not a Time), en lugar de causar un error.
+    rutas_df["Salida"] = pd.to_datetime(rutas_df["Salida"], format='%H:%M', errors='coerce').dt.time
+    rutas_df["Llegada"] = pd.to_datetime(rutas_df["Llegada"], format='%H:%M', errors='coerce').dt.time
+
+    # --- ¡NUEVO PASO IMPORTANTE! ---
+    # Eliminamos cualquier fila donde la conversión de hora haya fallado.
+    # Esto limpia los datos y evita que la app se detenga por un error en el Excel.
+    filas_originales = len(rutas_df)
+    rutas_df.dropna(subset=['Salida', 'Llegada'], inplace=True)
+    filas_limpias = len(rutas_df)
+    
+    if filas_originales > filas_limpias:
+        print(f"ADVERTENCIA: Se eliminaron {filas_originales - filas_limpias} filas de 'rutas.xlsx' por tener un formato de hora incorrecto.")
+
 except FileNotFoundError:
     print("Error: El archivo 'rutas.xlsx' no se encontró. Asegúrate de que está en la misma carpeta.")
-    # Creamos un DataFrame vacío para que la app no falle al iniciar
     rutas_df = pd.DataFrame(columns=["Origen", "Destino", "Salida", "Llegada", "Precio", "Compania"])
+except Exception as e:
+    print(f"Ocurrió un error inesperado al cargar 'rutas.xlsx': {e}")
+    rutas_df = pd.DataFrame(columns=["Origen", "Destino", "Salida", "Llegada", "Precio", "Compania"])
+
 
 # Cargamos las frases motivadoras
 try:
@@ -48,35 +65,25 @@ def buscar():
     # --- 1. BÚSQUEDA DE RUTAS DIRECTAS ---
     rutas_directas = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == destino)]
     for _, ruta in rutas_directas.iterrows():
-        # Cada ruta válida es una lista de segmentos. Las directas tienen 1 segmento.
         rutas_validas.append([ruta.to_dict()])
 
     # --- 2. BÚSQUEDA DE RUTAS CON 1 TRANSBORDO ---
-    # Tiempo mínimo de espera para un transbordo (ej. 15 minutos)
     TIEMPO_MINIMO_TRANSBORDO = timedelta(minutes=15)
-
-    # Posibles puntos de transbordo desde el origen
     posibles_primeros_tramos = rutas_df[rutas_df["Origen"] == origen]
 
     for _, tramo1 in posibles_primeros_tramos.iterrows():
         punto_intermedio = tramo1["Destino"]
         
-        # Si el punto intermedio es el destino final, ya es una ruta directa
         if punto_intermedio == destino:
             continue
 
-        # Buscamos el segundo tramo: desde el punto intermedio hasta el destino final
         posibles_segundos_tramos = rutas_df[(rutas_df["Origen"] == punto_intermedio) & (rutas_df["Destino"] == destino)]
 
         for _, tramo2 in posibles_segundos_tramos.iterrows():
-            # **LA LÓGICA CLAVE: Comprobar si el transbordo es posible en el tiempo**
             hora_llegada_tramo1 = datetime.combine(datetime.today(), tramo1["Llegada"])
             hora_salida_tramo2 = datetime.combine(datetime.today(), tramo2["Salida"])
 
-            # Comprobamos que la salida del segundo tramo es POSTERIOR a la llegada del primero
-            # y que además hay un margen de tiempo mínimo para el transbordo.
             if hora_salida_tramo2 >= (hora_llegada_tramo1 + TIEMPO_MINIMO_TRANSBORDO):
-                # Si la conexión es válida, la añadimos como una opción de ruta
                 rutas_validas.append([tramo1.to_dict(), tramo2.to_dict()])
 
     # --- 3. PROCESAR Y ORDENAR LAS RUTAS ENCONTRADAS ---
@@ -84,7 +91,6 @@ def buscar():
     for ruta in rutas_validas:
         precio_total = sum(segmento["Precio"] for segmento in ruta)
         
-        # Formateamos las horas para mostrarlas correctamente
         for segmento in ruta:
             segmento["Salida_str"] = segmento["Salida"].strftime('%H:%M')
             segmento["Llegada_str"] = segmento["Llegada"].strftime('%H:%M')
@@ -99,7 +105,6 @@ def buscar():
             "tipo": "Directo" if len(ruta) == 1 else "Transbordo"
         })
 
-    # Ordenamos los resultados: primero por hora de llegada, y luego por precio
     if resultados_finales:
         resultados_finales.sort(key=lambda x: (x["hora_llegada_final"], x["precio_total"]))
 
