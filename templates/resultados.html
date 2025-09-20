@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Resultado de Ruta</title>
-    /static/style.css
+    {{ url_for(
 </head>
 <body>
     <h2>Resultado de tu ruta 🧭</h2>
@@ -23,5 +23,8 @@
     {% else %}
         <p>No se encontraron rutas disponibles entre los lugares seleccionados.</p>
     {% endif %}
+
+    <br>
+    /🔙 Volver a buscar otra ruta</a>
 </body>
 </html>
