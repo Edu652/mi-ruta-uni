@@ -28,18 +28,21 @@ try:
     
     rutas_df.columns = rutas_df.columns.str.strip()
 
-    # --- ¡NUEVA LÓGICA A PRUEBA DE ERRORES! ---
-    # Renombramos 'Compañía' a 'Compania' si existe, para estandarizar.
     if 'Compañía' in rutas_df.columns:
         rutas_df.rename(columns={'Compañía': 'Compania'}, inplace=True)
 
-    # Ahora siempre buscaremos 'Compania' (con n)
     required_cols = ['Origen', 'Destino', 'Tipo_Horario', 'Compania', 'Precio']
     for col in required_cols:
         if col not in rutas_df.columns:
             raise ValueError(f"Falta la columna requerida: {col}")
             
     rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
+    
+    # --- ¡NUEVAS LÍNEAS DE CORRECCIÓN! ---
+    # Forzamos que las columnas de duración y frecuencia sean siempre numéricas.
+    rutas_df['Duracion_Trayecto_Min'] = pd.to_numeric(rutas_df['Duracion_Trayecto_Min'], errors='coerce').fillna(0)
+    rutas_df['Frecuencia_Min'] = pd.to_numeric(rutas_df['Frecuencia_Min'], errors='coerce').fillna(0)
+
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
@@ -173,7 +176,7 @@ def buscar():
                     "segmentos": segmentos_calculados,
                     "precio_total": sum(s.get('Precio', 0) for s in ruta),
                     "hora_llegada_final": llegada_final_dt.time(),
-                    "tipo": "Directo" if len(ruta) == 1 else "Transbordo",
+                    "tipo": "Directo" if len(ruta) == 1 else "Transbord",
                     "duracion_total_str": format_timedelta(duracion_total)
                 })
         except Exception as e:
