@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Mi Ruta Uni 🚀</title>
-    /static/style.css
+    {{ url_for(
 </head>
 <body>
     <h1>Mi Ruta Uni 🚀</h1>
     <p class="frase">{{ frase }}</p>
+
     /buscar
         <label>Origen:</label>
         <select name="origen">
@@ -15,13 +16,16 @@
             <option value="{{ lugar }}">{{ lugar }}</option>
             {% endfor %}
         </select>
+
         <label>Destino:</label>
         <select name="destino">
             {% for lugar in lugares %}
             <option value="{{ lugar }}">{{ lugar }}</option>
             {% endfor %}
         </select>
+
         <button type="submit">Buscar ruta</button>
     </form>
 </body>
 </html>
+
