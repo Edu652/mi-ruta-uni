@@ -1,21 +1,20 @@
 from flask import Flask, render_template, request
 import pandas as pd
 import json
+import random
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# Cargar rutas desde Excel
 rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
 
-# Cargar frases motivadoras
 with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
     frases = json.load(f)
 
 @app.route("/")
 def index():
     lugares = sorted(set(rutas_df["Origen"]).union(set(rutas_df["Destino"])))
-    frase = frases[0]  # Puedes usar random.choice(frases) si quieres que sea aleatoria
+    frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase)
 
 @app.route("/buscar", methods=["POST"])
@@ -23,10 +22,8 @@ def buscar():
     origen = request.form["origen"]
     destino = request.form["destino"]
 
-    # Buscar rutas directas
     directas = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == destino)]
 
-    # Buscar rutas con transbordo
     intermedios = rutas_df[rutas_df["Origen"] == origen]["Destino"].unique()
     transbordos = []
     for punto in intermedios:
