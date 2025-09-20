@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# --- Helper Functions ---
+# --- Funciones de Ayuda ---
 def get_icon_for_compania(compania):
     compania_lower = str(compania).lower()
     if 'urbano' in compania_lower: return '🚍'
@@ -22,203 +22,162 @@ def format_timedelta(td):
     if hours > 0: return f"{hours}h {minutes}min"
     return f"{minutes}min"
 
-# --- Carga de Datos y Limpieza ---
+# --- Carga de Datos ---
 try:
-    rutas_df_raw = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    rutas_df_raw.columns = rutas_df_raw.columns.str.strip()
-
-    fijos_df = rutas_df_raw[rutas_df_raw['Tipo_Horario'] == 'Fijo'].copy()
-    frecuencia_df = rutas_df_raw[rutas_df_raw['Tipo_Horario'] == 'Frecuencia'].copy()
-    # ¡NUEVO! DataFrame para rutas flexibles
-    flexible_df = rutas_df_raw[rutas_df_raw['Tipo_Horario'] == 'Flexible'].copy()
-
-    # Procesar Fijos
-    if not fijos_df.empty:
-        fijos_df['Salida_dt'] = pd.to_datetime(fijos_df['Salida'], format='%H:%M:%S', errors='coerce')
-        fijos_df['Llegada_dt'] = pd.to_datetime(fijos_df['Llegada'], format='%H:%M:%S', errors='coerce')
-        fijos_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
-        overnight_mask = fijos_df['Llegada_dt'] < fijos_df['Salida_dt']
-        fijos_df.loc[overnight_mask, 'Llegada_dt'] += timedelta(days=1)
-        fijos_df['Duracion_Tramo_Min'] = (fijos_df['Llegada_dt'] - fijos_df['Salida_dt']).dt.total_seconds() / 60
-        fijos_df['Salida'] = fijos_df['Salida_dt'].dt.time
-        fijos_df['Llegada'] = fijos_df['Llegada_dt'].dt.time
-        fijos_df['Precio'] = pd.to_numeric(fijos_df['Precio'], errors='coerce').fillna(0)
-
-    # Procesar Frecuencia
-    if not frecuencia_df.empty:
-        frecuencia_df['Frecuencia_Min'] = pd.to_numeric(frecuencia_df['Frecuencia_Min'], errors='coerce').fillna(0)
-        frecuencia_df['Duracion_Trayecto_Min'] = pd.to_numeric(frecuencia_df['Duracion_Trayecto_Min'], errors='coerce').fillna(0)
-        frecuencia_df['Precio'] = pd.to_numeric(frecuencia_df['Precio'], errors='coerce').fillna(0)
-
-    # ¡NUEVO! Procesar Flexibles
-    if not flexible_df.empty:
-        flexible_df['Duracion_Trayecto_Min'] = pd.to_numeric(flexible_df['Duracion_Trayecto_Min'], errors='coerce').fillna(0)
-        flexible_df['Precio'] = pd.to_numeric(flexible_df['Precio'], errors='coerce').fillna(0)
-        
-    rutas_df = pd.concat([fijos_df, frecuencia_df, flexible_df], ignore_index=True)
+    rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
+    rutas_df.columns = rutas_df.columns.str.strip()
+    # Asegurar que las columnas clave existen
+    required_cols = ['Origen', 'Destino', 'Tipo_Horario', 'Compania', 'Precio']
+    for col in required_cols:
+        if col not in rutas_df.columns:
+            raise ValueError(f"Falta la columna requerida: {col}")
+            
+    rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
     rutas_df = pd.DataFrame()
 
-# ... (resto de la carga de frases y la ruta @app.route("/") se mantienen igual)
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
         frases = json.load(f)
-except:
+except Exception:
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
 @app.route("/")
 def index():
     lugares = []
-    try:
-        if not rutas_df.empty and 'Origen' in rutas_df.columns and 'Destino' in rutas_df.columns:
-            # Excluir los destinos intermedios de los flexibles para que no aparezcan en el desplegable
-            origenes_publicos = rutas_df[rutas_df['Tipo_Horario'] != 'Flexible']['Origen']
-            todos_destinos = rutas_df['Destino']
-            lugares = sorted(pd.concat([origenes_publicos, todos_destinos, rutas_df[rutas_df['Tipo_Horario'] == 'Flexible']['Origen']]).dropna().unique())
-        else:
-            print("ADVERTENCIA: No se pudieron cargar los lugares.")
-    except Exception as e:
-        print(f"ERROR al procesar los lugares: {e}")
-    
+    if not rutas_df.empty:
+        lugares = sorted(pd.concat([rutas_df["Origen"], rutas_df["Destino"]]).dropna().unique())
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase)
 
-
-def find_routes_from(start_node, final_destination, initial_segments=[], initial_price=0, last_arrival_dt=None):
-    """Función recursiva o auxiliar para encontrar cadenas de rutas."""
-    # Esta función se vuelve muy compleja, la lógica se integrará directamente en /buscar
-    pass
-
 @app.route("/buscar", methods=["POST"])
 def buscar():
-    origen_inicial = request.form["origen"]
-    destino_final = request.form["destino"]
+    origen = request.form["origen"]
+    destino = request.form["destino"]
     resultados_finales = []
     
-    # --- ¡LÓGICA DE BÚSQUEDA TOTALMENTE RECONSTRUIDA! ---
+    # --- LÓGICA DE BÚSQUEDA RECONSTRUIDA ---
+    # Constantes
+    TIEMPO_TRANSBORDO = timedelta(minutes=10)
+    TIEMPO_COCHE_A_ESTACION = timedelta(minutes=10)
+
+    # Convertir horas a objetos datetime para poder operar con ellas
+    rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
+    rutas_fijas['Salida_dt'] = rutas_fijas.apply(lambda row: datetime.combine(datetime.today(), pd.to_datetime(row['Salida'], format='%H:%M:%S', errors='coerce').time()), axis=1)
+    rutas_fijas['Llegada_dt'] = rutas_fijas.apply(lambda row: datetime.combine(datetime.today(), pd.to_datetime(row['Llegada'], format='%H:%M:%S', errors='coerce').time()), axis=1)
+    rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
     
-    # Definir constantes
-    TIEMPO_MINIMO_TRANSBORDO = timedelta(minutes=10)
-    # ¡NUEVO! Tiempo para aparcar el coche y llegar al andén
-    TIEMPO_COCHE_ESTACION = timedelta(minutes=10)
+    # 1. RUTAS DIRECTAS (1 TRAMO)
+    directas = rutas_fijas[(rutas_fijas['Origen'] == origen) & (rutas_fijas['Destino'] == destino)]
+    for _, ruta in directas.iterrows():
+        resultados_finales.append([ruta.to_dict()])
 
-    # Función interna para procesar y añadir resultados
-    def add_result(segments):
-        if not segments: return
+    # 2. RUTAS DE 2 TRAMOS (Fijo -> Fijo/Frecuencia)
+    tramos1 = rutas_fijas[rutas_fijas['Origen'] == origen]
+    for _, tramo1 in tramos1.iterrows():
+        punto_intermedio = tramo1['Destino']
+        tramos2 = rutas_df[(rutas_df['Origen'] == punto_intermedio) & (rutas_df['Destino'] == destino)]
+        for _, tramo2 in tramos2.iterrows():
+            if tramo2['Tipo_Horario'] == 'Fijo':
+                tramo2_salida_dt = datetime.combine(datetime.today(), pd.to_datetime(tramo2['Salida'], format='%H:%M:%S').time())
+                if tramo1['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_salida_dt:
+                    resultados_finales.append([tramo1.to_dict(), tramo2.to_dict()])
+            elif tramo2['Tipo_Horario'] == 'Frecuencia':
+                resultados_finales.append([tramo1.to_dict(), tramo2.to_dict()])
+    
+    # 3. RUTAS QUE EMPIEZAN CON COCHE (Flexible -> Fijo -> ...)
+    tramos_coche = rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Tipo_Horario'] == 'Flexible')]
+    for _, coche in tramos_coche.iterrows():
+        estacion = coche['Destino']
+        duracion_coche = timedelta(minutes=coche['Duracion_Trayecto_Min'])
+        
+        # Conexión Coche -> Fijo
+        tramos_fijos_desde_estacion = rutas_fijas[rutas_fijas['Origen'] == estacion]
+        for _, tramo_fijo in tramos_fijos_desde_estacion.iterrows():
+            # A. Ruta de 2 tramos: Coche -> Fijo
+            if tramo_fijo['Destino'] == destino:
+                coche_calculado = coche.copy()
+                coche_calculado['Llegada_dt'] = tramo_fijo['Salida_dt'] - TIEMPO_COCHE_A_ESTACION
+                coche_calculado['Salida_dt'] = coche_calculado['Llegada_dt'] - duracion_coche
+                resultados_finales.append([coche_calculado.to_dict(), tramo_fijo.to_dict()])
+            
+            # B. Ruta de 3 tramos: Coche -> Fijo -> Fijo/Frecuencia
+            punto_intermedio_2 = tramo_fijo['Destino']
+            tramos_finales = rutas_df[(rutas_df['Origen'] == punto_intermedio_2) & (rutas_df['Destino'] == destino)]
+            for _, tramo_final in tramos_finales.iterrows():
+                # ... (Lógica similar a la de 2 tramos)
+                 if tramo_final['Tipo_Horario'] == 'Fijo':
+                    tramo_final_salida_dt = datetime.combine(datetime.today(), pd.to_datetime(tramo_final['Salida'], format='%H:%M:%S').time())
+                    if tramo_fijo['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo_final_salida_dt:
+                        coche_calculado = coche.copy()
+                        coche_calculado['Llegada_dt'] = tramo_fijo['Salida_dt'] - TIEMPO_COCHE_A_ESTACION
+                        coche_calculado['Salida_dt'] = coche_calculado['Llegada_dt'] - duracion_coche
+                        resultados_finales.append([coche_calculado.to_dict(), tramo_fijo.to_dict(), tramo_final.to_dict()])
+                 elif tramo_final['Tipo_Horario'] == 'Frecuencia':
+                    coche_calculado = coche.copy()
+                    coche_calculado['Llegada_dt'] = tramo_fijo['Salida_dt'] - TIEMPO_COCHE_A_ESTACION
+                    coche_calculado['Salida_dt'] = coche_calculado['Llegada_dt'] - duracion_coche
+                    resultados_finales.append([coche_calculado.to_dict(), tramo_fijo.to_dict(), tramo_final.to_dict()])
 
-        # Calcular totales
-        precio_total = sum(s.get('Precio', 0) for s in segments)
+
+    # --- PROCESAR Y FORMATEAR RESULTADOS ---
+    resultados_procesados = []
+    for ruta in resultados_finales:
+        # ... (Cálculos de precio, duración, hora de llegada, etc.)
+        # Esta parte es larga y la incluyo en el bloque final
+        llegada_final_dt = None
+        salida_inicial_dt = None
         
-        # Calcular duración y llegada final
-        salida_inicial_dt = segments[0]['Salida_dt']
-        llegada_final_dt = segments[-1]['Llegada_dt']
+        # Calcular horarios para toda la ruta
+        segmentos_calculados = []
+        llegada_anterior_dt = None
         
-        if llegada_final_dt < salida_inicial_dt:
-            llegada_final_dt += timedelta(days=1)
-        
+        for i, seg in enumerate(ruta):
+            seg_calc = seg.copy()
+            if seg['Tipo_Horario'] == 'Fijo':
+                seg_calc['Salida_dt'] = datetime.combine(datetime.today(), pd.to_datetime(seg['Salida'], format='%H:%M:%S').time())
+                seg_calc['Llegada_dt'] = datetime.combine(datetime.today(), pd.to_datetime(seg['Llegada'], format='%H:%M:%S').time())
+            elif seg['Tipo_Horario'] == 'Frecuencia':
+                seg_calc['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                duracion_viaje = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+                espera_maxima = timedelta(minutes=seg['Frecuencia_Min'])
+                seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion_viaje + espera_maxima
+
+            # Corrección para viajes nocturnos
+            if llegada_anterior_dt and seg_calc['Salida_dt'] < llegada_anterior_dt:
+                 seg_calc['Salida_dt'] += timedelta(days=1)
+                 seg_calc['Llegada_dt'] += timedelta(days=1)
+            if seg_calc['Llegada_dt'] < seg_calc['Salida_dt']:
+                 seg_calc['Llegada_dt'] += timedelta(days=1)
+
+            llegada_anterior_dt = seg_calc['Llegada_dt']
+            if i == 0: salida_inicial_dt = seg_calc['Salida_dt']
+            
+            # Formateo final para la vista
+            seg_calc['icono'] = get_icon_for_compania(seg_calc['Compania'])
+            seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
+            seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
+            seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
+            segmentos_calculados.append(seg_calc)
+
+        llegada_final_dt = llegada_anterior_dt
         duracion_total = llegada_final_dt - salida_inicial_dt
         
-        # Formatear para la plantilla
-        processed_segments = []
-        for s in segments:
-            seg_dict = s.to_dict()
-            seg_dict['icono'] = get_icon_for_compania(s.get('Compania'))
-            if isinstance(s.get('Salida_dt'), datetime):
-                seg_dict['Salida_str'] = s['Salida_dt'].strftime('%H:%M')
-            if isinstance(s.get('Llegada_dt'), datetime):
-                seg_dict['Llegada_str'] = s['Llegada_dt'].strftime('%H:%M')
-            processed_segments.append(seg_dict)
-
-        resultados_finales.append({
-            "segmentos": processed_segments,
-            "precio_total": precio_total,
+        resultados_procesados.append({
+            "segmentos": segmentos_calculados,
+            "precio_total": sum(s.get('Precio', 0) for s in ruta),
             "hora_llegada_final": llegada_final_dt.time(),
-            "tipo": "Directo" if len(segments) == 1 else "Transbordo",
+            "tipo": "Directo" if len(ruta) == 1 else "Transbordo",
             "duracion_total_str": format_timedelta(duracion_total)
         })
 
-    # --- INICIO DE LA BÚSQUEDA ---
-    
-    # Escenario 1: El viaje empieza directamente con transporte público
-    # ... (código para 1, 2 y 3 tramos de transporte público)
-    
-    # Escenario 2: El viaje empieza con un tramo "Flexible" (Coche Propio)
-    rutas_coche = rutas_df[(rutas_df['Origen'] == origen_inicial) & (rutas_df['Tipo_Horario'] == 'Flexible')]
-    for _, coche_tramo in rutas_coche.iterrows():
-        estacion = coche_tramo['Destino']
-        duracion_coche = timedelta(minutes=coche_tramo['Duracion_Trayecto_Min'])
-        
-        # Ahora, buscamos rutas de transporte público desde la 'estacion'
-        primeros_tramos_publicos = rutas_df[(rutas_df['Origen'] == estacion) & (rutas_df['Tipo_Horario'] == 'Fijo')]
-        for _, tramo1_pub in primeros_tramos_publicos.iterrows():
-            
-            # ¡NUEVA LÓGICA DE CÁLCULO HACIA ATRÁS!
-            hora_salida_tren = datetime.combine(datetime.today(), tramo1_pub['Salida'])
-            hora_llegada_coche = hora_salida_tren - TIEMPO_COCHE_ESTACION
-            hora_salida_coche = hora_llegada_coche - duracion_coche
+    if resultados_procesados:
+        resultados_procesados.sort(key=lambda x: x['hora_llegada_final'])
 
-            # Reconstruir el tramo del coche con horarios calculados
-            coche_tramo_calculado = coche_tramo.copy()
-            coche_tramo_calculado['Salida_dt'] = hora_salida_coche
-            coche_tramo_calculado['Llegada_dt'] = hora_llegada_coche
-            coche_tramo_calculado['Duracion_Tramo_Min'] = duracion_coche.total_seconds() / 60
-
-            # --- Comprobar si este tramo público ya llega al destino (Ruta de 2 tramos: Coche + Fijo) ---
-            if tramo1_pub['Destino'] == destino_final:
-                add_result([coche_tramo_calculado, tramo1_pub])
-            
-            # --- Comprobar si necesitamos un TERCER tramo (Ruta de 3 tramos: Coche + Fijo + [Fijo o Frecuencia]) ---
-            # ... (código completo en el bloque final)
-
-    # La lógica completa es muy extensa, la reemplazo por la versión final.
-
-    # --- BÚSQUEDA COMPLETA (SOBREESCRIBE EL CÓDIGO ANTERIOR) ---
-    
-    def buscar_combinaciones(origen, destino, es_inicio_viaje=True):
-        rutas_encontradas = []
-
-        # 1. Búsqueda Directa (Fijo)
-        directas_df = rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Destino'] == destino) & (rutas_df['Tipo_Horario'] == 'Fijo')]
-        for _, ruta in directas_df.iterrows():
-            rutas_encontradas.append([ruta])
-            
-        # 2. Búsqueda con Transbordos (Fijo -> Fijo / Fijo -> Frecuencia)
-        tramos1_df = rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Tipo_Horario'] == 'Fijo')]
-        for _, tramo1 in tramos1_df.iterrows():
-            punto_intermedio = tramo1['Destino']
-            tramos2_df = rutas_df[(rutas_df['Origen'] == punto_intermedio) & (rutas_df['Destino'] == destino)]
-            # ... (Lógica de validación de 2 tramos aquí)
-
-        # ¡NUEVO! Lógica inicial con Coche Propio si es el inicio del viaje
-        if es_inicio_viaje:
-            rutas_coche_df = rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Tipo_Horario'] == 'Flexible')]
-            for _, coche_tramo in rutas_coche_df.iterrows():
-                estacion = coche_tramo['Destino']
-                # Buscar combinaciones de transporte público desde la estación
-                # y PREPENDER el tramo del coche calculado hacia atrás.
-                # ... (Lógica de cálculo hacia atrás aquí)
-        
-        return rutas_encontradas
-
-    # El enfoque recursivo es complejo. Usaré un enfoque iterativo más claro.
-    
-    # 1. Rutas que empiezan con transporte público
-    # ... (código de 1, 2, 3 tramos públicos)
-
-    # 2. Rutas que empiezan con Coche Propio
-    # ... (código de Coche + 1, 2 tramos públicos)
-
-    # Por la complejidad, voy a poner el código final y funcional directamente.
-
-    # Reemplazo total de la función `buscar`
-    # ...
-    if resultados_finales:
-        resultados_finales.sort(key=lambda x: x["hora_llegada_final"])
-
-    return render_template("resultado.html", origen=origen_inicial, destino=destino_final, resultados=resultados_finales)
-
+    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados)
 
 if __name__ == "__main__":
     app.run(debug=True)
+
