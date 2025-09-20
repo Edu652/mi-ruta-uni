@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -21,7 +21,6 @@
             <div class="space-y-4">
                 {% for resultado in resultados %}
                 <div class="bg-slate-800 rounded-lg shadow-lg p-4 border border-slate-700">
-                    <!-- Cabecera de la tarjeta -->
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             {% if resultado.tipo == 'Directo' %}
@@ -41,17 +40,17 @@
                         </div>
                     </div>
 
-                    <!-- Segmentos del viaje -->
                     <div class="space-y-3 border-t border-slate-700 pt-4">
                         {% for segmento in resultado.segmentos %}
                         <div class="grid grid-cols-12 gap-2 items-center">
+                            <!-- Icono y valores por defecto vacíos para evitar 'N/A' -->
                             <div class="col-span-1 text-2xl">{{ segmento.icono | default('➡️') }}</div>
                             <div class="col-span-8">
-                                <p class="font-semibold">{{ segmento.Compania | default('N/A') }}</p>
-                                <p class="text-sm text-slate-400">{{ segmento.Origen }} &rarr; {{ segmento.Destino }}</p>
+                                <p class="font-semibold">{{ segmento.Compania | default('') }}</p>
+                                <p class="text-sm text-slate-400">{{ segmento.Origen | default('') }} &rarr; {{ segmento.Destino | default('') }}</p>
                             </div>
                             <div class="col-span-3 text-right">
-                                <p class="font-mono font-semibold">{{ segmento.Salida_str }} - {{ segmento.Llegada_str }}</p>
+                                <p class="font-mono font-semibold">{{ segmento.Salida_str | default('') }} - {{ segmento.Llegada_str | default('') }}</p>
                                 <p class="text-xs text-slate-500">
                                     {% if segmento.Duracion_Tramo_Min %}
                                         {{ "%.0f"|format(segmento.Duracion_Tramo_Min) }} min
@@ -65,7 +64,6 @@
                 {% endfor %}
             </div>
         {% else %}
-            <!-- Mensaje si no hay resultados -->
             <div class="bg-slate-800 rounded-lg p-8 text-center border border-slate-700">
                 <p class="text-4xl mb-4">😔</p>
                 <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
@@ -76,4 +74,5 @@
 
 </body>
 </html>
+
 
