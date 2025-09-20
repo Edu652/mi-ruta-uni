@@ -26,14 +26,15 @@ def format_timedelta(td):
 try:
     rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
     
-    # --- LÍNEA DE DEPURACIÓN ---
-    # Imprimirá las columnas exactas que se leen del Excel en los logs de Render.
-    print(f"COLUMNAS DETECTADAS EN EXCEL: {rutas_df.columns.tolist()}")
-
     rutas_df.columns = rutas_df.columns.str.strip()
-    # Asegurar que las columnas clave existen
-    # CORRECCIÓN: Cambiado 'Compania' por 'Compañía' para que coincida con el Excel
-    required_cols = ['Origen', 'Destino', 'Tipo_Horario', 'Compañía', 'Precio']
+
+    # --- ¡NUEVA LÓGICA A PRUEBA DE ERRORES! ---
+    # Renombramos 'Compañía' a 'Compania' si existe, para estandarizar.
+    if 'Compañía' in rutas_df.columns:
+        rutas_df.rename(columns={'Compañía': 'Compania'}, inplace=True)
+
+    # Ahora siempre buscaremos 'Compania' (con n)
+    required_cols = ['Origen', 'Destino', 'Tipo_Horario', 'Compania', 'Precio']
     for col in required_cols:
         if col not in rutas_df.columns:
             raise ValueError(f"Falta la columna requerida: {col}")
@@ -70,7 +71,6 @@ def buscar():
 
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
-        # Usamos .loc para evitar SettingWithCopyWarning
         rutas_fijas.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
@@ -158,7 +158,7 @@ def buscar():
                 llegada_anterior_dt = seg_calc.get('Llegada_dt')
                 if i == 0: salida_inicial_dt = seg_calc.get('Salida_dt')
                 
-                seg_calc['icono'] = get_icon_for_compania(seg_calc['Compañía'])
+                seg_calc['icono'] = get_icon_for_compania(seg_calc['Compania'])
                 seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M') if seg_calc.get('Salida_dt') else ''
                 seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M') if seg_calc.get('Llegada_dt') else ''
                 if seg_calc.get('Llegada_dt') and seg_calc.get('Salida_dt'):
