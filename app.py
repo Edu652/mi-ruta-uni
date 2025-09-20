@@ -15,9 +15,11 @@ try:
     rutas_df.loc[fijos_mask, "Salida"] = pd.to_datetime(rutas_df.loc[fijos_mask, "Salida"], format='%H:%M:%S', errors='coerce').dt.time
     rutas_df.loc[fijos_mask, "Llegada"] = pd.to_datetime(rutas_df.loc[fijos_mask, "Llegada"], format='%H:%M:%S', errors='coerce').dt.time
     
-    # Nos aseguramos de que las columnas numéricas sean números
+    # Nos aseguramos de que las columnas numéricas sean números, tratando errores.
     rutas_df['Frecuencia_Min'] = pd.to_numeric(rutas_df['Frecuencia_Min'], errors='coerce')
     rutas_df['Duracion_Trayecto_Min'] = pd.to_numeric(rutas_df['Duracion_Trayecto_Min'], errors='coerce')
+    rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
+
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
@@ -33,10 +35,20 @@ except:
 @app.route("/")
 def index():
     lugares = []
-    if not rutas_df.empty:
-        lugares = sorted(pd.concat([rutas_df["Origen"], rutas_df["Destino"]]).dropna().unique())
+    # ----> ¡NUEVO BLOQUE A PRUEBA DE ERRORES! <----
+    try:
+        if not rutas_df.empty:
+            # Comprobamos que las columnas 'Origen' y 'Destino' existen
+            if 'Origen' in rutas_df.columns and 'Destino' in rutas_df.columns:
+                lugares = sorted(pd.concat([rutas_df["Origen"], rutas_df["Destino"]]).dropna().unique())
+            else:
+                print("ERROR: Faltan las columnas 'Origen' y/o 'Destino' en el Excel.")
+    except Exception as e:
+        print(f"ERROR al procesar los lugares para los desplegables: {e}")
+
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase)
+
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
