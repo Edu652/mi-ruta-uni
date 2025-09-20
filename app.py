@@ -7,13 +7,25 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # --- Funciones de Ayuda ---
-def get_icon_for_compania(compania):
-    compania_lower = str(compania).lower()
-    if 'urbano' in compania_lower: return '🚍'
-    if 'damas' in compania_lower: return '🚌'
-    if 'renfe' in compania_lower or 'tren' in compania_lower: return '🚆'
-    if 'coche' in compania_lower: return '🚗'
-    return '➡️'
+def get_icon_for_compania(compania, transporte=None):
+    # Prioriza el nombre de la compañía
+    compania_str = str(compania).lower()
+    if 'urbano' in compania_str: return '🚍'
+    if 'damas' in compania_str: return '🚌'
+    if 'renfe' in compania_str: return '🚆'
+    if 'coche' in compania_str: return '🚗'
+    
+    # Si no, busca por tipo de transporte
+    transporte_str = str(transporte).lower()
+    if 'tren' in transporte_str: return '🚆'
+    if 'bus' in transporte_str: return '🚌'
+    
+    # Si existe una compañía pero no se reconoce, muestra un icono genérico
+    if compania_str not in ['nan', 'none', '']:
+        return '➡️'
+        
+    # Si no hay información, no muestra nada
+    return ''
 
 def format_timedelta(td):
     total_seconds = int(td.total_seconds())
@@ -37,12 +49,8 @@ try:
             raise ValueError(f"Falta la columna requerida: {col}")
             
     rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
-    
-    # --- ¡NUEVAS LÍNEAS DE CORRECCIÓN! ---
-    # Forzamos que las columnas de duración y frecuencia sean siempre numéricas.
     rutas_df['Duracion_Trayecto_Min'] = pd.to_numeric(rutas_df['Duracion_Trayecto_Min'], errors='coerce').fillna(0)
     rutas_df['Frecuencia_Min'] = pd.to_numeric(rutas_df['Frecuencia_Min'], errors='coerce').fillna(0)
-
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
@@ -161,7 +169,7 @@ def buscar():
                 llegada_anterior_dt = seg_calc.get('Llegada_dt')
                 if i == 0: salida_inicial_dt = seg_calc.get('Salida_dt')
                 
-                seg_calc['icono'] = get_icon_for_compania(seg_calc['Compania'])
+                seg_calc['icono'] = get_icon_for_compania(seg_calc.get('Compania'), seg_calc.get('Transporte'))
                 seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M') if seg_calc.get('Salida_dt') else ''
                 seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M') if seg_calc.get('Llegada_dt') else ''
                 if seg_calc.get('Llegada_dt') and seg_calc.get('Salida_dt'):
@@ -175,8 +183,8 @@ def buscar():
                 resultados_procesados.append({
                     "segmentos": segmentos_calculados,
                     "precio_total": sum(s.get('Precio', 0) for s in ruta),
+                    "llegada_final_dt_obj": llegada_final_dt, # Para ordenar
                     "hora_llegada_final": llegada_final_dt.time(),
-                    "tipo": "Directo" if len(ruta) == 1 else "Transbord",
                     "duracion_total_str": format_timedelta(duracion_total)
                 })
         except Exception as e:
@@ -185,7 +193,7 @@ def buscar():
 
 
     if resultados_procesados:
-        resultados_procesados.sort(key=lambda x: x['hora_llegada_final'])
+        resultados_procesados.sort(key=lambda x: x['llegada_final_dt_obj'])
 
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados)
 
