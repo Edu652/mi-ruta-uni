@@ -6,100 +6,98 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# --- Carga de Datos ---
+# --- Carga de Datos Inteligente ---
 try:
-    # Leemos el archivo Excel
     rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
 
-    # Corregimos el formato de hora para que acepte segundos (HH:MM:SS)
-    rutas_df["Salida"] = pd.to_datetime(rutas_df["Salida"], format='%H:%M:%S', errors='coerce').dt.time
-    rutas_df["Llegada"] = pd.to_datetime(rutas_df["Llegada"], format='%H:%M:%S', errors='coerce').dt.time
-
-    # Eliminamos cualquier fila donde la conversión de hora haya fallado.
-    filas_originales = len(rutas_df)
-    rutas_df.dropna(subset=['Salida', 'Llegada'], inplace=True)
-    filas_limpias = len(rutas_df)
+    # Procesamos solo las filas con horario FIJO
+    fijos_mask = rutas_df['Tipo_Horario'] == 'Fijo'
+    rutas_df.loc[fijos_mask, "Salida"] = pd.to_datetime(rutas_df.loc[fijos_mask, "Salida"], format='%H:%M:%S', errors='coerce').dt.time
+    rutas_df.loc[fijos_mask, "Llegada"] = pd.to_datetime(rutas_df.loc[fijos_mask, "Llegada"], format='%H:%M:%S', errors='coerce').dt.time
     
-    if filas_originales > filas_limpias:
-        print(f"ADVERTENCIA: Se eliminaron {filas_originales - filas_limpias} filas por tener un formato de hora incorrecto.")
+    # Nos aseguramos de que las columnas numéricas sean números
+    rutas_df['Frecuencia_Min'] = pd.to_numeric(rutas_df['Frecuencia_Min'], errors='coerce')
+    rutas_df['Duracion_Trayecto_Min'] = pd.to_numeric(rutas_df['Duracion_Trayecto_Min'], errors='coerce')
 
-except FileNotFoundError:
-    print("ERROR CRÍTICO: No se encontró 'rutas.xlsx'.")
-    rutas_df = pd.DataFrame(columns=["Origen", "Destino", "Salida", "Llegada", "Precio", "Compañia"])
 except Exception as e:
-    print(f"ERROR CRÍTICO: Ocurrió un error al cargar 'rutas.xlsx': {e}")
-    rutas_df = pd.DataFrame(columns=["Origen", "Destino", "Salida", "Llegada", "Precio", "Compañia"])
+    print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
+    rutas_df = pd.DataFrame()
 
-# Cargamos las frases motivadoras
+# Cargamos las frases
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
         frases = json.load(f)
-except FileNotFoundError:
-    frases = ["El éxito es la suma de pequeños esfuerzos repetidos día tras día."]
-
+except:
+    frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
 @app.route("/")
 def index():
+    lugares = []
     if not rutas_df.empty:
-        # Aseguramos que los lugares no tengan espacios extra
-        origenes = rutas_df["Origen"].str.strip()
-        destinos = rutas_df["Destino"].str.strip()
-        lugares = sorted(set(origenes).union(set(destinos)))
-    else:
-        lugares = [] 
+        lugares = sorted(pd.concat([rutas_df["Origen"], rutas_df["Destino"]]).dropna().unique())
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase)
-
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
     origen = request.form["origen"]
     destino = request.form["destino"]
-    rutas_validas = []
-
-    # Búsqueda de rutas directas
-    rutas_directas = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == destino)]
-    for _, ruta in rutas_directas.iterrows():
-        rutas_validas.append([ruta.to_dict()])
-
-    # Búsqueda de rutas con 1 transbordo
-    TIEMPO_MINIMO_TRANSBORDO = timedelta(minutes=15)
-    posibles_primeros_tramos = rutas_df[rutas_df["Origen"] == origen]
-    for _, tramo1 in posibles_primeros_tramos.iterrows():
-        punto_intermedio = tramo1["Destino"]
-        if punto_intermedio == destino: continue
-        
-        posibles_segundos_tramos = rutas_df[(rutas_df["Origen"] == punto_intermedio) & (rutas_df["Destino"] == destino)]
-        for _, tramo2 in posibles_segundos_tramos.iterrows():
-            hora_llegada_tramo1 = datetime.combine(datetime.today(), tramo1["Llegada"])
-            hora_salida_tramo2 = datetime.combine(datetime.today(), tramo2["Salida"])
-            if hora_salida_tramo2 >= (hora_llegada_tramo1 + TIEMPO_MINIMO_TRANSBORDO):
-                rutas_validas.append([tramo1.to_dict(), tramo2.to_dict()])
-
-    # Procesar y ordenar resultados
     resultados_finales = []
-    for ruta in rutas_validas:
-        precio_total = sum(pd.to_numeric(s.get("Precio", 0), errors='coerce') for s in ruta)
-        
-        # Preparamos los segmentos para mostrarlos en el HTML
-        for segmento in ruta:
-            segmento["Salida_str"] = segmento["Salida"].strftime('%H:%M')
-            segmento["Llegada_str"] = segmento["Llegada"].strftime('%H:%M')
-        
-        hora_llegada_final = ruta[-1]["Llegada"]
+    
+    # --- Lógica de Búsqueda Mejorada ---
+    
+    # 1. Rutas Directas (solo pueden ser de tipo 'Fijo')
+    directas = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df["Destino"] == destino) & (rutas_df['Tipo_Horario'] == 'Fijo')]
+    for _, ruta in directas.iterrows():
+        ruta_dict = ruta.to_dict()
+        ruta_dict['Salida_str'] = ruta['Salida'].strftime('%H:%M')
+        ruta_dict['Llegada_str'] = ruta['Llegada'].strftime('%H:%M')
         resultados_finales.append({
-            "segmentos": ruta, "precio_total": round(precio_total, 2),
-            "hora_llegada_final_str": hora_llegada_final.strftime('%H:%M'),
-            "hora_llegada_final": hora_llegada_final,
-            "tipo": "Directo" if len(ruta) == 1 else "Transbordo"
+            "segmentos": [ruta_dict],
+            "precio_total": ruta['Precio'],
+            "hora_llegada_final": ruta['Llegada'],
+            "tipo": "Directo"
         })
 
+    # 2. Rutas con Transbordo (A -> B (Fijo) -> C (Frecuencia))
+    TIEMPO_MINIMO_TRANSBORDO = timedelta(minutes=10)
+    posibles_primeros_tramos = rutas_df[(rutas_df["Origen"] == origen) & (rutas_df['Tipo_Horario'] == 'Fijo')]
+    
+    for _, tramo1 in posibles_primeros_tramos.iterrows():
+        punto_intermedio = tramo1["Destino"]
+        posibles_segundos_tramos = rutas_df[(rutas_df["Origen"] == punto_intermedio) & (rutas_df["Destino"] == destino)]
+        
+        for _, tramo2 in posibles_segundos_tramos.iterrows():
+            hora_llegada_tramo1 = datetime.combine(datetime.today(), tramo1["Llegada"])
+            
+            # Si el segundo tramo es de frecuencia, aplicamos la nueva lógica
+            if tramo2["Tipo_Horario"] == 'Frecuencia':
+                # Estimamos el tiempo de espera + viaje
+                # Llegada_bus_anterior + tiempo_caminar + espera_maxima + duracion_viaje
+                espera_estimada = timedelta(minutes=tramo2['Frecuencia_Min'])
+                duracion_viaje = timedelta(minutes=tramo2['Duracion_Trayecto_Min'])
+                hora_llegada_final_dt = hora_llegada_tramo1 + TIEMPO_MINIMO_TRANSBORDO + espera_estimada + duracion_viaje
+                
+                tramo1_dict = tramo1.to_dict()
+                tramo1_dict['Salida_str'] = tramo1['Salida'].strftime('%H:%M')
+                tramo1_dict['Llegada_str'] = tramo1['Llegada'].strftime('%H:%M')
+                
+                tramo2_dict = tramo2.to_dict()
+                # Para la vista, podemos estimar una hora de "salida"
+                tramo2_dict['Salida_str'] = (hora_llegada_tramo1 + TIEMPO_MINIMO_TRANSBORDO).strftime('%H:%M')
+                tramo2_dict['Llegada_str'] = hora_llegada_final_dt.strftime('%H:%M')
+
+                resultados_finales.append({
+                    "segmentos": [tramo1_dict, tramo2_dict],
+                    "precio_total": tramo1['Precio'] + tramo2['Precio'],
+                    "hora_llegada_final": hora_llegada_final_dt.time(),
+                    "tipo": "Transbordo (Bus Urbano)"
+                })
+    
     if resultados_finales:
-        # Ordenamos por hora de llegada y luego por precio
-        resultados_finales.sort(key=lambda x: (x["hora_llegada_final"], x["precio_total"]))
+        resultados_finales.sort(key=lambda x: x["hora_llegada_final"])
 
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_finales)
 
 if __name__ == "__main__":
     app.run(debug=True)
-
