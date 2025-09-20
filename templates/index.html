@@ -2,30 +2,77 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta Uni 🚀</title>
-    {{ url_for(
+    <!-- Incluimos Tailwind CSS para un diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Pequeño ajuste para mejorar el aspecto de los selectores en modo oscuro */
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
 </head>
-<body>
-    <h1>Mi Ruta Uni 🚀</h1>
-    <p class="frase">{{ frase }}</p>
+<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen p-4 antialiased">
 
-    /buscar
-        <label>Origen:</label>
-        <select name="origen">
-            {% for lugar in lugares %}
-            <option value="{{ lugar }}">{{ lugar }}</option>
-            {% endfor %}
-        </select>
+    <main class="w-full max-w-md mx-auto">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 md:p-8 text-center">
+            
+            <!-- Encabezado -->
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-400 mb-2">Mi Ruta Uni 🚀</h1>
+            <p class="text-slate-400 mb-8">Planifica tu viaje a la universidad</p>
+            
+            <!-- Formulario de Búsqueda -->
+            <form action="/buscar" method="post" class="space-y-6">
+                <!-- Selector de Origen -->
+                <div>
+                    <label for="origen" class="block text-left text-sm font-medium text-slate-300 mb-2">Origen</label>
+                    <select id="origen" name="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="" disabled selected>Selecciona una parada</option>
+                        {% for lugar in lugares %}
+                        <option value="{{ lugar }}">{{ lugar }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        <label>Destino:</label>
-        <select name="destino">
-            {% for lugar in lugares %}
-            <option value="{{ lugar }}">{{ lugar }}</option>
-            {% endfor %}
-        </select>
+                <!-- Selector de Destino -->
+                <div>
+                    <label for="destino" class="block text-left text-sm font-medium text-slate-300 mb-2">Destino</label>
+                    <select id="destino" name="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-3 px-4 text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="" disabled selected>Selecciona una parada</option>
+                        {% for lugar in lugares %}
+                        <option value="{{ lugar }}">{{ lugar }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        <button type="submit">Buscar ruta</button>
-    </form>
+                <!-- Botón de Búsqueda -->
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-lg transition-transform duration-300 transform hover:scale-105 shadow-lg">
+                    Buscar Ruta
+                </button>
+            </form>
+            
+            <!-- Frase Motivadora -->
+            <div class="mt-8 pt-6 border-t border-slate-700">
+                <p class="text-sm text-slate-400 italic">"{{ frase.texto }}"</p>
+                <p class="text-xs text-slate-500 mt-2">- {{ frase.autor }}</p>
+            </div>
+
+        </div>
+    </main>
+
 </body>
 </html>
-
