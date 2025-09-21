@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta Uni 🚀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -15,7 +15,6 @@
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
         <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-700">
-            <!-- Logo como fondo -->
             <img src="{{ url_for('static', filename='logo_psicología.png') }}" alt="Logo Psicología" class="absolute inset-0 w-full h-full object-contain object-center opacity-10 pointer-events-none">
             
             <div class="relative z-10">
@@ -46,33 +45,49 @@
                         </div>
                     </div>
 
-                    <!-- Checkboxes para evitar estaciones -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-sm text-slate-300">
-                        <label for="evitar_santa_justa" class="flex items-center space-x-2 cursor-pointer p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition">
-                            <input id="evitar_santa_justa" name="evitar_santa_justa" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                            <span>Evitar Santa Justa</span>
-                        </label>
-                        <label for="evitar_plaza_armas" class="flex items-center space-x-2 cursor-pointer p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition">
-                            <input id="evitar_plaza_armas" name="evitar_plaza_armas" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                            <span>Evitar Plaza de Armas</span>
-                        </label>
-                    </div>
+                    <!-- Filtros de Búsqueda -->
+                    <fieldset class="mt-6 border-t border-slate-700 pt-4">
+                        <legend class="text-sm font-semibold text-slate-400 px-2 -ml-2">Opciones de Búsqueda</legend>
+                        <div class="space-y-4 mt-2">
+                            <!-- Fila para Hora -->
+                             <div class="flex items-center space-x-4">
+                                <label for="hora_salida" class="text-sm text-slate-300 whitespace-nowrap">Salida desde las:</label>
+                                <select id="hora_salida" name="hora_salida" class="w-full bg-slate-700/80 border border-slate-600 rounded-lg py-1 px-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                    <option value="">Cualquier hora</option>
+                                    {% for i in range(6, 24) %}
+                                        <option value="{{ '%02d'|format(i) }}:00">{{ '%02d'|format(i) }}:00</option>
+                                        <option value="{{ '%02d'|format(i) }}:30">{{ '%02d'|format(i) }}:30</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <!-- Checkbox "Desde ahora" -->
+                             <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+                                <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <span>O buscar desde la hora actual</span>
+                            </label>
+                             <!-- Checkboxes para evitar estaciones -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-300">
+                                <label for="evitar_santa_justa" class="flex items-center space-x-2 cursor-pointer">
+                                    <input id="evitar_santa_justa" name="evitar_santa_justa" type="checkbox" checked class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                    <span>Evitar Santa Justa</span>
+                                </label>
+                                <label for="evitar_plaza_armas" class="flex items-center space-x-2 cursor-pointer">
+                                    <input id="evitar_plaza_armas" name="evitar_plaza_armas" type="checkbox" checked class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                    <span>Evitar Plaza de Armas</span>
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
 
-                    <div class="mt-4">
-                        <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
-                            <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                            <span>Buscar rutas desde la hora actual</span>
-                        </label>
-                    </div>
 
-                    <div class="mt-8">
+                    <div class="mt-6">
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">
                             Buscar Ruta
                         </button>
                     </div>
                 </form>
 
-                <div class="text-center mt-6">
+                <div class="text-center mt-4">
                     <p class="text-slate-400 italic text-sm">"{{ frase }}"</p>
                 </div>
             </div>
@@ -102,7 +117,7 @@
                 </div>
                 <div>
                     <h4 class="font-semibold text-indigo-400">Emtusa (Huelva)</h4>
-                    <p>Web: <a href="https://emtusa.es/" target="_blank" class="underline">emtusa.es</a></p>
+                    <p>Web: <a href="https://www.emtusahuelva.es/" target="_blank" class="underline">emtusahuelva.es</a></p>
                     <p>Teléfono: <a href="tel:959247192" class="underline">959 24 71 92</a></p>
                 </div>
             </div>
