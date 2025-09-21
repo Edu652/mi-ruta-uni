@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es" class="">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
     <script>
-        // Poner este script en el <head> es crucial para evitar el "flash" del tema incorrecto al cargar.
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -108,31 +108,39 @@
                 </p>
             </div>
         {% endif %}
+
     </div>
     
     <script>
         // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
-        const themeToggleButton = document.getElementById('theme-toggle');
 
-        function toggleTheme() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
-            themeToggleDarkIcon.classList.toggle('hidden', !isDark);
-            themeToggleLightIcon.classList.toggle('hidden', isDark);
-        }
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeToggleDarkIcon.classList.remove('hidden');
+                themeToggleLightIcon.classList.add('hidden');
+            }
+        };
 
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            themeToggleDarkIcon.classList.add('hidden');
-            themeToggleLightIcon.classList.remove('hidden');
-        } else {
-            themeToggleDarkIcon.classList.remove('hidden');
-            themeToggleLightIcon.classList.add('hidden');
-        }
+        const storedTheme = localStorage.getItem('color-theme');
+        const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        applyTheme(storedTheme || preferredTheme);
 
-        themeToggleButton.addEventListener('click', toggleTheme);
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('color-theme', newTheme);
+            applyTheme(newTheme);
+        });
     </script>
 </body>
 </html>
+
 
