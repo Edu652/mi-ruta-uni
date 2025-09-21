@@ -44,27 +44,27 @@ def clean_minutes_column(series):
 
 # --- Carga de Datos ---
 try:
-    rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    rutas_df.columns = rutas_df.columns.str.strip()
+    rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
+    rutas_df_global.columns = rutas_df_global.columns.str.strip()
 
-    if 'Compañía' in rutas_df.columns:
-        rutas_df.rename(columns={'Compañía': 'Compania'}, inplace=True)
+    if 'Compañía' in rutas_df_global.columns:
+        rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
 
     required_cols = ['Origen', 'Destino', 'Tipo_Horario', 'Compania']
     for col in required_cols:
-        if col not in rutas_df.columns:
+        if col not in rutas_df_global.columns:
             raise ValueError(f"Falta la columna requerida: {col}")
 
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
-        if col in rutas_df.columns:
-            rutas_df[col] = clean_minutes_column(rutas_df[col])
+        if col in rutas_df_global.columns:
+            rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     
-    if 'Precio' in rutas_df.columns:
-        rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
+    if 'Precio' in rutas_df_global.columns:
+        rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
-    rutas_df = pd.DataFrame()
+    rutas_df_global = pd.DataFrame()
 
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
@@ -75,8 +75,8 @@ except Exception:
 @app.route("/")
 def index():
     lugares = []
-    if not rutas_df.empty:
-        lugares = sorted(pd.concat([rutas_df["Origen"], rutas_df["Destino"]]).dropna().unique())
+    if not rutas_df_global.empty:
+        lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase)
 
@@ -87,6 +87,22 @@ def buscar():
     destino = request.form["destino"]
     desde_ahora_check = request.form.get('desde_ahora')
     
+    # --- ¡NUEVO! Filtro de estaciones ---
+    rutas_df = rutas_df_global.copy()
+    paradas_prohibidas = []
+    # ATENCIÓN: Reemplazar "Sevilla Santa Justa" y "Sevilla Plaza de Armas" con los nombres EXACTOS del Excel.
+    if request.form.get('evitar_santa_justa'):
+        paradas_prohibidas.append("Sevilla Santa Justa") 
+    if request.form.get('evitar_plaza_armas'):
+        paradas_prohibidas.append("Sevilla Plaza de Armas")
+    
+    if paradas_prohibidas:
+        # Excluir rutas que empiezan en una parada prohibida
+        rutas_df = rutas_df[~rutas_df['Origen'].isin(paradas_prohibidas)]
+        # Excluir rutas que terminan en una parada prohibida (a menos que sea el destino final)
+        rutas_df = rutas_df[~(rutas_df['Destino'].isin(paradas_prohibidas) & (rutas_df['Destino'] != destino))]
+
+
     # Pre-procesar rutas fijas una sola vez
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
@@ -103,7 +119,12 @@ def buscar():
         if clave_ruta in rutas_procesadas_set: return
         rutas_procesadas_set.add(clave_ruta)
         
-        # --- ¡NUEVO! Caso especial para rutas directas en coche ---
+        # --- ¡NUEVO! Validar que no se usan paradas prohibidas como transbordo ---
+        for i in range(len(ruta_series_list) - 1):
+            if ruta_series_list[i]['Destino'] in paradas_prohibidas:
+                return # Ruta inválida
+
+        # Caso especial para rutas directas en coche
         if len(ruta_series_list) == 1 and ruta_series_list[0]['Tipo_Horario'] == 'Flexible':
             seg = ruta_series_list[0]
             duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
@@ -121,7 +142,6 @@ def buscar():
             })
             return
 
-        # --- Procesamiento normal para el resto de rutas ---
         segmentos, llegada_anterior_dt = [], None
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
