@@ -190,15 +190,17 @@ def buscar():
         })
 
     # --- BÚSQUEDA DE CANDIDATOS ---
-    for _, ruta in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
+    df_busqueda = rutas_df_global.copy()
+    
+    for _, ruta in df_busqueda[(df_busqueda['Origen'] == origen) & (df_busqueda['Destino'] == destino)].iterrows():
         procesar_y_validar_ruta([ruta])
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[(rutas_df_global['Origen'] == tramo1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+    for _, tramo1 in df_busqueda[df_busqueda['Origen'] == origen].iterrows():
+        for _, tramo2 in df_busqueda[(df_busqueda['Origen'] == tramo1['Destino']) & (df_busqueda['Destino'] == destino)].iterrows():
             procesar_y_validar_ruta([tramo1, tramo2])
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+    for _, tramo1 in df_busqueda[df_busqueda['Origen'] == origen].iterrows():
+        for _, tramo2 in df_busqueda[df_busqueda['Origen'] == tramo1['Destino']].iterrows():
             if tramo2['Destino'] == destino or tramo2['Destino'] == origen: continue
-            for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+            for _, tramo3 in df_busqueda[(df_busqueda['Origen'] == tramo2['Destino']) & (df_busqueda['Destino'] == destino)].iterrows():
                 procesar_y_validar_ruta([tramo1, tramo2, tramo3])
 
     if resultados_procesados:
