@@ -45,25 +45,12 @@
                         </div>
                     </div>
                     
-                    <fieldset class="mt-6 border-t border-slate-700 pt-4">
-                        <legend class="text-sm font-semibold text-slate-400 px-2 -ml-2">Opciones de Búsqueda</legend>
-                        <div class="space-y-4 mt-2">
-                             <div class="flex items-center space-x-4">
-                                <label for="hora_salida" class="text-sm text-slate-300 whitespace-nowrap">Salida desde las:</label>
-                                <select id="hora_salida" name="hora_salida" class="w-full bg-slate-700/80 border border-slate-600 rounded-lg py-1 px-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                    <option value="">Cualquier hora</option>
-                                    {% for i in range(6, 24) %}
-                                        <option value="{{ '%02d'|format(i) }}:00">{{ '%02d'|format(i) }}:00</option>
-                                        <option value="{{ '%02d'|format(i) }}:30">{{ '%02d'|format(i) }}:30</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                             <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
-                                <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                                <span>O buscar desde la hora actual</span>
-                            </label>
-                        </div>
-                    </fieldset>
+                    <div class="mt-6 border-t border-slate-700 pt-4">
+                        <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+                            <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                            <span>Buscar desde la hora actual</span>
+                        </label>
+                    </div>
 
                     <div class="mt-6">
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">
