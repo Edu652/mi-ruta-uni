@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 import pandas as pd
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 app = Flask(__name__)
 
@@ -26,6 +26,35 @@ def format_timedelta(td):
     if hours > 0: return f"{hours}h {minutes}min"
     return f"{minutes}min"
 
+def clean_minutes_column(series):
+    # Función para convertir una columna que puede tener números, strings o tiempos a minutos numéricos
+    def to_minutes(val):
+        if pd.isna(val):
+            return 0
+        if isinstance(val, (int, float)):
+            return val
+        if isinstance(val, str):
+            try:
+                # Intenta interpretar como H:M:S o H:M
+                parts = list(map(int, val.split(':')))
+                if len(parts) >= 2:
+                    return parts[0] * 60 + parts[1]
+            except (ValueError, AttributeError):
+                # Si falla, intenta convertirlo a número directamente
+                try:
+                    return float(val)
+                except ValueError:
+                    return 0
+        if isinstance(val, time):
+            return val.hour * 60 + val.minute
+        return 0
+    # Usamos .squeeze() por si la serie es un resultado de un filtro
+    if isinstance(series, pd.Series):
+        return series.apply(to_minutes)
+    else:
+        return to_minutes(series)
+
+
 # --- Carga de Datos ---
 try:
     rutas_df = pd.read_excel("rutas.xlsx", engine="openpyxl")
@@ -39,9 +68,14 @@ try:
         if col not in rutas_df.columns:
             raise ValueError(f"Falta la columna requerida: {col}")
 
-    for col in ['Precio', 'Duracion_Trayecto_Min', 'Frecuencia_Min']:
+    # Usamos la nueva función para limpiar las columnas de minutos
+    for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
         if col in rutas_df.columns:
-            rutas_df[col] = pd.to_numeric(rutas_df[col], errors='coerce').fillna(0)
+            rutas_df[col] = clean_minutes_column(rutas_df[col])
+    
+    if 'Precio' in rutas_df.columns:
+        rutas_df['Precio'] = pd.to_numeric(rutas_df['Precio'], errors='coerce').fillna(0)
+
 
 except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
@@ -70,7 +104,6 @@ def buscar():
     
     # --- CONSTANTES ---
     TIEMPO_TRANSBORDO = timedelta(minutes=10)
-    TIEMPO_COCHE_A_ESTACION = timedelta(minutes=10)
 
     # Preparar DataFrames por tipo de horario
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
@@ -79,8 +112,7 @@ def buscar():
         rutas_fijas['Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
-    # --- LÓGICA DE BÚSQUEDA (CORREGIDA) ---
-    # Ahora guardamos el objeto Series completo, no un diccionario
+    # --- LÓGICA DE BÚSQUEDA ---
 
     # 1. Rutas Directas (1 Tramo)
     directas = rutas_fijas[(rutas_fijas['Origen'] == origen) & (rutas_fijas['Destino'] == destino)]
@@ -94,8 +126,8 @@ def buscar():
         tramos2 = rutas_df[(rutas_df['Origen'] == punto_intermedio) & (rutas_df['Destino'] == destino)]
         for _, tramo2 in tramos2.iterrows():
             if tramo2['Tipo_Horario'] == 'Fijo':
-                tramo2_fijo = rutas_fijas[rutas_fijas.index == tramo2.name]
-                if not tramo2_fijo.empty and tramo1['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_fijo.iloc[0]['Salida_dt']:
+                tramo2_fijo = rutas_fijas.loc[tramo2.name]
+                if not tramo2_fijo.empty and tramo1['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_fijo['Salida_dt']:
                     rutas_encontradas.append([tramo1, tramo2])
             elif tramo2['Tipo_Horario'] == 'Frecuencia':
                 rutas_encontradas.append([tramo1, tramo2])
@@ -118,8 +150,8 @@ def buscar():
             for _, tramo2_pub in tramos2_pub.iterrows():
                 es_valido = False
                 if tramo2_pub['Tipo_Horario'] == 'Fijo':
-                    tramo2_pub_fijo = rutas_fijas[rutas_fijas.index == tramo2_pub.name]
-                    if not tramo2_pub_fijo.empty and tramo1_pub['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_pub_fijo.iloc[0]['Salida_dt']:
+                    tramo2_pub_fijo = rutas_fijas.loc[tramo2_pub.name]
+                    if not tramo2_pub_fijo.empty and tramo1_pub['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_pub_fijo['Salida_dt']:
                         es_valido = True
                 elif tramo2_pub['Tipo_Horario'] == 'Frecuencia':
                     es_valido = True
@@ -134,24 +166,25 @@ def buscar():
             segmentos_calculados = []
             llegada_anterior_dt = None
             
-            # La variable del bucle ahora es una Serie (seg_series), no un diccionario
             for i, seg_series in enumerate(ruta):
                 seg_calc = seg_series.copy()
                 
                 if seg_calc['Tipo_Horario'] == 'Flexible':
                     siguiente_tramo_series = ruta[i+1]
-                    siguiente_tramo_fijo = rutas_fijas[rutas_fijas.index == siguiente_tramo_series.name].iloc[0]
+                    siguiente_tramo_fijo = rutas_fijas.loc[siguiente_tramo_series.name]
                     salida_siguiente_dt = siguiente_tramo_fijo['Salida_dt']
                     duracion_coche = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
-                    seg_calc['Llegada_dt'] = salida_siguiente_dt - TIEMPO_COCHE_A_ESTACION
+                    # --- LÓGICA CORREGIDA PARA COCHE ---
+                    seg_calc['Llegada_dt'] = salida_siguiente_dt
                     seg_calc['Salida_dt'] = seg_calc['Llegada_dt'] - duracion_coche
 
                 elif seg_calc['Tipo_Horario'] == 'Fijo':
-                    tramo_fijo = rutas_fijas[rutas_fijas.index == seg_series.name].iloc[0]
+                    tramo_fijo = rutas_fijas.loc[seg_series.name]
                     seg_calc['Salida_dt'] = tramo_fijo['Salida_dt']
                     seg_calc['Llegada_dt'] = tramo_fijo['Llegada_dt']
 
                 elif seg_calc['Tipo_Horario'] == 'Frecuencia':
+                    # --- LÓGICA CORREGIDA PARA BUS URBANO ---
                     frecuencia = timedelta(minutes=seg_calc['Frecuencia_Min'])
                     duracion = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
                     seg_calc['Salida_dt'] = llegada_anterior_dt + frecuencia
@@ -167,7 +200,7 @@ def buscar():
                 seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
                 seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
                 seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
-                segmentos_calculados.append(seg_calc.to_dict()) # Convertimos a dict al final
+                segmentos_calculados.append(seg_calc.to_dict())
 
             salida_inicial_dt = segmentos_calculados[0]['Salida_dt']
             llegada_final_dt = segmentos_calculados[-1]['Llegada_dt']
