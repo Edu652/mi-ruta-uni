@@ -86,20 +86,10 @@ def buscar():
     if request.form.get('evitar_plaza_armas'):
         paradas_prohibidas.append("Sevilla Plaza de Armas")
 
-    # --- LÓGICA DE FILTRADO Y BÚSQUEDA RECONSTRUIDA ---
+    # --- LÓGICA DE BÚSQUEDA RECONSTRUIDA ---
     
-    # 1. Filtrar el DataFrame principal ANTES de empezar
-    rutas_df = rutas_df_global.copy()
-    if paradas_prohibidas:
-        # Excluir cualquier tramo que TOQUE una parada prohibida (origen o destino)
-        # a menos que sea el origen inicial o el destino final del viaje completo.
-        rutas_df = rutas_df[
-            ~(rutas_df['Origen'].isin(paradas_prohibidas) & (rutas_df['Origen'] != origen)) &
-            ~(rutas_df['Destino'].isin(paradas_prohibidas) & (rutas_df['Destino'] != destino))
-        ]
-
-    # 2. Pre-procesar rutas fijas con sus horarios
-    rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
+    # 1. Pre-procesar rutas fijas con sus horarios
+    rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
         rutas_fijas['Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas['Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
@@ -114,7 +104,26 @@ def buscar():
         if clave_ruta in rutas_procesadas_set: return
         rutas_procesadas_set.add(clave_ruta)
         
-        # ... (código de validación y procesamiento de ruta)
+        # Validación de paradas prohibidas en transbordos
+        for i in range(len(ruta_series_list) - 1):
+            if ruta_series_list[i]['Destino'] in paradas_prohibidas: return
+
+        # Caso especial para rutas directas en coche
+        if len(ruta_series_list) == 1 and ruta_series_list[0]['Tipo_Horario'] == 'Flexible':
+            seg = ruta_series_list[0]
+            duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+            segmento_dict = seg.to_dict()
+            segmento_dict['icono'] = get_icon_for_compania(seg.get('Compania'))
+            segmento_dict['Salida_str'] = "A tu aire"
+            segmento_dict['Llegada_str'] = ""
+            segmento_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
+            resultados_procesados.append({
+                "segmentos": [segmento_dict], "precio_total": seg.get('Precio', 0),
+                "llegada_final_dt_obj": datetime(1, 1, 1, 0, 0), "hora_llegada_final": "Flexible",
+                "duracion_total_str": format_timedelta(duracion)
+            })
+            return
+
         segmentos, llegada_anterior_dt = [], None
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
@@ -167,35 +176,29 @@ def buscar():
             llegada_anterior_dt = seg_calc.get('Llegada_dt')
             
             seg_calc['icono'] = get_icon_for_compania(seg.get('Compania'), seg.get('Transporte'))
-            seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M') if 'Salida_dt' in seg_calc else "N/A"
-            seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M') if 'Llegada_dt' in seg_calc else "N/A"
-            if 'Llegada_dt' in seg_calc and 'Salida_dt' in seg_calc:
-                seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
+            seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
+            seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
+            seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
             segmentos.append(seg_calc.to_dict())
-        
-        # Caso especial para rutas directas en coche
-        if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Flexible':
-            duracion = timedelta(minutes=segmentos[0]['Duracion_Trayecto_Min'])
-            segmentos[0]['Salida_str'], segmentos[0]['Llegada_str'] = "A tu aire", ""
-            resultados_procesados.append({ "segmentos": segmentos, "precio_total": segmentos[0].get('Precio', 0), "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion) })
-            return
 
         resultados_procesados.append({
-            "segmentos": segmentos, "precio_total": sum(s.get('Precio', 0) for s in segmentos),
-            "llegada_final_dt_obj": segmentos[-1]['Llegada_dt'], "hora_llegada_final": segmentos[-1]['Llegada_dt'].time(),
+            "segmentos": segmentos,
+            "precio_total": sum(s.get('Precio', 0) for s in ruta_series_list),
+            "llegada_final_dt_obj": segmentos[-1]['Llegada_dt'],
+            "hora_llegada_final": segmentos[-1]['Llegada_dt'].time(),
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - segmentos[0]['Salida_dt'])
         })
 
     # --- BÚSQUEDA DE CANDIDATOS ---
-    for _, ruta in rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Destino'] == destino)].iterrows():
+    for _, ruta in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
         procesar_y_validar_ruta([ruta])
-    for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df[(rutas_df['Origen'] == tramo1['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
+    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, tramo2 in rutas_df_global[(rutas_df_global['Origen'] == tramo1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
             procesar_y_validar_ruta([tramo1, tramo2])
-    for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df[rutas_df['Origen'] == tramo1['Destino']].iterrows():
-            if tramo2['Destino'] in [destino, origen]: continue
-            for _, tramo3 in rutas_df[(rutas_df['Origen'] == tramo2['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
+    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+            if tramo2['Destino'] == destino or tramo2['Destino'] == origen: continue
+            for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
                 procesar_y_validar_ruta([tramo1, tramo2, tramo3])
 
     if resultados_procesados:
