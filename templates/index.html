@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
     <script>
-        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        // Poner este script en el <head> es crucial para evitar el "flash" del tema incorrecto al cargar.
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -18,12 +18,12 @@
         }
     </script>
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased">
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
         <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-200 dark:border-slate-700">
-            <img src="{{ url_for('static', filename='logo_psicología.png') }}" alt="Logo Psicología" class="absolute inset-0 w-full h-full object-contain object-center opacity-10 dark:opacity-10 pointer-events-none">
+            <div class="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center opacity-10 dark:opacity-5 pointer-events-none" style="background-image: url('{{ url_for('static', filename='logo_psicología.png') }}');"></div>
             
             <!-- Theme Toggle -->
             <div class="absolute top-4 right-4 z-20">
@@ -78,19 +78,21 @@
                                 <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                 <span>O buscar desde la hora actual</span>
                             </label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300">
-                                <label for="evitar_santa_justa" class="flex items-center space-x-2 cursor-pointer">
-                                    <input id="evitar_santa_justa" name="evitar_santa_justa" type="checkbox" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                                    <span>Evitar Santa Justa</span>
-                                </label>
-                                <label for="evitar_plaza_armas" class="flex items-center space-x-2 cursor-pointer">
-                                    <input id="evitar_plaza_armas" name="evitar_plaza_armas" type="checkbox" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                                    <span>Evitar Plaza de Armas</span>
-                                </label>
-                            </div>
                         </div>
                     </fieldset>
-
+                     <fieldset class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+                        <legend class="text-sm font-semibold text-slate-500 dark:text-slate-400 px-2 -ml-2">Filtros</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300 mt-2">
+                            <label for="evitar_santa_justa" class="flex items-center space-x-2 cursor-pointer">
+                                <input id="evitar_santa_justa" name="evitar_santa_justa" type="checkbox" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <span>No usar Santa Justa</span>
+                            </label>
+                            <label for="evitar_plaza_armas" class="flex items-center space-x-2 cursor-pointer">
+                                <input id="evitar_plaza_armas" name="evitar_plaza_armas" type="checkbox" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <span>No usar Plaza de Armas</span>
+                            </label>
+                        </div>
+                    </fieldset>
 
                     <div class="mt-6">
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">
@@ -153,33 +155,22 @@
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
         const themeToggleButton = document.getElementById('theme-toggle');
 
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+            themeToggleDarkIcon.classList.toggle('hidden', !isDark);
+            themeToggleLightIcon.classList.toggle('hidden', isDark);
+        }
+
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleDarkIcon.classList.add('hidden');
             themeToggleLightIcon.classList.remove('hidden');
         } else {
             themeToggleDarkIcon.classList.remove('hidden');
+            themeToggleLightIcon.classList.add('hidden');
         }
 
-        themeToggleButton.addEventListener('click', function() {
-            themeToggleDarkIcon.classList.toggle('hidden');
-            themeToggleLightIcon.classList.toggle('hidden');
-            if (localStorage.getItem('color-theme')) {
-                if (localStorage.getItem('color-theme') === 'light') {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                }
-            } else {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                }
-            }
-        });
+        themeToggleButton.addEventListener('click', toggleTheme);
     </script>
 </body>
 </html>
