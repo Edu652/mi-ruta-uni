@@ -18,13 +18,12 @@
             left: 0;
             right: 0;
             bottom: 0;
+            /* CORRECCIÓN: Nombre de archivo con acento, como en tu PC */
             background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
             background-position: center center;
-            /* --- MEJORAS PARA MÓVILES --- */
-            background-size: contain; /* Asegura que toda la imagen se vea, escalándola si es necesario */
-            background-repeat: no-repeat; /* Evita que la imagen se repita */
-            /* --- FIN DE MEJORAS --- */
-            opacity: 0.05;
+            background-size: contain; 
+            background-repeat: no-repeat;
+            opacity: 0.15;
             z-index: 0;
         }
         .content-wrapper {
