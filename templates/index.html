@@ -7,107 +7,79 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* bg-slate-900 */
+        }
+        .bg-image-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .bg-image-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* CORRECCIÓN: Nombre del archivo actualizado con acento */
+            background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
+            background-size: cover;
+            background-position: center;
+            opacity: 0.05;
+            z-index: 0;
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-white antialiased">
+<body class="text-white antialiased">
 
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-image-container">
         
-        <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-700">
-            <div class="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center opacity-10 pointer-events-none" style="background-image: url('{{ url_for('static', filename='logo_psicología.png') }}');"></div>
-            
-            <div class="relative z-10">
-                <div class="text-center mb-6">
-                    <h1 class="text-4xl font-bold text-white">Mi Ruta Uni 🚀</h1>
-                    <p class="text-slate-400 mt-2">Planifica tu viaje</p>
-                </div>
+        <div class="relative w-full max-w-md bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-8 border border-slate-700">
 
-                <form action="/buscar" method="post">
-                    <div class="space-y-4">
-                        <div>
-                            <label for="origen" class="block text-sm font-medium text-slate-300 mb-1">Origen</label>
-                            <select id="origen" name="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <option value="" disabled selected>Selecciona</option>
-                                {% for lugar in lugares %}
-                                <option value="{{ lugar }}">{{ lugar }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="destino" class="block text-sm font-medium text-slate-300 mb-1">Destino</label>
-                            <select id="destino" name="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <option value="" disabled selected>Selecciona</option>
-                                {% for lugar in lugares %}
-                                <option value="{{ lugar }}">{{ lugar }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-6 border-t border-slate-700 pt-4">
-                        <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
-                            <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                            <span>Buscar desde la hora actual</span>
-                        </label>
-                    </div>
-
-                    <div class="mt-6">
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            Buscar Ruta
-                        </button>
-                    </div>
-                </form>
-
-                <div class="text-center mt-4">
-                    <p class="text-slate-400 italic text-sm">"{{ frase }}"</p>
-                </div>
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-indigo-400">Mi Ruta Uni 🚀</h1>
+                <p class="text-slate-400 mt-1">Planifica tu viaje</p>
             </div>
-        </div>
 
-        <div class="text-center mt-4">
-            <button id="infoBtn" class="text-indigo-400 hover:underline text-sm font-semibold transition">
-                Información de Transportes
-            </button>
+            <form action="/buscar" method="post" class="space-y-6">
+                <div>
+                    <label for="origen" class="block text-sm font-medium text-slate-300 mb-2">Origen</label>
+                    <select id="origen" name="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="" disabled selected>Selecciona</option>
+                        {% for lugar in lugares %}
+                            <option value="{{ lugar }}">{{ lugar }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="destino" class="block text-sm font-medium text-slate-300 mb-2">Destino</label>
+                    <select id="destino" name="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="" disabled selected>Selecciona</option>
+                        {% for lugar in lugares %}
+                            <option value="{{ lugar }}">{{ lugar }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- CHECKBOX NUEVO -->
+                <div class="flex items-center">
+                    <input id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <label for="desde_ahora" class="ml-2 block text-sm text-slate-300">Buscar rutas desde la hora actual</label>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500">
+                    Buscar Ruta
+                </button>
+            </form>
+
+            <div class="mt-8 text-center border-t border-slate-700 pt-4">
+                <p class="text-sm text-slate-400 italic">"{{ frase }}"</p>
+            </div>
         </div>
     </div>
 
-    <!-- Modal de Información -->
-    <div id="infoModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-700">
-            <h3 class="text-xl font-bold mb-4 text-white">Info de Contacto</h3>
-            <div class="space-y-4 text-slate-300">
-                <div>
-                    <h4 class="font-semibold text-indigo-400">Damas</h4>
-                    <p>Web: <a href="https://damas-sa.es/" target="_blank" class="underline hover:text-indigo-500">damas-sa.es</a></p>
-                    <p>Teléfono: <a href="tel:959256900" class="underline hover:text-indigo-500">959 25 69 00</a></p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-indigo-400">Renfe</h4>
-                    <p>Web: <a href="https://www.renfe.com/" target="_blank" class="underline hover:text-indigo-500">renfe.com</a></p>
-                    <p>Teléfono: <a href="tel:912320320" class="underline hover:text-indigo-500">912 32 03 20</a></p>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-indigo-400">Emtusa (Huelva)</h4>
-                    <p>Web: <a href="https://www.emtusahuelva.es/" target="_blank" class="underline hover:text-indigo-500">emtusahuelva.es</a></p>
-                    <p>Teléfono: <a href="tel:959247192" class="underline hover:text-indigo-500">959 24 71 92</a></p>
-                </div>
-            </div>
-            <button id="closeModalBtn" class="mt-6 w-full bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition">
-                Cerrar
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // Modal Logic
-        const infoBtn = document.getElementById('infoBtn');
-        const infoModal = document.getElementById('infoModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        infoBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
-        closeModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
-        infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden') });
-    </script>
 </body>
 </html>
 
