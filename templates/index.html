@@ -25,7 +25,6 @@
         <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-200 dark:border-slate-700">
             <div class="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center opacity-15 dark:opacity-10 pointer-events-none" style="background-image: url('{{ url_for('static', filename='logo_psicología.png') }}');"></div>
             
-            <!-- Theme Toggle -->
             <div class="absolute top-4 right-4 z-20">
                 <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
                     <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
@@ -85,12 +84,12 @@
                         <legend class="text-sm font-semibold text-slate-500 dark:text-slate-400 px-2 -ml-2">Filtros</legend>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300 mt-2">
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input name="evitar_santa_justa" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                                <span>Evitar Santa Justa</span>
+                                <input name="usar_santa_justa" type="checkbox" value="true" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <span>Usar Santa Justa</span>
                             </label>
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input name="evitar_plaza_armas" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                                <span>Evitar Plaza de Armas</span>
+                                <input name="usar_plaza_armas" type="checkbox" value="true" checked class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <span>Usar Plaza de Armas</span>
                             </label>
                         </div>
                     </fieldset>
@@ -156,7 +155,6 @@
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
 
-        // Function to set theme
         const applyTheme = (theme) => {
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
@@ -169,15 +167,13 @@
             }
         };
 
-        // Apply theme on initial load
         const storedTheme = localStorage.getItem('color-theme');
         const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         applyTheme(storedTheme || preferredTheme);
 
-        // Listen for clicks on the button
         themeToggleBtn.addEventListener('click', () => {
-            const currentTheme = localStorage.getItem('color-theme') || preferredTheme;
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
             localStorage.setItem('color-theme', newTheme);
             applyTheme(newTheme);
         });
