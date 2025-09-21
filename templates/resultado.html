@@ -134,13 +134,12 @@
         applyTheme(storedTheme || preferredTheme);
 
         themeToggleBtn.addEventListener('click', () => {
-            const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
             localStorage.setItem('color-theme', newTheme);
             applyTheme(newTheme);
         });
     </script>
 </body>
 </html>
-
 
