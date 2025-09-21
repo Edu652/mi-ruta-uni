@@ -28,7 +28,13 @@
                     <div class="p-4 bg-slate-700/50 flex justify-between items-center">
                         <div>
                             <p class="text-sm text-slate-400">Llegada Aprox.</p>
-                            <p class="text-2xl font-bold text-indigo-400">{{ resultado.hora_llegada_final.strftime('%H:%M') }}</p>
+                            <p class="text-2xl font-bold text-indigo-400">
+                                {% if resultado.hora_llegada_final == 'Flexible' %}
+                                    Flexible
+                                {% else %}
+                                    {{ resultado.hora_llegada_final.strftime('%H:%M') }}
+                                {% endif %}
+                            </p>
                         </div>
                         <div class="text-right">
                             <p class="text-sm text-slate-400">Duración Total</p>
@@ -53,9 +59,11 @@
                                 </div>
                                 <p class="text-sm">{{ segmento.Origen }} &rarr; {{ segmento.Destino }}</p>
                                 <p class="text-xs text-slate-400 mt-1">
-                                    <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} | 
-                                    <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }} | 
-                                    <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
+                                    <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} 
+                                    {% if segmento.Llegada_str %}
+                                        | <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}
+                                    {% endif %}
+                                    | <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
                                     
                                     {% set compania_lower = segmento.Compania|string|lower %}
                                     {% if ('urbano' in compania_lower or 'emtusa' in compania_lower) and segmento.Linea and segmento.Linea|string|lower != 'nan' %}
