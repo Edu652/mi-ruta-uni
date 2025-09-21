@@ -25,7 +25,6 @@
                 {% for resultado in resultados %}
                 <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
                     
-                    <!-- RESUMEN DEL VIAJE -->
                     <div class="p-4 bg-slate-700/50 flex justify-between items-center">
                         <div>
                             <p class="text-sm text-slate-400">Llegada Aprox.</p>
@@ -41,7 +40,6 @@
                         </div>
                     </div>
 
-                    <!-- SEGMENTOS DEL VIAJE -->
                     <div class="p-4 space-y-4">
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
@@ -58,6 +56,11 @@
                                     <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} | 
                                     <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }} | 
                                     <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
+                                    
+                                    {% set compania_lower = segmento.Compania|string|lower %}
+                                    {% if ('urbano' in compania_lower or 'emtusa' in compania_lower) and segmento.Linea and segmento.Linea|string|lower != 'nan' %}
+                                        | <span class="font-medium">Línea:</span> {{ segmento.Linea | int }}
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
@@ -73,19 +76,15 @@
                 {% endfor %}
             </div>
         {% else %}
-            <!-- MENSAJE SI NO HAY RUTAS -->
             <div class="text-center bg-slate-800 p-8 rounded-xl border border-slate-700">
                 <p class="text-4xl mb-4">😔</p>
                 <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
                 <p class="text-slate-400">
                     No hemos podido encontrar una combinación para este trayecto.
-                    Prueba con otro origen o destino.
                 </p>
             </div>
         {% endif %}
-
     </div>
-
 </body>
 </html>
 
