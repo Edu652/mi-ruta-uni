@@ -10,7 +10,7 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
     <script>
-        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        // Este script en el <head> es crucial para evitar el "parpadeo" de la página al cargar.
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -150,33 +150,31 @@
         closeModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
         infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden') });
 
-        // Theme Toggle Logic
+        // --- SCRIPT DE MODO CLARO/OSCURO CORREGIDO ---
         const themeToggleBtn = document.getElementById('theme-toggle');
-        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
 
-        const applyTheme = (theme) => {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                themeToggleLightIcon.classList.remove('hidden');
-                themeToggleDarkIcon.classList.add('hidden');
-            } else {
-                document.documentElement.classList.remove('dark');
-                themeToggleDarkIcon.classList.remove('hidden');
-                themeToggleLightIcon.classList.add('hidden');
-            }
-        };
-
-        const storedTheme = localStorage.getItem('color-theme');
-        const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        applyTheme(storedTheme || preferredTheme);
-
-        themeToggleBtn.addEventListener('click', () => {
+        function syncThemeIcon() {
             const isDark = document.documentElement.classList.contains('dark');
-            const newTheme = isDark ? 'light' : 'dark';
-            localStorage.setItem('color-theme', newTheme);
-            applyTheme(newTheme);
+            if (isDark) {
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            } else {
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+            syncThemeIcon();
         });
+        
+        // Sincronizar el icono al cargar la página
+        syncThemeIcon();
     </script>
 </body>
 </html>
