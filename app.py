@@ -81,6 +81,7 @@ def buscar():
 
     rutas_df = rutas_df_global.copy()
     
+    # Pre-procesar rutas fijas
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
         rutas_fijas['Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
@@ -90,6 +91,7 @@ def buscar():
     resultados_procesados = []
     rutas_procesadas_set = set()
 
+    # --- MOTOR DE CÁLCULO Y VALIDACIÓN RECONSTRUIDO ---
     def procesar_y_validar_ruta(ruta_series_list):
         clave_ruta = tuple(s.name for s in ruta_series_list)
         if clave_ruta in rutas_procesadas_set: return
@@ -103,29 +105,35 @@ def buscar():
         for i, seg in enumerate(ruta_series_list):
             seg_calc = seg.copy()
             
+            # Establecer punto de partida para el primer tramo
             if i == 0:
                 if seg['Tipo_Horario'] == 'Fijo':
-                    tramo_fijo = rutas_fijas.loc[seg.name]
-                    if tramo_fijo['Salida_dt'].time() < filtro_hora: return
-                    llegada_anterior_dt = tramo_fijo['Salida_dt'] - TIEMPO_TRANSBORDO
-                else: # Frecuencia (Coche o Bus)
+                    tramo_fijo_inicial = rutas_fijas.loc[seg.name]
+                    if tramo_fijo_inicial['Salida_dt'].time() < filtro_hora: return
+                    llegada_anterior_dt = tramo_fijo_inicial['Salida_dt'] - TIEMPO_TRANSBORDO
+                else: # Frecuencia
                     llegada_anterior_dt = datetime.combine(datetime.today(), filtro_hora)
             
+            # Calcular tiempos para el tramo actual
             if seg['Tipo_Horario'] == 'Fijo':
                 tramo_fijo = rutas_fijas.loc[seg.name]
                 if llegada_anterior_dt and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO: return
                 seg_calc['Salida_dt'], seg_calc['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
-            else: # Frecuencia (Coche o Bus)
+            else: # Frecuencia
                 frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                seg_calc['Salida_dt'] = llegada_anterior_dt + frecuencia + (TIEMPO_TRANSBORDO if i > 0 else timedelta(0))
+                # Añadir tiempo de transbordo solo si no es el primer tramo
+                tiempo_espera = frecuencia + (TIEMPO_TRANSBORDO if i > 0 else timedelta(0))
+                seg_calc['Salida_dt'] = llegada_anterior_dt + tiempo_espera
                 seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion
             
+            # Ajuste para medianoche
             if llegada_anterior_dt and seg_calc['Salida_dt'] < llegada_anterior_dt:
                 seg_calc['Salida_dt'] += timedelta(days=1); seg_calc['Llegada_dt'] += timedelta(days=1)
             
             llegada_anterior_dt = seg_calc['Llegada_dt']
             
+            # Formatear para la vista
             seg_calc['icono'] = get_icon_for_compania(seg.get('Compania'), seg.get('Transporte'))
             seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
             seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
