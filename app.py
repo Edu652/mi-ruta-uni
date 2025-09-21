@@ -88,7 +88,7 @@ def buscar():
     desde_ahora_check = request.form.get('desde_ahora')
     hora_salida_str = request.form.get('hora_salida')
     
-    # --- Filtro de estaciones ---
+    # --- ¡NUEVO! Filtro de estaciones ---
     rutas_df = rutas_df_global.copy()
     paradas_prohibidas = []
     # ATENCIÓN: Reemplazar "Sevilla Santa Justa" y "Sevilla Plaza de Armas" con los nombres EXACTOS del Excel.
@@ -97,11 +97,6 @@ def buscar():
     if request.form.get('evitar_plaza_armas'):
         paradas_prohibidas.append("Sevilla Plaza de Armas")
     
-    if paradas_prohibidas:
-        rutas_df = rutas_df[~rutas_df['Origen'].isin(paradas_prohibidas)]
-        rutas_df = rutas_df[~(rutas_df['Destino'].isin(paradas_prohibidas) & (rutas_df['Destino'] != destino))]
-
-
     # Pre-procesar rutas fijas
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
@@ -128,11 +123,14 @@ def buscar():
         if clave_ruta in rutas_procesadas_set: return
         rutas_procesadas_set.add(clave_ruta)
         
+        # Validar paradas prohibidas en transbordos
         for i in range(len(ruta_series_list) - 1):
             if ruta_series_list[i]['Destino'] in paradas_prohibidas: return
 
+        # Caso especial para rutas directas en coche
         if len(ruta_series_list) == 1 and ruta_series_list[0]['Tipo_Horario'] == 'Flexible':
             seg = ruta_series_list[0]
+            if seg['Origen'] in paradas_prohibidas or seg['Destino'] in paradas_prohibidas: return
             duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
             segmento_dict = seg.to_dict()
             segmento_dict['icono'] = get_icon_for_compania(seg.get('Compania'), seg.get('Transporte'))
@@ -155,7 +153,7 @@ def buscar():
             if i == 0:
                 if seg['Tipo_Horario'] == 'Frecuencia':
                     start_time = datetime.now() if desde_ahora_check else datetime.combine(datetime.today(), time(7, 0))
-                    if hora_salida_str:
+                    if hora_salida_str and not desde_ahora_check:
                         start_time = datetime.combine(datetime.today(), datetime.strptime(hora_salida_str, '%H:%M').time())
                     llegada_anterior_dt = start_time
                 elif seg['Tipo_Horario'] == 'Fijo':
@@ -186,7 +184,7 @@ def buscar():
                 seg_calc['Salida_dt'] = llegada_anterior_dt + frecuencia
                 seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion
             
-            if llegada_anterior_dt and seg_calc['Salida_dt'] < llegada_anterior_dt:
+            if llegada_anterior_dt and seg_calc.get('Salida_dt') and seg_calc['Salida_dt'] < llegada_anterior_dt:
                 seg_calc['Salida_dt'] += timedelta(days=1); seg_calc['Llegada_dt'] += timedelta(days=1)
             
             llegada_anterior_dt = seg_calc['Llegada_dt']
@@ -206,15 +204,17 @@ def buscar():
         })
 
     # --- BÚSQUEDA DE CANDIDATOS ---
-    for _, ruta in rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Destino'] == destino)].iterrows():
+    df_sin_prohibidos = rutas_df[~rutas_df['Origen'].isin(paradas_prohibidas)]
+
+    for _, ruta in df_sin_prohibidos[(df_sin_prohibidos['Origen'] == origen) & (df_sin_prohibidos['Destino'] == destino)].iterrows():
         procesar_y_validar_ruta([ruta])
-    for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df[(rutas_df['Origen'] == tramo1['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
+    for _, tramo1 in df_sin_prohibidos[df_sin_prohibidos['Origen'] == origen].iterrows():
+        for _, tramo2 in df_sin_prohibidos[(df_sin_prohibidos['Origen'] == tramo1['Destino']) & (df_sin_prohibidos['Destino'] == destino)].iterrows():
             procesar_y_validar_ruta([tramo1, tramo2])
-    for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df[rutas_df['Origen'] == tramo1['Destino']].iterrows():
+    for _, tramo1 in df_sin_prohibidos[df_sin_prohibidos['Origen'] == origen].iterrows():
+        for _, tramo2 in df_sin_prohibidos[df_sin_prohibidos['Origen'] == tramo1['Destino']].iterrows():
             if tramo2['Destino'] == destino or tramo2['Destino'] == origen: continue
-            for _, tramo3 in rutas_df[(rutas_df['Origen'] == tramo2['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
+            for _, tramo3 in df_sin_prohibidos[(df_sin_prohibidos['Origen'] == tramo2['Destino']) & (df_sin_prohibidos['Destino'] == destino)].iterrows():
                 procesar_y_validar_ruta([tramo1, tramo2, tramo3])
 
     if resultados_procesados:
