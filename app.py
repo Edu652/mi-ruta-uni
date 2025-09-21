@@ -102,28 +102,47 @@ def buscar():
         clave_ruta = tuple(s.name for s in ruta_series_list)
         if clave_ruta in rutas_procesadas_set: return
         rutas_procesadas_set.add(clave_ruta)
+        
+        # --- ¡NUEVO! Caso especial para rutas directas en coche ---
+        if len(ruta_series_list) == 1 and ruta_series_list[0]['Tipo_Horario'] == 'Flexible':
+            seg = ruta_series_list[0]
+            duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+            segmento_dict = seg.to_dict()
+            segmento_dict['icono'] = get_icon_for_compania(seg.get('Compania'), seg.get('Transporte'))
+            segmento_dict['Salida_str'] = "A tu aire"
+            segmento_dict['Llegada_str'] = ""
+            segmento_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
+            resultados_procesados.append({
+                "segmentos": [segmento_dict],
+                "precio_total": seg.get('Precio', 0),
+                "llegada_final_dt_obj": datetime(1, 1, 1, 0, 0),
+                "hora_llegada_final": "Flexible",
+                "duracion_total_str": format_timedelta(duracion)
+            })
+            return
 
+        # --- Procesamiento normal para el resto de rutas ---
         segmentos, llegada_anterior_dt = [], None
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         for i, seg in enumerate(ruta_series_list):
             seg_calc = seg.copy()
             
-            if i == 0: # Primer tramo
+            if i == 0:
                 if seg['Tipo_Horario'] == 'Frecuencia':
                     start_time = datetime.now() if desde_ahora_check else datetime.combine(datetime.today(), time(7, 0))
                     llegada_anterior_dt = start_time
                 elif seg['Tipo_Horario'] == 'Fijo':
                     tramo_fijo = rutas_fijas.loc[seg.name]
-                    if desde_ahora_check and tramo_fijo['Salida_dt'].time() < datetime.now().time(): return # Descartar si ya ha salido
-                    llegada_anterior_dt = tramo_fijo['Salida_dt'] - TIEMPO_TRANSBORDO # Truco para el cálculo
+                    if desde_ahora_check and tramo_fijo['Salida_dt'].time() < datetime.now().time(): return
+                    llegada_anterior_dt = tramo_fijo['Salida_dt'] - TIEMPO_TRANSBORDO
             
             if seg['Tipo_Horario'] == 'Flexible':
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                if i > 0: # Tramo final
+                if i > 0:
                     seg_calc['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion
-                else: # Tramo inicial
+                else:
                     siguiente_tramo = rutas_fijas.loc[ruta_series_list[i+1].name]
                     if desde_ahora_check and siguiente_tramo['Salida_dt'].time() < datetime.now().time(): return
                     seg_calc['Llegada_dt'] = siguiente_tramo['Salida_dt']
@@ -131,7 +150,7 @@ def buscar():
             
             elif seg['Tipo_Horario'] == 'Fijo':
                 tramo_fijo = rutas_fijas.loc[seg.name]
-                if llegada_anterior_dt and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO: return # No da tiempo al transbordo
+                if llegada_anterior_dt and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO: return
                 seg_calc['Salida_dt'], seg_calc['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
             
             elif seg['Tipo_Horario'] == 'Frecuencia':
@@ -145,7 +164,6 @@ def buscar():
             
             llegada_anterior_dt = seg_calc['Llegada_dt']
             
-            # Formateo
             seg_calc['icono'] = get_icon_for_compania(seg.get('Compania'), seg.get('Transporte'))
             seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
             seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
@@ -161,23 +179,17 @@ def buscar():
         })
 
     # --- BÚSQUEDA DE CANDIDATOS ---
-    # 1. Rutas Directas
     for _, ruta in rutas_df[(rutas_df['Origen'] == origen) & (rutas_df['Destino'] == destino)].iterrows():
         procesar_y_validar_ruta([ruta])
-
-    # 2. Rutas de 2 tramos
     for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
         for _, tramo2 in rutas_df[(rutas_df['Origen'] == tramo1['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
             procesar_y_validar_ruta([tramo1, tramo2])
-    
-    # 3. Rutas de 3 tramos
     for _, tramo1 in rutas_df[rutas_df['Origen'] == origen].iterrows():
         for _, tramo2 in rutas_df[rutas_df['Origen'] == tramo1['Destino']].iterrows():
             if tramo2['Destino'] == destino or tramo2['Destino'] == origen: continue
             for _, tramo3 in rutas_df[(rutas_df['Origen'] == tramo2['Destino']) & (rutas_df['Destino'] == destino)].iterrows():
                 procesar_y_validar_ruta([tramo1, tramo2, tramo3])
 
-    # --- FINAL ---
     if resultados_procesados:
         resultados_procesados.sort(key=lambda x: x['llegada_final_dt_obj'])
 
