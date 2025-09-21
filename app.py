@@ -108,10 +108,9 @@ def buscar():
             # Establecer punto de partida para el primer tramo
             if i == 0:
                 if seg['Tipo_Horario'] == 'Fijo':
-                    if seg.name not in rutas_fijas.index: return # La ruta fija debe ser válida
+                    if seg.name not in rutas_fijas.index: return 
                     tramo_fijo_inicial = rutas_fijas.loc[seg.name]
                     if tramo_fijo_inicial['Salida_dt'].time() < filtro_hora: return
-                    # Usamos la hora de salida real como base para el primer tramo fijo
                     llegada_anterior_dt = tramo_fijo_inicial['Salida_dt'] - TIEMPO_TRANSBORDO 
                 else: # Frecuencia
                     llegada_anterior_dt = datetime.combine(datetime.today(), filtro_hora)
@@ -125,12 +124,10 @@ def buscar():
             else: # Frecuencia (Coche o Bus)
                 frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                # Añadir tiempo de transbordo solo si no es el primer tramo
                 tiempo_espera = frecuencia + (TIEMPO_TRANSBORDO if i > 0 else timedelta(0))
                 seg_calc['Salida_dt'] = llegada_anterior_dt + tiempo_espera
                 seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion
             
-            # Ajuste para medianoche
             if llegada_anterior_dt and seg_calc['Salida_dt'] < llegada_anterior_dt:
                 seg_calc['Salida_dt'] += timedelta(days=1); seg_calc['Llegada_dt'] += timedelta(days=1)
             
