@@ -108,7 +108,6 @@ def buscar():
     # 1. Rutas Directas (Fijas y Flexibles)
     directas = rutas_df[((rutas_df['Origen'] == origen) & (rutas_df['Destino'] == destino)) & ((rutas_df['Tipo_Horario'] == 'Fijo') | (rutas_df['Tipo_Horario'] == 'Flexible'))]
     for _, ruta in directas.iterrows():
-        # Para que sea considerada, si es fija, debe estar en el dataframe filtrado por hora
         if ruta['Tipo_Horario'] == 'Fijo' and ruta.name not in rutas_fijas.index:
             continue
         rutas_encontradas.append([ruta])
@@ -134,12 +133,10 @@ def buscar():
         estacion = coche['Destino']
         if estacion == destino or estacion == origen: continue
         
-        # A. Coche + 1 Tramo Público
         tramos_fijos_desde_estacion = rutas_fijas[(rutas_fijas['Origen'] == estacion) & (rutas_fijas['Destino'] == destino)]
         for _, tramo_fijo in tramos_fijos_desde_estacion.iterrows():
             rutas_encontradas.append([coche, tramo_fijo])
         
-        # B. Coche + 2 Tramos Públicos
         tramos1_pub = rutas_fijas[rutas_fijas['Origen'] == estacion]
         for _, tramo1_pub in tramos1_pub.iterrows():
             punto_intermedio = tramo1_pub['Destino']
@@ -161,6 +158,27 @@ def buscar():
     resultados_procesados = []
     for ruta in rutas_encontradas:
         try:
+            # --- ¡NUEVO! Caso especial para rutas directas en coche ---
+            if len(ruta) == 1 and ruta[0]['Tipo_Horario'] == 'Flexible':
+                seg_series = ruta[0]
+                duracion = timedelta(minutes=seg_series['Duracion_Trayecto_Min'])
+                
+                segmento = seg_series.to_dict()
+                segmento['icono'] = get_icon_for_compania(seg_series.get('Compania'), seg_series.get('Transporte'))
+                segmento['Salida_str'] = "A tu aire"
+                segmento['Llegada_str'] = ""
+                segmento['Duracion_Tramo_Min'] = seg_series['Duracion_Trayecto_Min']
+
+                resultados_procesados.append({
+                    "segmentos": [segmento],
+                    "precio_total": seg_series.get('Precio', 0),
+                    "llegada_final_dt_obj": datetime(1, 1, 1, 0, 0), # Para que se ordene primero
+                    "hora_llegada_final": "Flexible", # Texto especial para la vista
+                    "duracion_total_str": format_timedelta(duracion)
+                })
+                continue # Saltar al siguiente bucle de ruta
+
+            # --- Procesamiento normal para el resto de rutas ---
             segmentos_calculados = []
             llegada_anterior_dt = None
             
@@ -168,15 +186,11 @@ def buscar():
                 seg_calc = seg_series.copy()
                 
                 if seg_calc['Tipo_Horario'] == 'Flexible':
-                    if len(ruta) > i + 1: # Si es parte de una ruta más larga
-                        siguiente_tramo_fijo = rutas_fijas.loc[ruta[i+1].name]
-                        salida_siguiente_dt = siguiente_tramo_fijo['Salida_dt']
-                        duracion_coche = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
-                        seg_calc['Llegada_dt'] = salida_siguiente_dt
-                        seg_calc['Salida_dt'] = seg_calc['Llegada_dt'] - duracion_coche
-                    else: # Si es un viaje directo en coche
-                        seg_calc['Salida_dt'] = datetime(1, 1, 1, 0, 0) 
-                        seg_calc['Llegada_dt'] = datetime(2, 1, 1, 0, 0) # Para que no falle el cálculo de duración
+                    siguiente_tramo_fijo = rutas_fijas.loc[ruta[i+1].name]
+                    salida_siguiente_dt = siguiente_tramo_fijo['Salida_dt']
+                    duracion_coche = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
+                    seg_calc['Llegada_dt'] = salida_siguiente_dt
+                    seg_calc['Salida_dt'] = seg_calc['Llegada_dt'] - duracion_coche
                 
                 elif seg_calc['Tipo_Horario'] == 'Fijo':
                     tramo_fijo = rutas_fijas.loc[seg_series.name]
@@ -196,34 +210,22 @@ def buscar():
                 llegada_anterior_dt = seg_calc.get('Llegada_dt')
                 
                 seg_calc['icono'] = get_icon_for_compania(seg_calc.get('Compania'), seg_calc.get('Transporte'))
-
-                if seg_calc['Tipo_Horario'] == 'Flexible' and len(ruta) == 1:
-                    seg_calc['Salida_str'] = "A tu aire"
-                    seg_calc['Llegada_str'] = ""
-                    seg_calc['Duracion_Tramo_Min'] = seg_calc['Duracion_Trayecto_Min']
-                else:
-                    seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
-                    seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
-                    seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
+                seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
+                seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
+                seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
                 
                 segmentos_calculados.append(seg_calc.to_dict())
 
             salida_inicial_dt = segmentos_calculados[0]['Salida_dt']
             llegada_final_dt = segmentos_calculados[-1]['Llegada_dt']
+            duracion_total = llegada_final_dt - salida_inicial_dt
             
-            if salida_inicial_dt.year > 2000: # Si es una fecha real, no la de relleno
-                llegada_final_dt = datetime(1, 1, 1, 0, 0)
-                duracion_total_str = "Flexible"
-            else:
-                duracion_total = llegada_final_dt - salida_inicial_dt
-                duracion_total_str = format_timedelta(duracion_total)
-
             resultados_procesados.append({
                 "segmentos": segmentos_calculados,
                 "precio_total": sum(s.get('Precio', 0) for s in ruta),
                 "llegada_final_dt_obj": llegada_final_dt,
                 "hora_llegada_final": llegada_final_dt.time(),
-                "duracion_total_str": duracion_total_str
+                "duracion_total_str": format_timedelta(duracion_total)
             })
         except Exception as e:
             print(f"Error procesando una ruta: {e}")
