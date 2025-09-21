@@ -9,27 +9,42 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
     </style>
+    <script>
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
-<body class="bg-slate-900 text-white antialiased">
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased">
 
     <div class="max-w-2xl mx-auto p-4 md:p-6">
         
-        <div class="text-center mb-8">
-            <a href="/" class="text-indigo-400 hover:text-indigo-300 transition-colors">&larr; Nueva Búsqueda</a>
-            <h1 class="text-3xl font-bold mt-2">Rutas Encontradas</h1>
-            <p class="text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
+        <div class="text-center mb-8 relative">
+            <a href="/" class="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors">&larr; Nueva Búsqueda</a>
+            <h1 class="text-3xl font-bold mt-2 text-slate-900 dark:text-white">Rutas Encontradas</h1>
+            <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
+            
+            <!-- Theme Toggle -->
+            <div class="absolute top-0 right-0">
+                <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3.05 4.95a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zm9.9 9.9a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM1 10a1 1 0 011-1h1a1 1 0 110 2H2a1 1 0 01-1-1z"></path></svg>
+                </button>
+            </div>
         </div>
 
         {% if resultados %}
             <div class="space-y-6">
                 {% for resultado in resultados %}
-                <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                     
-                    <div class="p-4 bg-slate-700/50 flex justify-between items-center">
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/50 flex justify-between items-center">
                         <div>
-                            <p class="text-sm text-slate-400">Llegada Aprox.</p>
-                            <!-- ¡NUEVO! Condicional para mostrar "Flexible" -->
-                            <p class="text-2xl font-bold text-indigo-400">
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Llegada Aprox.</p>
+                            <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                                 {% if resultado.hora_llegada_final == 'Flexible' %}
                                     Flexible
                                 {% else %}
@@ -38,12 +53,12 @@
                             </p>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-slate-400">Duración Total</p>
-                            <p class="font-semibold">{{ resultado.duracion_total_str }}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Duración Total</p>
+                            <p class="font-semibold text-slate-700 dark:text-slate-200">{{ resultado.duracion_total_str }}</p>
                         </div>
                          <div class="text-right">
-                            <p class="text-sm text-slate-400">Precio Total</p>
-                            <p class="font-semibold">{{ "%.2f"|format(resultado.precio_total) }} €</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Precio Total</p>
+                            <p class="font-semibold text-slate-700 dark:text-slate-200">{{ "%.2f"|format(resultado.precio_total) }} €</p>
                         </div>
                     </div>
 
@@ -53,13 +68,13 @@
                             <span class="text-2xl mr-4">{{ segmento.icono }}</span>
                             <div class="flex-grow">
                                 <div class="flex justify-between items-center">
-                                    <p class="font-semibold">{{ segmento.Compania | default('') }}</p>
-                                    <p class="text-sm text-slate-400">
+                                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ segmento.Compania | default('') }}</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">
                                         {{ "%.2f"|format(segmento.Precio) }} €
                                     </p>
                                 </div>
-                                <p class="text-sm">{{ segmento.Origen }} &rarr; {{ segmento.Destino }}</p>
-                                <p class="text-xs text-slate-400 mt-1">
+                                <p class="text-sm text-slate-600 dark:text-slate-300">{{ segmento.Origen }} &rarr; {{ segmento.Destino }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} 
                                     {% if segmento.Llegada_str %}
                                         | <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}
@@ -75,8 +90,8 @@
                         </div>
                         {% if not loop.last %}
                             <div class="pl-10">
-                                <div class="border-l-2 border-dashed border-slate-600 h-6 ml-3"></div>
-                                <p class="text-xs text-slate-500 -ml-1">Transbordo</p>
+                                <div class="border-l-2 border-dashed border-slate-300 dark:border-slate-600 h-6 ml-3"></div>
+                                <p class="text-xs text-slate-400 dark:text-slate-500 -ml-1">Transbordo</p>
                             </div>
                         {% endif %}
                         {% endfor %}
@@ -85,15 +100,51 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="text-center bg-slate-800 p-8 rounded-xl border border-slate-700">
+            <div class="text-center bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700">
                 <p class="text-4xl mb-4">😔</p>
-                <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
-                <p class="text-slate-400">
-                    No hemos podido encontrar una combinación para este trayecto.
+                <h2 class="text-xl font-semibold mb-2 text-slate-800 dark:text-slate-200">¡Vaya! No encontramos rutas</h2>
+                <p class="text-slate-500 dark:text-slate-400">
+                    No hemos podido encontrar una combinación para este trayecto con los filtros seleccionados.
                 </p>
             </div>
         {% endif %}
+
     </div>
+    
+    <script>
+        // Theme Toggle Logic
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const themeToggleButton = document.getElementById('theme-toggle');
+
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        themeToggleButton.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+    </script>
 </body>
 </html>
 
