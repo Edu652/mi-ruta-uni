@@ -6,73 +6,75 @@
     <title>Mi Ruta Uni 🚀</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        .main-container {
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* bg-slate-900 */
+        }
+        .bg-image-container {
             position: relative;
             overflow: hidden;
         }
-        .main-container::before {
+        .bg-image-container::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("{{ url_for('static', filename='logo_psicologia.png') }}");
-            background-size: contain;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* CORRECCIÓN: Nombre del archivo actualizado con acento */
+            background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
+            background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0.1; /* Opacidad para que sea sutil */
+            opacity: 0.05;
             z-index: 0;
-        }
-        .content-card {
-            position: relative;
-            z-index: 1;
-            background-color: rgba(30, 41, 59, 0.8); /* bg-slate-800 con transparencia */
-            backdrop-filter: blur(10px);
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white flex items-center justify-center min-h-screen p-4">
+<body class="text-white antialiased">
 
-    <div class="w-full max-w-md main-container rounded-xl shadow-2xl border border-slate-700">
-        <div class="content-card p-6 sm:p-8">
-            
-            <div class="text-center mb-8">
-                <h1 class="text-3xl sm:text-4xl font-bold text-white">Mi Ruta Uni 🚀</h1>
-                <!-- Texto cambiado -->
-                <p class="text-indigo-400 mt-2">Planifica tu viaje</p>
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-image-container">
+        
+        <div class="relative w-full max-w-md bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-8 border border-slate-700">
+
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-indigo-400">Mi Ruta Uni 🚀</h1>
+                <p class="text-slate-400 mt-1">Planifica tu viaje</p>
             </div>
 
             <form action="/buscar" method="post" class="space-y-6">
                 <div>
                     <label for="origen" class="block text-sm font-medium text-slate-300 mb-2">Origen</label>
-                    <select name="origen" id="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-md p-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <!-- Texto del desplegable cambiado -->
+                    <select id="origen" name="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                         <option value="" disabled selected>Selecciona</option>
                         {% for lugar in lugares %}
-                        <option value="{{ lugar }}">{{ lugar }}</option>
+                            <option value="{{ lugar }}">{{ lugar }}</option>
                         {% endfor %}
                     </select>
                 </div>
-
+                
                 <div>
                     <label for="destino" class="block text-sm font-medium text-slate-300 mb-2">Destino</label>
-                    <select name="destino" id="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-md p-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    <select id="destino" name="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                         <option value="" disabled selected>Selecciona</option>
                         {% for lugar in lugares %}
-                        <option value="{{ lugar }}">{{ lugar }}</option>
+                            <option value="{{ lugar }}">{{ lugar }}</option>
                         {% endfor %}
                     </select>
                 </div>
-
-                <div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                        Buscar Ruta
-                    </button>
+                
+                <!-- CHECKBOX NUEVO -->
+                <div class="flex items-center">
+                    <input id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <label for="desde_ahora" class="ml-2 block text-sm text-slate-300">Buscar rutas desde la hora actual</label>
                 </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500">
+                    Buscar Ruta
+                </button>
             </form>
-            
-            <div class="text-center mt-8 border-t border-slate-700 pt-4">
+
+            <div class="mt-8 text-center border-t border-slate-700 pt-4">
                 <p class="text-sm text-slate-400 italic">"{{ frase }}"</p>
             </div>
         </div>
