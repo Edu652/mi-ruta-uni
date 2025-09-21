@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,40 +9,25 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
     </style>
-    <script>
-        // Este script en el <head> es crucial para evitar el "parpadeo" de la página al cargar.
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
+<body class="bg-slate-900 text-white antialiased">
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
-        <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-200 dark:border-slate-700">
-            <div class="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center opacity-15 dark:opacity-10 pointer-events-none" style="background-image: url('{{ url_for('static', filename='logo_psicología.png') }}');"></div>
+        <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden border border-slate-700">
+            <div class="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center opacity-10 pointer-events-none" style="background-image: url('{{ url_for('static', filename='logo_psicología.png') }}');"></div>
             
-            <div class="absolute top-4 right-4 z-20">
-                <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
-                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3.05 4.95a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zm9.9 9.9a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM1 10a1 1 0 011-1h1a1 1 0 110 2H2a1 1 0 01-1-1z"></path></svg>
-                </button>
-            </div>
-
             <div class="relative z-10">
                 <div class="text-center mb-6">
-                    <h1 class="text-4xl font-bold text-slate-900 dark:text-white">Mi Ruta Uni 🚀</h1>
-                    <p class="text-slate-500 dark:text-slate-400 mt-2">Planifica tu viaje</p>
+                    <h1 class="text-4xl font-bold text-white">Mi Ruta Uni 🚀</h1>
+                    <p class="text-slate-400 mt-2">Planifica tu viaje</p>
                 </div>
 
                 <form action="/buscar" method="post">
                     <div class="space-y-4">
                         <div>
-                            <label for="origen" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Origen</label>
-                            <select id="origen" name="origen" required class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <label for="origen" class="block text-sm font-medium text-slate-300 mb-1">Origen</label>
+                            <select id="origen" name="origen" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                                 <option value="" disabled selected>Selecciona</option>
                                 {% for lugar in lugares %}
                                 <option value="{{ lugar }}">{{ lugar }}</option>
@@ -50,8 +35,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="destino" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Destino</label>
-                            <select id="destino" name="destino" required class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <label for="destino" class="block text-sm font-medium text-slate-300 mb-1">Destino</label>
+                            <select id="destino" name="destino" required class="w-full bg-slate-700 border border-slate-600 rounded-lg py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                                 <option value="" disabled selected>Selecciona</option>
                                 {% for lugar in lugares %}
                                 <option value="{{ lugar }}">{{ lugar }}</option>
@@ -60,12 +45,12 @@
                         </div>
                     </div>
                     
-                    <fieldset class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <legend class="text-sm font-semibold text-slate-500 dark:text-slate-400 px-2 -ml-2">Opciones de Búsqueda</legend>
+                    <fieldset class="mt-6 border-t border-slate-700 pt-4">
+                        <legend class="text-sm font-semibold text-slate-400 px-2 -ml-2">Opciones de Búsqueda</legend>
                         <div class="space-y-4 mt-2">
                              <div class="flex items-center space-x-4">
-                                <label for="hora_salida" class="text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">Salida desde las:</label>
-                                <select id="hora_salida" name="hora_salida" class="w-full bg-slate-100 dark:bg-slate-700/80 border border-slate-300 dark:border-slate-600 rounded-lg py-1 px-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <label for="hora_salida" class="text-sm text-slate-300 whitespace-nowrap">Salida desde las:</label>
+                                <select id="hora_salida" name="hora_salida" class="w-full bg-slate-700/80 border border-slate-600 rounded-lg py-1 px-2 text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition">
                                     <option value="">Cualquier hora</option>
                                     {% for i in range(6, 24) %}
                                         <option value="{{ '%02d'|format(i) }}:00">{{ '%02d'|format(i) }}:00</option>
@@ -73,22 +58,22 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                             <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
-                                <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                             <label for="desde_ahora" class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+                                <input id="desde_ahora" name="desde_ahora" type="checkbox" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                 <span>O buscar desde la hora actual</span>
                             </label>
                         </div>
                     </fieldset>
                     
-                     <fieldset class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <legend class="text-sm font-semibold text-slate-500 dark:text-slate-400 px-2 -ml-2">Filtros</legend>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600 dark:text-slate-300 mt-2">
+                     <fieldset class="mt-4 border-t border-slate-700 pt-4">
+                        <legend class="text-sm font-semibold text-slate-400 px-2 -ml-2">Filtros</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-300 mt-2">
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input name="evitar_santa_justa" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <input name="evitar_santa_justa" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                 <span>Evitar Santa Justa</span>
                             </label>
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input name="evitar_plaza_armas" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                <input name="evitar_plaza_armas" type="checkbox" value="true" class="h-4 w-4 rounded bg-slate-800 border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                 <span>Evitar Plaza de Armas</span>
                             </label>
                         </div>
@@ -102,13 +87,13 @@
                 </form>
 
                 <div class="text-center mt-4">
-                    <p class="text-slate-500 dark:text-slate-400 italic text-sm">"{{ frase }}"</p>
+                    <p class="text-slate-400 italic text-sm">"{{ frase }}"</p>
                 </div>
             </div>
         </div>
 
         <div class="text-center mt-4">
-            <button id="infoBtn" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-semibold transition">
+            <button id="infoBtn" class="text-indigo-400 hover:underline text-sm font-semibold transition">
                 Información de Transportes
             </button>
         </div>
@@ -116,21 +101,21 @@
 
     <!-- Modal de Información -->
     <div id="infoModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
-            <h3 class="text-xl font-bold mb-4 text-slate-900 dark:text-white">Info de Contacto</h3>
-            <div class="space-y-4 text-slate-600 dark:text-slate-300">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-700">
+            <h3 class="text-xl font-bold mb-4 text-white">Info de Contacto</h3>
+            <div class="space-y-4 text-slate-300">
                 <div>
-                    <h4 class="font-semibold text-indigo-600 dark:text-indigo-400">Damas</h4>
+                    <h4 class="font-semibold text-indigo-400">Damas</h4>
                     <p>Web: <a href="https://damas-sa.es/" target="_blank" class="underline hover:text-indigo-500">damas-sa.es</a></p>
                     <p>Teléfono: <a href="tel:959256900" class="underline hover:text-indigo-500">959 25 69 00</a></p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-indigo-600 dark:text-indigo-400">Renfe</h4>
+                    <h4 class="font-semibold text-indigo-400">Renfe</h4>
                     <p>Web: <a href="https://www.renfe.com/" target="_blank" class="underline hover:text-indigo-500">renfe.com</a></p>
                     <p>Teléfono: <a href="tel:912320320" class="underline hover:text-indigo-500">912 32 03 20</a></p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-indigo-600 dark:text-indigo-400">Emtusa (Huelva)</h4>
+                    <h4 class="font-semibold text-indigo-400">Emtusa (Huelva)</h4>
                     <p>Web: <a href="https://www.emtusahuelva.es/" target="_blank" class="underline hover:text-indigo-500">emtusahuelva.es</a></p>
                     <p>Teléfono: <a href="tel:959247192" class="underline hover:text-indigo-500">959 24 71 92</a></p>
                 </div>
@@ -149,32 +134,6 @@
         infoBtn.addEventListener('click', () => infoModal.classList.remove('hidden'));
         closeModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
         infoModal.addEventListener('click', (e) => { if (e.target === infoModal) infoModal.classList.add('hidden') });
-
-        // --- SCRIPT DE MODO CLARO/OSCURO CORREGIDO ---
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const darkIcon = document.getElementById('theme-toggle-dark-icon');
-        const lightIcon = document.getElementById('theme-toggle-light-icon');
-
-        function syncThemeIcon() {
-            const isDark = document.documentElement.classList.contains('dark');
-            if (isDark) {
-                lightIcon.classList.remove('hidden');
-                darkIcon.classList.add('hidden');
-            } else {
-                darkIcon.classList.remove('hidden');
-                lightIcon.classList.add('hidden');
-            }
-        }
-
-        themeToggleBtn.addEventListener('click', function() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
-            syncThemeIcon();
-        });
-        
-        // Sincronizar el icono al cargar la página
-        syncThemeIcon();
     </script>
 </body>
 </html>
