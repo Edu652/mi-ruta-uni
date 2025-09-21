@@ -86,9 +86,7 @@ def buscar():
     if request.form.get('evitar_plaza_armas'):
         paradas_prohibidas.append("Sevilla Plaza de Armas")
 
-    # --- LÓGICA DE BÚSQUEDA RECONSTRUIDA ---
-    
-    # 1. Pre-procesar rutas fijas con sus horarios
+    # Pre-procesar rutas fijas con sus horarios
     rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
         rutas_fijas['Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
@@ -104,9 +102,20 @@ def buscar():
         if clave_ruta in rutas_procesadas_set: return
         rutas_procesadas_set.add(clave_ruta)
         
-        # Validación de paradas prohibidas en transbordos
-        for i in range(len(ruta_series_list) - 1):
-            if ruta_series_list[i]['Destino'] in paradas_prohibidas: return
+        # --- ¡NUEVA Y CORRECTA VALIDACIÓN DE PARADAS PROHIBIDAS! ---
+        for i, seg in enumerate(ruta_series_list):
+            # Un punto de transbordo no puede ser una parada prohibida.
+            if i < len(ruta_series_list) - 1: # Si no es el último tramo
+                if seg['Destino'] in paradas_prohibidas: return
+            # Un origen intermedio no puede ser una parada prohibida
+            if i > 0: # Si no es el primer tramo
+                if seg['Origen'] in paradas_prohibidas: return
+        # Si la ruta es directa, su origen o destino no puede ser una parada prohibida
+        # a menos que coincida con el origen/destino de la búsqueda.
+        if len(ruta_series_list) == 1:
+            seg = ruta_series_list[0]
+            if seg['Origen'] in paradas_prohibidas and seg['Origen'] != origen: return
+            if seg['Destino'] in paradas_prohibidas and seg['Destino'] != destino: return
 
         # Caso especial para rutas directas en coche
         if len(ruta_series_list) == 1 and ruta_series_list[0]['Tipo_Horario'] == 'Flexible':
