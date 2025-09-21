@@ -9,23 +9,14 @@ app = Flask(__name__)
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
-    
-    # --- ¡FUNCIÓN MEJORADA! ---
-    # Casos específicos de compañías o tipos
-    if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍' # Emtusa o cualquier bus urbano
+    if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
     if 'damas' in compania_str: return '🚌'
     if 'renfe' in compania_str: return '🚆'
-    if 'coche' in compania_str or 'particular' in compania_str: return '🚗' # Coche propio / particular
-    
-    # Fallback al tipo de transporte si la compañía no se reconoce
+    if 'coche' in compania_str or 'particular' in compania_str: return '🚗'
     transporte_str = str(transporte).lower()
     if 'tren' in transporte_str: return '🚆'
     if 'bus' in transporte_str: return '🚌'
-    
-    # Icono genérico si hay un nombre de compañía pero no se reconoce
     if compania_str not in ['nan', 'none', '']: return '➡️'
-    
-    # Si no hay información, no muestra nada
     return ''
 
 def format_timedelta(td):
@@ -48,7 +39,6 @@ try:
         if col not in rutas_df.columns:
             raise ValueError(f"Falta la columna requerida: {col}")
 
-    # Forzar columnas numéricas para evitar errores de tipo de dato
     for col in ['Precio', 'Duracion_Trayecto_Min', 'Frecuencia_Min']:
         if col in rutas_df.columns:
             rutas_df[col] = pd.to_numeric(rutas_df[col], errors='coerce').fillna(0)
@@ -57,7 +47,6 @@ except Exception as e:
     print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
     rutas_df = pd.DataFrame()
 
-# ... (El resto de la carga y la ruta de inicio se mantienen igual)
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
         frases = json.load(f)
@@ -86,6 +75,7 @@ def buscar():
     # Preparar DataFrames por tipo de horario
     rutas_fijas = rutas_df[rutas_df['Tipo_Horario'] == 'Fijo'].copy()
     if not rutas_fijas.empty:
+        # Convertimos una sola vez y lo guardamos en columnas _dt para usarlo siempre
         rutas_fijas['Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas['Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
         rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
@@ -103,9 +93,10 @@ def buscar():
         punto_intermedio = tramo1['Destino']
         tramos2 = rutas_df[(rutas_df['Origen'] == punto_intermedio) & (rutas_df['Destino'] == destino)]
         for _, tramo2 in tramos2.iterrows():
-            if tramo2['Tipo_Horario'] == 'Fijo' and pd.notna(tramo2.get('Salida')):
-                tramo2_salida_dt = datetime.combine(datetime.today(), pd.to_datetime(tramo2['Salida']).time())
-                if tramo1['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_salida_dt:
+            if tramo2['Tipo_Horario'] == 'Fijo':
+                # Buscamos el tramo 2 en el dataframe ya procesado
+                tramo2_fijo = rutas_fijas[rutas_fijas.index == tramo2.name]
+                if not tramo2_fijo.empty and tramo1['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_fijo.iloc[0]['Salida_dt']:
                     rutas_encontradas.append([tramo1.to_dict(), tramo2.to_dict()])
             elif tramo2['Tipo_Horario'] == 'Frecuencia':
                 rutas_encontradas.append([tramo1.to_dict(), tramo2.to_dict()])
@@ -126,11 +117,10 @@ def buscar():
             punto_intermedio = tramo1_pub['Destino']
             tramos2_pub = rutas_df[(rutas_df['Origen'] == punto_intermedio) & (rutas_df['Destino'] == destino)]
             for _, tramo2_pub in tramos2_pub.iterrows():
-                # Validar la conexión entre los dos tramos públicos
                 es_valido = False
-                if tramo2_pub['Tipo_Horario'] == 'Fijo' and pd.notna(tramo2_pub.get('Salida')):
-                    tramo2_salida_dt = datetime.combine(datetime.today(), pd.to_datetime(tramo2_pub['Salida']).time())
-                    if tramo1_pub['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_salida_dt:
+                if tramo2_pub['Tipo_Horario'] == 'Fijo':
+                    tramo2_pub_fijo = rutas_fijas[rutas_fijas.index == tramo2_pub.name]
+                    if not tramo2_pub_fijo.empty and tramo1_pub['Llegada_dt'] + TIEMPO_TRANSBORDO <= tramo2_pub_fijo.iloc[0]['Salida_dt']:
                         es_valido = True
                 elif tramo2_pub['Tipo_Horario'] == 'Frecuencia':
                     es_valido = True
@@ -145,47 +135,40 @@ def buscar():
             segmentos_calculados = []
             llegada_anterior_dt = None
             
-            # --- Bucle para calcular tiempos ---
             for i, seg_dict in enumerate(ruta):
                 seg_calc = seg_dict.copy()
                 
-                # Calcular Salida_dt y Llegada_dt para cada tipo de tramo
                 if seg_calc['Tipo_Horario'] == 'Flexible':
-                    siguiente_tramo_fijo = ruta[i+1]
-                    salida_siguiente_dt = pd.to_datetime(siguiente_tramo_fijo['Salida']).to_pydatetime()
+                    siguiente_tramo_dict = ruta[i+1]
+                    siguiente_tramo_fijo = rutas_fijas[rutas_fijas.index == siguiente_tramo_dict.name].iloc[0]
+                    salida_siguiente_dt = siguiente_tramo_fijo['Salida_dt']
                     duracion_coche = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
-                    
                     seg_calc['Llegada_dt'] = salida_siguiente_dt - TIEMPO_COCHE_A_ESTACION
                     seg_calc['Salida_dt'] = seg_calc['Llegada_dt'] - duracion_coche
 
                 elif seg_calc['Tipo_Horario'] == 'Fijo':
-                    seg_calc['Salida_dt'] = pd.to_datetime(seg_calc['Salida']).to_pydatetime()
-                    seg_calc['Llegada_dt'] = pd.to_datetime(seg_calc['Llegada']).to_pydatetime()
+                    tramo_fijo = rutas_fijas[rutas_fijas.index == seg_dict.name].iloc[0]
+                    seg_calc['Salida_dt'] = tramo_fijo['Salida_dt']
+                    seg_calc['Llegada_dt'] = tramo_fijo['Llegada_dt']
 
                 elif seg_calc['Tipo_Horario'] == 'Frecuencia':
                     frecuencia = timedelta(minutes=seg_calc['Frecuencia_Min'])
                     duracion = timedelta(minutes=seg_calc['Duracion_Trayecto_Min'])
-                    
                     seg_calc['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg_calc['Llegada_dt'] = seg_calc['Salida_dt'] + duracion
 
-                # Ajuste para viajes que pasan la medianoche
                 if llegada_anterior_dt and seg_calc.get('Salida_dt') < llegada_anterior_dt:
                      seg_calc['Salida_dt'] += timedelta(days=1)
-                     seg_calc['Llegada_dt'] += timedelta(days=1)
-                if seg_calc.get('Llegada_dt') < seg_calc.get('Salida_dt'):
                      seg_calc['Llegada_dt'] += timedelta(days=1)
                 
                 llegada_anterior_dt = seg_calc.get('Llegada_dt')
                 
-                # Formatear para la vista
                 seg_calc['icono'] = get_icon_for_compania(seg_calc.get('Compania'), seg_calc.get('Transporte'))
                 seg_calc['Salida_str'] = seg_calc['Salida_dt'].strftime('%H:%M')
                 seg_calc['Llegada_str'] = seg_calc['Llegada_dt'].strftime('%H:%M')
                 seg_calc['Duracion_Tramo_Min'] = (seg_calc['Llegada_dt'] - seg_calc['Salida_dt']).total_seconds() / 60
                 segmentos_calculados.append(seg_calc)
 
-            # Calcular totales para la ruta completa
             salida_inicial_dt = segmentos_calculados[0]['Salida_dt']
             llegada_final_dt = segmentos_calculados[-1]['Llegada_dt']
             duracion_total = llegada_final_dt - salida_inicial_dt
@@ -200,7 +183,6 @@ def buscar():
         except Exception as e:
             print(f"Error procesando una ruta: {e}")
 
-    # Ordenar por hora de llegada final
     if resultados_procesados:
         resultados_procesados.sort(key=lambda x: x['llegada_final_dt_obj'])
 
