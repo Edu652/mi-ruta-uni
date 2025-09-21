@@ -108,18 +108,21 @@ def buscar():
             # Establecer punto de partida para el primer tramo
             if i == 0:
                 if seg['Tipo_Horario'] == 'Fijo':
+                    if seg.name not in rutas_fijas.index: return # La ruta fija debe ser válida
                     tramo_fijo_inicial = rutas_fijas.loc[seg.name]
                     if tramo_fijo_inicial['Salida_dt'].time() < filtro_hora: return
-                    llegada_anterior_dt = tramo_fijo_inicial['Salida_dt'] - TIEMPO_TRANSBORDO
+                    # Usamos la hora de salida real como base para el primer tramo fijo
+                    llegada_anterior_dt = tramo_fijo_inicial['Salida_dt'] - TIEMPO_TRANSBORDO 
                 else: # Frecuencia
                     llegada_anterior_dt = datetime.combine(datetime.today(), filtro_hora)
             
             # Calcular tiempos para el tramo actual
             if seg['Tipo_Horario'] == 'Fijo':
+                if seg.name not in rutas_fijas.index: return
                 tramo_fijo = rutas_fijas.loc[seg.name]
                 if llegada_anterior_dt and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO: return
                 seg_calc['Salida_dt'], seg_calc['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
-            else: # Frecuencia
+            else: # Frecuencia (Coche o Bus)
                 frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 # Añadir tiempo de transbordo solo si no es el primer tramo
