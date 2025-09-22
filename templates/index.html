@@ -22,7 +22,6 @@
             left: 0;
             right: 0;
             bottom: 0;
-            /* CORRECCIÓN: Nombre del archivo actualizado con acento */
             background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
             background-size: cover;
             background-position: center;
@@ -63,7 +62,6 @@
                     </select>
                 </div>
                 
-                <!-- CHECKBOX NUEVO -->
                 <div class="flex items-center">
                     <input id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                     <label for="desde_ahora" class="ml-2 block text-sm text-slate-300">Buscar rutas desde la hora actual</label>
