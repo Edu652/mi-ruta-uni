@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: 3.0 (Motor de búsqueda reconstruido desde cero)
+# Archivo: app.py | Versión: 3.0 (Motor de búsqueda reconstruido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -8,7 +8,7 @@ import pytz
 
 app = Flask(__name__)
 
-# --- Funciones de Ayuda (sin cambios) ---
+# --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
@@ -89,22 +89,20 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar candidatos de forma inteligente y escalonada
+    # 2. Encontrar candidatos
     candidatos = []
     # 1 tramo
     candidatos.extend([[r] for _, r in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows()])
     # 2 tramos
-    if not any(r[0]['Destino'] == destino for r in candidatos):
-        for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-            for _, t2 in rutas_df_global[(rutas_df_global['Origen'] == t1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                candidatos.append([t1, t2])
+    for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, t2 in rutas_df_global[(rutas_df_global['Origen'] == t1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+            candidatos.append([t1, t2])
     # 3 tramos
-    if not any(r[-1]['Destino'] == destino for r in candidatos):
-        for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-            for _, t2 in rutas_df_global[rutas_df_global['Origen'] == t1['Destino']].iterrows():
-                if t2['Destino'] in [origen, destino]: continue
-                for _, t3 in rutas_df_global[(rutas_df_global['Origen'] == t2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                    candidatos.append([t1, t2, t3])
+    for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, t2 in rutas_df_global[rutas_df_global['Origen'] == t1['Destino']].iterrows():
+            if t2['Destino'] in [origen, destino]: continue
+            for _, t3 in rutas_df_global[(rutas_df_global['Origen'] == t2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                candidatos.append([t1, t2, t3])
 
     # 3. Validar y procesar cada candidato
     resultados_procesados = []
@@ -116,32 +114,31 @@ def buscar():
             for i, seg_raw in enumerate(ruta):
                 seg = seg_raw.copy()
                 
-                # --- Lógica de cálculo reconstruida ---
-                if 'coche' in str(seg['Compania']).lower() and i == 0 and len(ruta) > 1:
-                    siguiente_tramo = ruta[i+1]
-                    if siguiente_tramo['Tipo_Horario'] != 'Fijo' or siguiente_tramo.name not in rutas_fijas.index:
-                        raise ValueError("Coche debe conectar con transporte de horario fijo.")
-                    siguiente_tramo_fijo = rutas_fijas.loc[siguiente_tramo.name]
-                    duracion_coche = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                    seg['Llegada_dt'] = siguiente_tramo_fijo['Salida_dt']
-                    seg['Salida_dt'] = seg['Llegada_dt'] - duracion_coche
-                elif seg['Tipo_Horario'] == 'Fijo':
+                if seg['Tipo_Horario'] == 'Fijo':
                     if seg.name not in rutas_fijas.index: raise ValueError("Horario fijo no disponible.")
                     tramo_fijo = rutas_fijas.loc[seg.name]
                     if i > 0 and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO:
-                        raise ValueError("No hay tiempo para transbordo a transporte fijo.")
+                        raise ValueError("No hay tiempo para transbordo.")
                     seg['Salida_dt'], seg['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
-                else: # Bus Urbano o Coche
+                
+                elif seg['Tipo_Horario'] == 'Frecuencia':
                     frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                     duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                     if i == 0:
                         start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
                         llegada_anterior_dt = start_time
                     
-                    # --- ¡LÓGICA CORREGIDA! ---
-                    # La espera es la frecuencia. No se suman 10 mins extra.
                     seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
+                
+                # --- NUEVO BLOQUE DE LÓGICA "HACIA ATRÁS" ---
+                # Se ejecuta al final para ajustar los tramos anteriores si es necesario
+                if len(segmentos) > 0 and seg['Tipo_Horario'] == 'Fijo' and segmentos[-1]['Tipo_Horario'] == 'Frecuencia' and 'coche' in str(segmentos[-1]['Compania']).lower():
+                    coche_seg = segmentos[-1]
+                    duracion_coche = timedelta(minutes=coche_seg['Duracion_Trayecto_Min'])
+                    coche_seg['Llegada_dt'] = seg['Salida_dt']
+                    coche_seg['Salida_dt'] = coche_seg['Llegada_dt'] - duracion_coche
+
 
                 if llegada_anterior_dt and seg['Salida_dt'] < llegada_anterior_dt:
                     seg['Salida_dt'] += timedelta(days=1); seg['Llegada_dt'] += timedelta(days=1)
@@ -149,6 +146,7 @@ def buscar():
                 llegada_anterior_dt = seg['Llegada_dt']
                 segmentos.append(seg)
             
+            # Formatear y añadir el resultado
             segmentos_formateados = []
             for seg in segmentos:
                 seg_dict = seg.to_dict()
