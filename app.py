@@ -1,4 +1,4 @@
-# Versión: 2.1 (Lógica de búsqueda reconstruida para corregir TypeError)
+# Archivo: app.py | Versión: 3.0 (Motor de búsqueda reconstruido desde cero)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -89,30 +89,23 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos)
+    # 2. Encontrar candidatos de forma inteligente y escalonada
     candidatos = []
     # 1 tramo
-    for _, tramo in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
-        candidatos.append([tramo])
+    candidatos.extend([[r] for _, r in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows()])
     # 2 tramos
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[(rutas_df_global['Origen'] == tramo1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-            candidatos.append([tramo1, tramo2])
+    if not any(r[0]['Destino'] == destino for r in candidatos):
+        for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+            for _, t2 in rutas_df_global[(rutas_df_global['Origen'] == t1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                candidatos.append([t1, t2])
     # 3 tramos
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-            if tramo2['Destino'] in [origen, destino]: continue
-            for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                candidatos.append([tramo1, tramo2, tramo3])
-    # 4 tramos
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-            if tramo2['Destino'] in [origen, destino]: continue
-            for _, tramo3 in rutas_df_global[rutas_df_global['Origen'] == tramo2['Destino']].iterrows():
-                if tramo3['Destino'] in [origen, destino]: continue
-                for _, tramo4 in rutas_df_global[(rutas_df_global['Origen'] == tramo3['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                    candidatos.append([tramo1, tramo2, tramo3, tramo4])
-    
+    if not any(r[-1]['Destino'] == destino for r in candidatos):
+        for _, t1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+            for _, t2 in rutas_df_global[rutas_df_global['Origen'] == t1['Destino']].iterrows():
+                if t2['Destino'] in [origen, destino]: continue
+                for _, t3 in rutas_df_global[(rutas_df_global['Origen'] == t2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                    candidatos.append([t1, t2, t3])
+
     # 3. Validar y procesar cada candidato
     resultados_procesados = []
     for ruta in candidatos:
@@ -138,13 +131,15 @@ def buscar():
                     if i > 0 and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO:
                         raise ValueError("No hay tiempo para transbordo a transporte fijo.")
                     seg['Salida_dt'], seg['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
-                else: # Bus Urbano o Coche al final
+                else: # Bus Urbano o Coche
                     frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                     duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                     if i == 0:
                         start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
                         llegada_anterior_dt = start_time
                     
+                    # --- ¡LÓGICA CORREGIDA! ---
+                    # La espera es la frecuencia. No se suman 10 mins extra.
                     seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
 
