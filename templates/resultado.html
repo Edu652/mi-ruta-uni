@@ -25,21 +25,35 @@
                 {% for resultado in resultados %}
                 <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
                     
-                    <div class="p-4 bg-slate-700/50 flex justify-between items-center">
+                    <!-- RESUMEN DEL VIAJE -->
+                    <div class="p-4 bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center">
+                        
+                        <div>
+                            <p class="text-sm text-slate-400">Hora de Salida</p>
+                            <p class="text-xl font-bold text-indigo-400">
+                                {{ resultado.segmentos[0].Salida_str }}
+                            </p>
+                        </div>
+                        
                         <div>
                             <p class="text-sm text-slate-400">Llegada Aprox.</p>
-                            <p class="text-2xl font-bold text-indigo-400">{{ resultado.hora_llegada_final.strftime('%H:%M') }}</p>
+                            <p class="text-xl font-bold text-indigo-400">
+                                {% if resultado.hora_llegada_final == 'Flexible' %}
+                                    Flexible
+                                {% else %}
+                                    {{ resultado.hora_llegada_final.strftime('%H:%M') }}
+                                {% endif %}
+                            </p>
                         </div>
+
                         <div class="text-right">
                             <p class="text-sm text-slate-400">Duración Total</p>
                             <p class="font-semibold">{{ resultado.duracion_total_str }}</p>
-                        </div>
-                         <div class="text-right">
-                            <p class="text-sm text-slate-400">Precio Total</p>
-                            <p class="font-semibold">{{ "%.2f"|format(resultado.precio_total) }} €</p>
+                            <p class="text-sm text-slate-400 mt-1">{{ "%.2f"|format(resultado.precio_total) }} €</p>
                         </div>
                     </div>
 
+                    <!-- SEGMENTOS DEL VIAJE -->
                     <div class="p-4 space-y-4">
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
@@ -53,9 +67,11 @@
                                 </div>
                                 <p class="text-sm">{{ segmento.Origen }} &rarr; {{ segmento.Destino }}</p>
                                 <p class="text-xs text-slate-400 mt-1">
-                                    <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} | 
-                                    <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }} | 
-                                    <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
+                                    <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} 
+                                    {% if segmento.Llegada_str %}
+                                        | <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}
+                                    {% endif %}
+                                    | <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
                                     
                                     {% set compania_lower = segmento.Compania|string|lower %}
                                     {% if ('urbano' in compania_lower or 'emtusa' in compania_lower) and segmento.Linea and segmento.Linea|string|lower != 'nan' %}
@@ -76,6 +92,7 @@
                 {% endfor %}
             </div>
         {% else %}
+            <!-- MENSAJE SI NO HAY RUTAS -->
             <div class="text-center bg-slate-800 p-8 rounded-xl border border-slate-700">
                 <p class="text-4xl mb-4">😔</p>
                 <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
@@ -84,7 +101,9 @@
                 </p>
             </div>
         {% endif %}
+
     </div>
+
 </body>
 </html>
 
