@@ -1,3 +1,4 @@
+# Versión: 2.1 (Lógica de búsqueda reconstruida para corregir TypeError)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -7,7 +8,7 @@ import pytz
 
 app = Flask(__name__)
 
-# --- Funciones de Ayuda ---
+# --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
@@ -77,7 +78,7 @@ def buscar():
     destino = request.form["destino"]
     desde_ahora_check = request.form.get('desde_ahora')
 
-    # 1. Pre-procesar horarios y filtrar por hora actual si es necesario
+    # 1. Pre-procesar horarios de rutas fijas
     rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
     rutas_fijas.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
     rutas_fijas.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
@@ -88,7 +89,7 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos) de forma inteligente
+    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos)
     candidatos = []
     # 1 tramo
     for _, tramo in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
@@ -98,29 +99,23 @@ def buscar():
         for _, tramo2 in rutas_df_global[(rutas_df_global['Origen'] == tramo1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
             candidatos.append([tramo1, tramo2])
     # 3 tramos
-    if not any(c['Destino'] == destino for c in candidatos): # Solo si no hay rutas más cortas
-        for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-            for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-                for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                    if tramo2['Destino'] in [origen, destino]: continue
-                    candidatos.append([tramo1, tramo2, tramo3])
+    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+            if tramo2['Destino'] in [origen, destino]: continue
+            for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                candidatos.append([tramo1, tramo2, tramo3])
     # 4 tramos
-    if not any(c['Destino'] == destino for c in candidatos):
-        for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-            for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-                for _, tramo3 in rutas_df_global[rutas_df_global['Origen'] == tramo2['Destino']].iterrows():
-                    for _, tramo4 in rutas_df_global[(rutas_df_global['Origen'] == tramo3['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                        if tramo2['Destino'] in [origen, destino] or tramo3['Destino'] in [origen, destino]: continue
-                        candidatos.append([tramo1, tramo2, tramo3, tramo4])
-
+    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+            if tramo2['Destino'] in [origen, destino]: continue
+            for _, tramo3 in rutas_df_global[rutas_df_global['Origen'] == tramo2['Destino']].iterrows():
+                if tramo3['Destino'] in [origen, destino]: continue
+                for _, tramo4 in rutas_df_global[(rutas_df_global['Origen'] == tramo3['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                    candidatos.append([tramo1, tramo2, tramo3, tramo4])
+    
     # 3. Validar y procesar cada candidato
     resultados_procesados = []
-    rutas_procesadas_set = set()
     for ruta in candidatos:
-        clave_ruta = tuple(s.name for s in ruta)
-        if clave_ruta in rutas_procesadas_set: continue
-        rutas_procesadas_set.add(clave_ruta)
-
         try:
             segmentos, llegada_anterior_dt = [], None
             TIEMPO_TRANSBORDO = timedelta(minutes=10)
