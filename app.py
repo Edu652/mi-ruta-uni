@@ -77,6 +77,7 @@ def buscar():
     destino = request.form["destino"]
     desde_ahora_check = request.form.get('desde_ahora')
 
+    # 1. Pre-procesar horarios y filtrar por hora actual si es necesario
     rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
     rutas_fijas.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
     rutas_fijas.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
@@ -87,6 +88,7 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
+    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos)
     candidatos = []
     # 1 tramo
     for _, tramo in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
@@ -109,8 +111,14 @@ def buscar():
                     if tramo2['Destino'] in [origen, destino] or tramo3['Destino'] in [origen, destino]: continue
                     candidatos.append([tramo1, tramo2, tramo3, tramo4])
 
+    # 3. Validar y procesar cada candidato
     resultados_procesados = []
+    rutas_procesadas_set = set()
     for ruta in candidatos:
+        clave_ruta = tuple(s.name for s in ruta)
+        if clave_ruta in rutas_procesadas_set: continue
+        rutas_procesadas_set.add(clave_ruta)
+
         try:
             segmentos, llegada_anterior_dt = [], None
             TIEMPO_TRANSBORDO = timedelta(minutes=10)
@@ -118,7 +126,8 @@ def buscar():
             for i, seg_raw in enumerate(ruta):
                 seg = seg_raw.copy()
                 
-                if str(seg['Compania']).lower() in ['coche propio', 'particular'] and i == 0 and len(ruta) > 1:
+                # --- Lógica de cálculo reconstruida ---
+                if 'coche' in str(seg['Compania']).lower() and i == 0 and len(ruta) > 1:
                     siguiente_tramo = ruta[i+1]
                     if siguiente_tramo['Tipo_Horario'] != 'Fijo' or siguiente_tramo.name not in rutas_fijas.index:
                         raise ValueError("Coche debe conectar con transporte de horario fijo.")
@@ -137,7 +146,9 @@ def buscar():
                     duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                     if i == 0:
                         start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
-                        llegada_anterior_dt = start_time - frecuencia
+                        llegada_anterior_dt = start_time
+                    # --- ¡LÓGICA CORREGIDA! ---
+                    # La espera es la frecuencia. No se suman 10 mins extra.
                     seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
 
