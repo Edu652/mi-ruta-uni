@@ -7,7 +7,7 @@ import pytz
 
 app = Flask(__name__)
 
-# --- Funciones de Ayuda (sin cambios) ---
+# --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
@@ -88,7 +88,7 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos)
+    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos) de forma inteligente
     candidatos = []
     # 1 tramo
     for _, tramo in rutas_df_global[(rutas_df_global['Origen'] == origen) & (rutas_df_global['Destino'] == destino)].iterrows():
@@ -98,18 +98,20 @@ def buscar():
         for _, tramo2 in rutas_df_global[(rutas_df_global['Origen'] == tramo1['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
             candidatos.append([tramo1, tramo2])
     # 3 tramos
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-            for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                if tramo2['Destino'] in [origen, destino]: continue
-                candidatos.append([tramo1, tramo2, tramo3])
+    if not any(c['Destino'] == destino for c in candidatos): # Solo si no hay rutas más cortas
+        for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+            for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+                for _, tramo3 in rutas_df_global[(rutas_df_global['Origen'] == tramo2['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                    if tramo2['Destino'] in [origen, destino]: continue
+                    candidatos.append([tramo1, tramo2, tramo3])
     # 4 tramos
-    for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
-        for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
-            for _, tramo3 in rutas_df_global[rutas_df_global['Origen'] == tramo2['Destino']].iterrows():
-                for _, tramo4 in rutas_df_global[(rutas_df_global['Origen'] == tramo3['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
-                    if tramo2['Destino'] in [origen, destino] or tramo3['Destino'] in [origen, destino]: continue
-                    candidatos.append([tramo1, tramo2, tramo3, tramo4])
+    if not any(c['Destino'] == destino for c in candidatos):
+        for _, tramo1 in rutas_df_global[rutas_df_global['Origen'] == origen].iterrows():
+            for _, tramo2 in rutas_df_global[rutas_df_global['Origen'] == tramo1['Destino']].iterrows():
+                for _, tramo3 in rutas_df_global[rutas_df_global['Origen'] == tramo2['Destino']].iterrows():
+                    for _, tramo4 in rutas_df_global[(rutas_df_global['Origen'] == tramo3['Destino']) & (rutas_df_global['Destino'] == destino)].iterrows():
+                        if tramo2['Destino'] in [origen, destino] or tramo3['Destino'] in [origen, destino]: continue
+                        candidatos.append([tramo1, tramo2, tramo3, tramo4])
 
     # 3. Validar y procesar cada candidato
     resultados_procesados = []
@@ -147,8 +149,7 @@ def buscar():
                     if i == 0:
                         start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
                         llegada_anterior_dt = start_time
-                    # --- ¡LÓGICA CORREGIDA! ---
-                    # La espera es la frecuencia. No se suman 10 mins extra.
+                    
                     seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
 
