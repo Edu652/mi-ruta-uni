@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final Estable 2.0
+# Archivo: app.py | Versión: 14.0 (Motor de búsqueda reconstruido desde cero)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -88,10 +88,9 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar candidatos
+    # 2. Encontrar y procesar rutas
     candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
-    # 3. Validar y procesar cada candidato
     resultados_procesados = []
     for ruta in candidatos:
         resultado = calculate_route_times(ruta, rutas_fijas, desde_ahora_check)
@@ -108,11 +107,12 @@ def find_all_routes_intelligently(origen, destino, df):
     # 1 tramo
     rutas.extend([[r] for _, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows()])
     # 2 tramos
-    for _, t1 in df[df['Origen'] == origen].iterrows():
-        for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
-            rutas.append([t1, t2])
+    if not any(r[-1]['Destino'] == destino for r in rutas):
+        for _, t1 in df[df['Origen'] == origen].iterrows():
+            for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
+                rutas.append([t1, t2])
     # 3 tramos
-    if not rutas: # Solo buscar 3 tramos si no hay rutas más cortas
+    if not any(r[-1]['Destino'] == destino for r in rutas):
         for _, t1 in df[df['Origen'] == origen].iterrows():
             for _, t2 in df[df['Origen'] == t1['Destino']].iterrows():
                 if t2['Destino'] in [origen, destino]: continue
@@ -125,9 +125,23 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
         segmentos = [s.copy() for s in ruta_series_list]
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
+        # --- CASO ESPECIAL: RUTA DIRECTA EN COCHE (O CUALQUIER FRECUENCIA ÚNICA) ---
+        if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
+            seg = segmentos[0]
+            duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+            seg_dict = seg.to_dict()
+            seg_dict['icono'] = get_icon_for_compania(seg.get('Compania'))
+            seg_dict['Salida_str'] = "A tu aire"
+            seg_dict['Llegada_str'] = ""
+            seg_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
+            return {
+                "segmentos": [seg_dict], "precio_total": seg.get('Precio', 0),
+                "llegada_final_dt_obj": datetime.min, # Para que aparezca siempre primero
+                "hora_llegada_final": "Flexible",
+                "duracion_total_str": format_timedelta(duracion)
+            }
+
         # --- MOTOR DE CÁLCULO RECONSTRUIDO ---
-        
-        # Encontrar el "ancla": el primer transporte de horario fijo en la ruta
         anchor_index = -1
         for i, seg in enumerate(segmentos):
             if seg['Tipo_Horario'] == 'Fijo':
@@ -135,7 +149,18 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
                     anchor_index = i
                     break
         
-        if anchor_index != -1: # La ruta tiene al menos un transporte fijo
+        if anchor_index == -1: # La ruta NO tiene transportes fijos
+            llegada_anterior_dt = None
+            for i, seg in enumerate(segmentos):
+                frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
+                duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+                if i == 0:
+                    start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
+                    llegada_anterior_dt = start_time
+                seg['Salida_dt'] = llegada_anterior_dt + frecuencia
+                seg['Llegada_dt'] = seg['Salida_dt'] + duracion
+                llegada_anterior_dt = seg['Llegada_dt']
+        else: # La ruta SÍ tiene un transporte fijo ("ancla")
             anchor_seg = segmentos[anchor_index]
             tramo_fijo_ancla = rutas_fijas.loc[anchor_seg.name]
             anchor_seg['Salida_dt'], anchor_seg['Llegada_dt'] = tramo_fijo_ancla['Salida_dt'], tramo_fijo_ancla['Llegada_dt']
@@ -164,18 +189,6 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
                     duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                     seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
-                llegada_anterior_dt = seg['Llegada_dt']
-
-        else: # La ruta solo tiene transportes de frecuencia
-            llegada_anterior_dt = None
-            for i, seg in enumerate(segmentos):
-                frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
-                duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                if i == 0:
-                    start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
-                    llegada_anterior_dt = start_time
-                seg['Salida_dt'] = llegada_anterior_dt + frecuencia
-                seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
 
         # Formatear y devolver
