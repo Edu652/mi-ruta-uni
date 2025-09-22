@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: 5.0 (Motor de búsqueda reconstruido con logs)
+# Archivo: app.py | Versión: 7.0 (Motor de búsqueda reconstruido desde cero)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -88,10 +88,9 @@ def buscar():
         ahora = datetime.now(tz).time()
         rutas_fijas = rutas_fijas[rutas_fijas['Salida_dt'].apply(lambda x: x.time()) >= ahora]
 
-    # 2. Encontrar todas las combinaciones posibles de rutas (candidatos)
-    candidatos = find_all_routes(origen, destino, rutas_df_global)
+    # 2. Encontrar y procesar rutas
+    candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
-    # 3. Validar y procesar cada candidato
     resultados_procesados = []
     print("\n--- INICIANDO PROCESO DE VALIDACIÓN DE RUTAS ---")
     for ruta in candidatos:
@@ -105,15 +104,17 @@ def buscar():
 
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados)
 
-def find_all_routes(origen, destino, df):
-    """Encuentra todas las combinaciones de rutas de hasta 3 tramos."""
+def find_all_routes_intelligently(origen, destino, df):
+    """Encuentra rutas de forma escalonada para evitar combinaciones ilógicas."""
     rutas = []
     # 1 tramo
     rutas.extend([[r] for _, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows()])
+    if rutas: return rutas
     # 2 tramos
     for _, t1 in df[df['Origen'] == origen].iterrows():
         for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
             rutas.append([t1, t2])
+    if rutas: return rutas
     # 3 tramos
     for _, t1 in df[df['Origen'] == origen].iterrows():
         for _, t2 in df[df['Origen'] == t1['Destino']].iterrows():
@@ -185,10 +186,10 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - segmentos[0]['Salida_dt'])
         }
     except Exception as e:
-        # --- ¡NUEVO! Log detallado de rutas descartadas ---
         ruta_info = " >> ".join([f"{s['Origen']}-{s['Destino']}({s['Compania']})" for s in ruta_series_list])
         print(f"RUTA DESCARTADA: {ruta_info} | MOTIVO: {e}")
         return None
 
 if __name__ == "__main__":
     app.run(debug=True)
+
