@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: 7.0 (Motor de búsqueda reconstruido desde cero)
+# Archivo: app.py | Versión: 8.0 (Motor de búsqueda reconstruido con logs y lógica corregida)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -121,6 +121,15 @@ def find_all_routes_intelligently(origen, destino, df):
             if t2['Destino'] in [origen, destino]: continue
             for _, t3 in df[(df['Origen'] == t2['Destino']) & (df['Destino'] == destino)].iterrows():
                 rutas.append([t1, t2, t3])
+    if rutas: return rutas
+    # 4 tramos
+    for _, t1 in df[df['Origen'] == origen].iterrows():
+        for _, t2 in df[df['Origen'] == t1['Destino']].iterrows():
+            if t2['Destino'] in [origen, destino]: continue
+            for _, t3 in df[df['Origen'] == t2['Destino']].iterrows():
+                if t3['Destino'] in [origen, destino]: continue
+                for _, t4 in df[(df['Origen'] == t3['Destino']) & (df['Destino'] == destino)].iterrows():
+                    rutas.append([t1, t2, t3, t4])
     return rutas
 
 def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
@@ -144,15 +153,13 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
                 duracion_coche = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 seg['Llegada_dt'] = siguiente_tramo_fijo['Salida_dt']
                 seg['Salida_dt'] = seg['Llegada_dt'] - duracion_coche
-
             elif seg['Tipo_Horario'] == 'Fijo':
                 if seg.name not in rutas_fijas.index: raise ValueError("Horario fijo no disponible o ya ha salido.")
                 tramo_fijo = rutas_fijas.loc[seg.name]
                 if i > 0 and tramo_fijo['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO:
                     raise ValueError("No hay tiempo para transbordo a transporte fijo.")
                 seg['Salida_dt'], seg['Llegada_dt'] = tramo_fijo['Salida_dt'], tramo_fijo['Llegada_dt']
-
-            else: # Frecuencia (Bus Urbano o Coche como tramo único/final)
+            else: # Bus Urbano o Coche al final
                 frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 if i == 0:
