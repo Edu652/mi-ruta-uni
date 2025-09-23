@@ -27,13 +27,13 @@
             left: 0;
             right: 0;
             bottom: 0;
-            /* CORRECCIÓN: Nombre del archivo actualizado con acento */
             background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
-            background-size: 70%;
+            /* AJUSTE: Tamaño de la imagen para cubrir el marco */
+            background-size: cover; 
             background-position: center;
             background-repeat: no-repeat;
-            /* Efecto translúcido y plateado */
-            opacity: 0.08;
+            /* AJUSTE: Opacidad aumentada al 15% */
+            opacity: 0.15;
             filter: grayscale(100%) brightness(150%);
             z-index: 0;
         }
