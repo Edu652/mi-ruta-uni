@@ -41,8 +41,8 @@
                 <!-- Se añade 'relative' para posicionar el número -->
                 <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors">
                     
-                    <!-- Número de la ruta -->
-                    <div class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                    <!-- CORRECCIÓN: Número de la ruta más pequeño y reposicionado -->
+                    <div class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
                         {{ loop.index }}
                     </div>
                     
@@ -127,6 +127,4 @@
 
 </body>
 </html>
-
-
 
