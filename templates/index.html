@@ -15,11 +15,11 @@
         body { 
             font-family: 'Inter', sans-serif;
         }
-        .card-with-logo-bg {
+        .card-container {
             position: relative;
             overflow: hidden; 
         }
-        .card-with-logo-bg::before {
+        .card-container::before {
             content: '';
             position: absolute;
             top: 0;
@@ -36,7 +36,7 @@
         }
         .card-content {
             position: relative;
-            z-index: 1;
+            z-index: 2; /* Por encima de la animación */
         }
         .nombre-saludo {
             font-weight: 600;
@@ -45,9 +45,8 @@
         .dark .nombre-saludo {
             color: #818cf8;
         }
-        /* --- NUEVO: Estilos para la tarjeta animada --- */
         .flip-card {
-            perspective: 1000px; /* Efecto de profundidad */
+            perspective: 1000px;
             cursor: pointer;
         }
         .flip-card-inner {
@@ -64,16 +63,56 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            -webkit-backface-visibility: hidden; /* Para Safari */
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            border-radius: 0.5rem; /* rounded-lg */
+            border-radius: 0.5rem;
         }
         .flip-card-back {
             transform: rotateY(180deg);
+        }
+
+        /* --- Estilos para el fondo animado --- */
+        .animated-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Entre el logo y el contenido */
+            overflow: hidden;
+        }
+        .animated-bg svg {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            stroke: #4f46e5; /* Color índigo */
+            stroke-width: 1;
+            fill: none;
+            opacity: 0.2;
+        }
+        .dark .animated-bg svg {
+            stroke: #818cf8; /* Color índigo claro en modo oscuro */
+            opacity: 0.15;
+        }
+        .animated-bg path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 20s linear infinite;
+        }
+        .animated-bg path:nth-child(2) { animation-delay: -5s; }
+        .animated-bg path:nth-child(3) { animation-delay: -10s; }
+        .animated-bg path:nth-child(4) { animation-delay: -15s; }
+
+        @keyframes draw {
+            to {
+                stroke-dashoffset: 0;
+            }
         }
     </style>
     <script>
@@ -89,14 +128,24 @@
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
-        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-with-logo-bg">
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
+            
+            <div class="animated-bg">
+                <svg>
+                    <path d="M-200,300 Q-100,500 0,300 T200,300 T400,300 T600,300 T800,300 T1000,300" />
+                    <path d="M-200,400 Q-100,200 0,400 T200,400 T400,400 T600,400 T800,400 T1000,400" />
+                    <path d="M-200,500 Q-100,700 0,500 T200,500 T400,500 T600,500 T800,500 T1000,500" />
+                    <path d="M-200,600 Q-100,400 0,600 T200,600 T400,600 T600,600 T800,600 T1000,600" />
+                </svg>
+            </div>
+
             <div class="card-content">
                 <div class="text-center mb-6">
                     <div class="relative flex justify-center items-center">
                         <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta Uni 🚀</h1>
                         <button id="theme-toggle" type="button" class="absolute right-0 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5 transition-colors">
                             <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
+                            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 Riktig 0001414 1414l .707 .707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
                         </button>
                     </div>
                     <p id="saludo" class="text-lg text-slate-500 dark:text-slate-400 mt-2"></p>
@@ -134,12 +183,11 @@
                     </button>
                 </form>
 
-                <!-- NUEVO: Tarjeta Animada de Frase -->
                 <div class="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div id="frase-card" class="flip-card h-24">
                         <div class="flip-card-inner">
                             <div class="flip-card-front bg-slate-200 dark:bg-slate-700">
-                                <p id="frase-texto" class="text-sm text-center text-slate-600 dark:text-slate-300 italic">"{{ frase }}"</p>
+                                <p id="frase-texto" class="text-sm text-center text-slate-600 dark:text-slate-300 italic">"{{ frase if frase else '¡Haz clic para ver una frase!' }}"</p>
                             </div>
                             <div class="flip-card-back bg-indigo-500 dark:bg-indigo-600">
                                 <p id="frase-texto-back" class="text-sm text-center text-white italic"></p>
@@ -193,32 +241,32 @@
             saludoEl.innerHTML = '¡Buenas noches, <span class="nombre-saludo">Noa</span>!';
         }
         
-        // --- NUEVO: Script para la tarjeta animada ---
+        // --- Script para la tarjeta animada ---
         const fraseCard = document.getElementById('frase-card');
         const fraseTexto = document.getElementById('frase-texto');
         const fraseTextoBack = document.getElementById('frase-texto-back');
-        const frases = {{ frases|tojson }};
-        let currentFrase = "{{ frase }}";
+        
+        // CORRECCIÓN: Si 'frases' no existe (en el preview), usamos un array de ejemplo real.
+        const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana.", "Confía en ti, eres capaz de lograrlo."]'|safe }};
+        let currentFrase = fraseTexto.innerText;
 
         fraseCard.addEventListener('click', function() {
-            // Elige una nueva frase que no sea la actual
+            if (!frases || frases.length === 0) return;
+            
             let nuevaFrase;
             do {
                 nuevaFrase = frases[Math.floor(Math.random() * frases.length)];
             } while (nuevaFrase === currentFrase && frases.length > 1);
             currentFrase = nuevaFrase;
             
-            // Asigna la nueva frase a la cara que está oculta
             if (fraseCard.classList.contains('is-flipped')) {
                 fraseTexto.innerText = `"${currentFrase}"`;
             } else {
                 fraseTextoBack.innerText = `"${currentFrase}"`;
             }
 
-            // Realiza la animación
             fraseCard.classList.toggle('is-flipped');
         });
-
     </script>
 </body>
 </html>
