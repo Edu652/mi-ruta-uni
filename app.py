@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final Estable 15.0
+# Archivo: app.py | Versión: Final Estable 15.1 (Corrección filtro 'desde ahora' con coche)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -78,17 +78,17 @@ def buscar():
     desde_ahora_check = request.form.get('desde_ahora')
 
     # 1. Pre-procesar horarios de rutas fijas
-    rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
-    rutas_fijas.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
-    rutas_fijas.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
-    rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
+    rutas_fijas_originales = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
+    rutas_fijas_originales.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas_originales['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
+    rutas_fijas_originales.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas_originales['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
+    rutas_fijas_originales.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
     # 2. Encontrar y procesar rutas
     candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
     resultados_procesados = []
     for ruta in candidatos:
-        resultado = calculate_route_times(ruta, rutas_fijas, desde_ahora_check)
+        resultado = calculate_route_times(ruta, rutas_fijas_originales, desde_ahora_check)
         if resultado:
             resultados_procesados.append(resultado)
             
@@ -122,7 +122,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
         
         # --- CASO ESPECIAL: RUTA DIRECTA DE FRECUENCIA (COCHE O BUS) ---
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
-            # Si se marca "desde ahora", no tiene sentido mostrar una ruta sin horario.
+            # Si se marca "desde ahora", no tiene sentido mostrar una ruta sin horario fijo. La descartamos.
             if desde_ahora_check: return None
             seg = segmentos[0]
             duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
@@ -142,20 +142,13 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
         anchor_index = -1
         for i, seg in enumerate(segmentos):
             if seg['Tipo_Horario'] == 'Fijo':
-                if seg.name in rutas_fijas.index:
-                    anchor_index = i
-                    break
+                anchor_index = i
+                break
         
         if anchor_index != -1: # La ruta SÍ tiene un transporte fijo ("ancla")
             anchor_seg = segmentos[anchor_index]
+            if anchor_seg.name not in rutas_fijas.index: raise ValueError("Horario fijo no disponible.")
             tramo_fijo_ancla = rutas_fijas.loc[anchor_seg.name]
-            
-            # Aplicar filtro de hora AHORA, en el ancla
-            tz = pytz.timezone('Europe/Madrid')
-            ahora = datetime.now(tz).time()
-            if desde_ahora_check and tramo_fijo_ancla['Salida_dt'].time() < ahora:
-                raise ValueError("La ruta ya ha salido.")
-
             anchor_seg['Salida_dt'], anchor_seg['Llegada_dt'] = tramo_fijo_ancla['Salida_dt'], tramo_fijo_ancla['Llegada_dt']
 
             # Calcular hacia atrás desde el ancla
@@ -195,6 +188,14 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
                 seg['Salida_dt'] = llegada_anterior_dt + frecuencia
                 seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
+        
+        # --- ¡NUEVA CAPA DE VALIDACIÓN FINAL! ---
+        tz = pytz.timezone('Europe/Madrid')
+        ahora = datetime.now(tz)
+        if desde_ahora_check and segmentos[0]['Salida_dt'].time() < ahora.time():
+             # Si el día es el mismo, pero la hora es anterior, es inválida.
+             if segmentos[0]['Salida_dt'].date() == ahora.date():
+                raise ValueError("La ruta calculada empieza en el pasado.")
 
         # Formatear y devolver
         segmentos_formateados = []
