@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Estable 16.0 (Lógica de hora corregida)
+# Archivo: app.py | Versión: Estable 16.1 (Cálculo hacia atrás corregido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -143,11 +143,13 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
             anchor_seg['Salida_dt'], anchor_seg['Llegada_dt'] = tramo_fijo_ancla['Salida_dt'], tramo_fijo_ancla['Llegada_dt']
 
             llegada_siguiente_dt = anchor_seg['Salida_dt']
+            # ***** CORRECCIÓN FUNDAMENTAL *****
+            # Al calcular hacia atrás, la frecuencia NO se debe restar.
+            # Simplemente se necesita llegar con tiempo suficiente para el transbordo.
             for i in range(anchor_index - 1, -1, -1):
                 seg = segmentos[i]
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
-                seg['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO - frecuencia
+                seg['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 seg['Salida_dt'] = seg['Llegada_dt'] - duracion
                 llegada_siguiente_dt = seg['Salida_dt']
 
@@ -177,16 +179,9 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
                 seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
         
-        # ***** CORRECCIÓN LÓGICA *****
-        # La comprobación de la hora se mueve aquí, al final del todo.
-        # Ahora se comprueba la hora de salida del PRIMER tramo, sea cual sea.
         if desde_ahora_check:
             tz = pytz.timezone('Europe/Madrid')
-            # Usamos un objeto datetime completo para una comparación precisa
             ahora_dt = datetime.now(tz)
-            
-            # Si la hora de salida calculada para el primer tramo es anterior a ahora, la ruta no es válida.
-            # NOTA: Los objetos 'Salida_dt' no tienen zona horaria, así que la quitamos a 'ahora_dt' para comparar.
             if segmentos[0]['Salida_dt'] < ahora_dt.replace(tzinfo=None):
                 raise ValueError("La hora de salida calculada es anterior a la hora actual.")
 
