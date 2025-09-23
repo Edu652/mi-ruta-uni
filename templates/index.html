@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta Uni 🚀</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SCRIPT DE CONFIGURACIÓN AÑADIDO -->
     <script>
         tailwind.config = {
             darkMode: 'class'
@@ -16,9 +15,35 @@
         body { 
             font-family: 'Inter', sans-serif;
         }
+        /* Estilos para el fondo con el logo */
+        .card-with-logo-bg {
+            position: relative;
+            overflow: hidden; /* Asegura que el pseudo-elemento no se salga de los bordes redondeados */
+        }
+        .card-with-logo-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("{{ url_for('static', filename='logo_psicologia.png') }}");
+            background-size: 70%;
+            background-position: center;
+            background-repeat: no-repeat;
+            /* Efecto translúcido y plateado */
+            opacity: 0.08;
+            filter: grayscale(100%) brightness(150%);
+            z-index: 0;
+        }
+        /* Asegura que el contenido del recuadro esté por encima del fondo */
+        .card-content {
+            position: relative;
+            z-index: 1;
+        }
     </style>
     <script>
-        // Script para aplicar el tema guardado al cargar la página y evitar el parpadeo
+        // Script para aplicar el tema guardado al cargar la página
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -30,52 +55,55 @@
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
-        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors">
-            <div class="text-center mb-6">
-                <div class="relative flex justify-center items-center">
-                    <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta Uni 🚀</h1>
-                    <!-- Botón para cambiar de tema -->
-                    <button id="theme-toggle" type="button" class="absolute right-0 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5 transition-colors">
-                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
+        <!-- Se añade la clase 'card-with-logo-bg' -->
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-with-logo-bg">
+            <!-- Se añade un div 'card-content' para controlar la superposición -->
+            <div class="card-content">
+                <div class="text-center mb-6">
+                    <div class="relative flex justify-center items-center">
+                        <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta Uni 🚀</h1>
+                        <button id="theme-toggle" type="button" class="absolute right-0 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5 transition-colors">
+                            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
+                        </button>
+                    </div>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
+                </div>
+
+                <form action="/buscar" method="post" class="space-y-6">
+                    <div>
+                        <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
+                        <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="" disabled selected>Selecciona</option>
+                            {% for lugar in lugares %}
+                                <option value="{{ lugar }}">{{ lugar }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
+                        <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="" disabled selected>Selecciona</option>
+                            {% for lugar in lugares %}
+                                <option value="{{ lugar }}">{{ lugar }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar rutas desde la hora actual</label>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500">
+                        Buscar Ruta
                     </button>
-                </div>
-                <p class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
-            </div>
+                </form>
 
-            <form action="/buscar" method="post" class="space-y-6">
-                <div>
-                    <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
-                    <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="" disabled selected>Selecciona</option>
-                        {% for lugar in lugares %}
-                            <option value="{{ lugar }}">{{ lugar }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 italic">"{{ frase }}"</p>
                 </div>
-                
-                <div>
-                    <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
-                    <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                        <option value="" disabled selected>Selecciona</option>
-                        {% for lugar in lugares %}
-                            <option value="{{ lugar }}">{{ lugar }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="flex items-center">
-                    <input id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
-                    <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar rutas desde la hora actual</label>
-                </div>
-
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500">
-                    Buscar Ruta
-                </button>
-            </form>
-
-            <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400 italic">"{{ frase }}"</p>
             </div>
         </div>
     </div>
@@ -85,7 +113,6 @@
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
         const themeToggleBtn = document.getElementById('theme-toggle');
 
-        // Función para actualizar los iconos
         function updateIcons() {
             if (document.documentElement.classList.contains('dark')) {
                 themeToggleDarkIcon.classList.add('hidden');
@@ -96,21 +123,17 @@
             }
         }
         
-        // Mostrar el icono correcto al cargar la página
         updateIcons();
 
         themeToggleBtn.addEventListener('click', function() {
-            // Alternar la clase 'dark' en <html>
             document.documentElement.classList.toggle('dark');
             
-            // Actualizar localStorage
             if (document.documentElement.classList.contains('dark')) {
                 localStorage.setItem('color-theme', 'dark');
             } else {
                 localStorage.setItem('color-theme', 'light');
             }
             
-            // Actualizar los iconos
             updateIcons();
         });
     </script>
