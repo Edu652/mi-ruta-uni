@@ -18,7 +18,7 @@
         /* Estilos para el fondo con el logo */
         .card-with-logo-bg {
             position: relative;
-            overflow: hidden; /* Asegura que el pseudo-elemento no se salga de los bordes redondeados */
+            overflow: hidden; 
         }
         .card-with-logo-bg::before {
             content: '';
@@ -28,19 +28,24 @@
             right: 0;
             bottom: 0;
             background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
-            /* AJUSTE: Tamaño de la imagen para cubrir el marco */
             background-size: cover; 
             background-position: center;
             background-repeat: no-repeat;
-            /* AJUSTE: Opacidad aumentada al 15% */
             opacity: 0.15;
             filter: grayscale(100%) brightness(150%);
             z-index: 0;
         }
-        /* Asegura que el contenido del recuadro esté por encima del fondo */
         .card-content {
             position: relative;
             z-index: 1;
+        }
+        /* NUEVO: Estilo para el nombre en el saludo */
+        .nombre-saludo {
+            font-weight: 600; /* semibold */
+            color: #4f46e5; /* text-indigo-600 */
+        }
+        .dark .nombre-saludo {
+            color: #818cf8; /* dark:text-indigo-400 */
         }
     </style>
     <script>
@@ -56,9 +61,7 @@
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
-        <!-- Se añade la clase 'card-with-logo-bg' -->
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-with-logo-bg">
-            <!-- Se añade un div 'card-content' para controlar la superposición -->
             <div class="card-content">
                 <div class="text-center mb-6">
                     <div class="relative flex justify-center items-center">
@@ -68,6 +71,8 @@
                             <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
                         </button>
                     </div>
+                    <!-- Saludo dinámico actualizado -->
+                    <p id="saludo" class="text-lg text-slate-500 dark:text-slate-400 mt-2"></p>
                     <p class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
                 </div>
 
@@ -110,6 +115,7 @@
     </div>
 
     <script>
+        // --- Script del modo claro/oscuro (sin cambios) ---
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
         const themeToggleBtn = document.getElementById('theme-toggle');
@@ -137,6 +143,18 @@
             
             updateIcons();
         });
+
+        // --- Script para el saludo dinámico y personalizado ---
+        const saludoEl = document.getElementById('saludo');
+        const horaActual = new Date().getHours();
+
+        if (horaActual >= 5 && horaActual < 12) {
+            saludoEl.innerHTML = '¡Buenos días, <span class="nombre-saludo">Noa</span>!';
+        } else if (horaActual >= 12 && horaActual < 20) {
+            saludoEl.innerHTML = '¡Buenas tardes, <span class="nombre-saludo">Noa</span>!';
+        } else {
+            saludoEl.innerHTML = '¡Buenas noches, <span class="nombre-saludo">Noa</span>!';
+        }
     </script>
 </body>
 </html>
