@@ -15,7 +15,6 @@
         body { 
             font-family: 'Inter', sans-serif;
         }
-        /* Estilos para el fondo con el logo */
         .card-with-logo-bg {
             position: relative;
             overflow: hidden; 
@@ -39,13 +38,42 @@
             position: relative;
             z-index: 1;
         }
-        /* NUEVO: Estilo para el nombre en el saludo */
         .nombre-saludo {
-            font-weight: 600; /* semibold */
-            color: #4f46e5; /* text-indigo-600 */
+            font-weight: 600;
+            color: #4f46e5;
         }
         .dark .nombre-saludo {
-            color: #818cf8; /* dark:text-indigo-400 */
+            color: #818cf8;
+        }
+        /* --- NUEVO: Estilos para la tarjeta animada --- */
+        .flip-card {
+            perspective: 1000px; /* Efecto de profundidad */
+            cursor: pointer;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.is-flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Para Safari */
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            border-radius: 0.5rem; /* rounded-lg */
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
         }
     </style>
     <script>
@@ -71,7 +99,6 @@
                             <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 003.636 6.464l.707.707a1 1 0 001.414-1.414l-.707-.707zM3 11a1 1 0 100-2H2a1 1 0 100 2h1zM6.464 16.364l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM13.536 16.364a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707z"></path></svg>
                         </button>
                     </div>
-                    <!-- Saludo dinámico actualizado -->
                     <p id="saludo" class="text-lg text-slate-500 dark:text-slate-400 mt-2"></p>
                     <p class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
                 </div>
@@ -107,8 +134,18 @@
                     </button>
                 </form>
 
-                <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
-                    <p class="text-sm text-slate-500 dark:text-slate-400 italic">"{{ frase }}"</p>
+                <!-- NUEVO: Tarjeta Animada de Frase -->
+                <div class="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div id="frase-card" class="flip-card h-24">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front bg-slate-200 dark:bg-slate-700">
+                                <p id="frase-texto" class="text-sm text-center text-slate-600 dark:text-slate-300 italic">"{{ frase }}"</p>
+                            </div>
+                            <div class="flip-card-back bg-indigo-500 dark:bg-indigo-600">
+                                <p id="frase-texto-back" class="text-sm text-center text-white italic"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -144,7 +181,7 @@
             updateIcons();
         });
 
-        // --- Script para el saludo dinámico y personalizado ---
+        // --- Script para el saludo dinámico (sin cambios) ---
         const saludoEl = document.getElementById('saludo');
         const horaActual = new Date().getHours();
 
@@ -155,6 +192,33 @@
         } else {
             saludoEl.innerHTML = '¡Buenas noches, <span class="nombre-saludo">Noa</span>!';
         }
+        
+        // --- NUEVO: Script para la tarjeta animada ---
+        const fraseCard = document.getElementById('frase-card');
+        const fraseTexto = document.getElementById('frase-texto');
+        const fraseTextoBack = document.getElementById('frase-texto-back');
+        const frases = {{ frases|tojson }};
+        let currentFrase = "{{ frase }}";
+
+        fraseCard.addEventListener('click', function() {
+            // Elige una nueva frase que no sea la actual
+            let nuevaFrase;
+            do {
+                nuevaFrase = frases[Math.floor(Math.random() * frases.length)];
+            } while (nuevaFrase === currentFrase && frases.length > 1);
+            currentFrase = nuevaFrase;
+            
+            // Asigna la nueva frase a la cara que está oculta
+            if (fraseCard.classList.contains('is-flipped')) {
+                fraseTexto.innerText = `"${currentFrase}"`;
+            } else {
+                fraseTextoBack.innerText = `"${currentFrase}"`;
+            }
+
+            // Realiza la animación
+            fraseCard.classList.toggle('is-flipped');
+        });
+
     </script>
 </body>
 </html>
