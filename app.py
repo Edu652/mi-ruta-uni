@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Estable 16.1 (Cálculo hacia atrás corregido)
+# Archivo: app.py | Versión: Estable 17.0 (Búsqueda de rutas corregida)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -97,17 +97,36 @@ def buscar():
 
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
-    rutas.extend([[r] for _, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows()])
-    if not any(r[0]['Destino'] == destino for r in rutas):
+    
+    # --- LÓGICA DE BÚSQUEDA CORREGIDA ---
+    # Ahora busca todas las opciones de 1 y 2 tramos para tener más alternativas.
+
+    # 1 tramo
+    rutas_1_tramo = [[r] for _, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows()]
+    rutas.extend(rutas_1_tramo)
+    
+    # 2 tramos
+    rutas_2_tramos = []
+    for _, t1 in df[df['Origen'] == origen].iterrows():
+        # Evitar ir y volver al origen en el primer transbordo
+        if t1['Destino'] == origen: continue
+        for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
+            rutas_2_tramos.append([t1, t2])
+    rutas.extend(rutas_2_tramos)
+
+    # Solo buscar 3 tramos si no se encontraron rutas más simples,
+    # para evitar combinaciones excesivamente complejas.
+    if not rutas:
+        rutas_3_tramos = []
         for _, t1 in df[df['Origen'] == origen].iterrows():
-            for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
-                rutas.append([t1, t2])
-    if not any(r[-1]['Destino'] == destino for r in rutas):
-        for _, t1 in df[df['Origen'] == origen].iterrows():
+            if t1['Destino'] == origen: continue
             for _, t2 in df[df['Origen'] == t1['Destino']].iterrows():
+                # Evitar bucles o llegar al destino demasiado pronto
                 if t2['Destino'] in [origen, destino]: continue
                 for _, t3 in df[(df['Origen'] == t2['Destino']) & (df['Destino'] == destino)].iterrows():
-                    rutas.append([t1, t2, t3])
+                    rutas_3_tramos.append([t1, t2, t3])
+        rutas.extend(rutas_3_tramos)
+        
     return rutas
 
 def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
@@ -206,4 +225,5 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
