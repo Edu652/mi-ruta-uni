@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final Estable 15.0 + Filtros
+# Archivo: app.py | Versión: Final Estable 15.0 + Filtros Corregidos
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -69,7 +69,6 @@ def index():
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
-    # Pasamos la lista completa de frases para la tarjeta animada
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
 @app.route("/buscar", methods=["POST"])
@@ -77,16 +76,15 @@ def buscar():
     origen = request.form["origen"]
     destino = request.form["destino"]
     desde_ahora_check = request.form.get('desde_ahora')
-    # --- NUEVO: Capturar el estado de los checkboxes de filtro ---
     evitar_sj_check = request.form.get('evitar_sj')
     evitar_pa_check = request.form.get('evitar_pa')
 
-    # --- NUEVO: Crear una lista de lugares a evitar ---
+    # --- CORRECCIÓN: Usar los nombres abreviados correctos ---
     lugares_a_evitar = []
     if evitar_sj_check:
-        lugares_a_evitar.append("Santa Justa")
+        lugares_a_evitar.append("Sta. Justa")
     if evitar_pa_check:
-        lugares_a_evitar.append("Plaza de Armas")
+        lugares_a_evitar.append("Plz. Armas")
 
     # 1. Pre-procesar horarios de rutas fijas
     rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
@@ -97,7 +95,7 @@ def buscar():
     # 2. Encontrar rutas
     candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
-    # --- NUEVO: Filtrar las rutas que pasan por lugares a evitar ---
+    # 3. Filtrar las rutas que pasan por lugares a evitar
     if lugares_a_evitar:
         rutas_filtradas = []
         for ruta in candidatos:
@@ -110,9 +108,9 @@ def buscar():
                     break 
             if es_ruta_valida:
                 rutas_filtradas.append(ruta)
-        candidatos = rutas_filtradas # Usamos la lista ya filtrada
+        candidatos = rutas_filtradas
 
-    # 3. Procesar las rutas válidas
+    # 4. Procesar las rutas válidas
     resultados_procesados = []
     for ruta in candidatos:
         resultado = calculate_route_times(ruta, rutas_fijas, desde_ahora_check)
@@ -149,6 +147,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
         
         # --- CASO ESPECIAL: RUTA DIRECTA DE FRECUENCIA (COCHE O BUS) ---
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
+            # Si se marca "desde ahora", no tiene sentido mostrar una ruta sin horario.
             if desde_ahora_check: return None
             seg = segmentos[0]
             duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
