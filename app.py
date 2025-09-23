@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final Estable 15.0
+# Archivo: app.py | Versión: Estable con corrección
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -69,7 +69,8 @@ def index():
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
-    return render_template("index.html", lugares=lugares, frase=frase)
+    # CORRECCIÓN: Ahora pasamos tanto la frase individual como la lista completa de frases.
+    return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
