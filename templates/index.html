@@ -10,20 +10,6 @@
         body { 
             font-family: 'Inter', sans-serif;
         }
-        .bg-image-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            z-index: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .dark .bg-image-container::before {
-            opacity: 0.05;
-        }
     </style>
     <script>
         // Script para aplicar el tema guardado al cargar la página y evitar el parpadeo
@@ -36,7 +22,7 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
-    <div class="relative min-h-screen flex flex-col items-center justify-center p-4 bg-image-container">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
         
         <div class="relative w-full max-w-md bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors">
             <div class="text-center mb-6">
@@ -124,5 +110,4 @@
     </script>
 </body>
 </html>
-
 
