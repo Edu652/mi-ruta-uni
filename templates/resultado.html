@@ -14,7 +14,8 @@
 
     <div class="max-w-2xl mx-auto p-4 md:p-6">
         
-        <div class="text-center mb-8">
+        <!-- CAMBIO: Cabecera Fija -->
+        <div class="sticky top-0 z-10 bg-slate-900 py-4 text-center mb-8">
             <a href="/" class="text-indigo-400 hover:text-indigo-300 transition-colors">&larr; Nueva Búsqueda</a>
             <h1 class="text-3xl font-bold mt-2">Rutas Encontradas</h1>
             <p class="text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
@@ -23,7 +24,13 @@
         {% if resultados %}
             <div class="space-y-6">
                 {% for resultado in resultados %}
-                <div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
+                <!-- CAMBIO: Se añade 'relative' para posicionar el número -->
+                <div class="relative bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
+                    
+                    <!-- CAMBIO: Número de la ruta -->
+                    <div class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                        {{ loop.index }}
+                    </div>
                     
                     <!-- RESUMEN DEL VIAJE -->
                     <div class="p-4 bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center">
@@ -82,8 +89,8 @@
                         </div>
                         {% if not loop.last %}
                             <div class="pl-10">
-                                <!-- CAMBIO: Se ha reducido la altura de 'h-6' a 'h-4' para un espacio más compacto -->
-                                <div class="border-l border-slate-600 h-4 ml-3"></div>
+                                <!-- CAMBIO: Se ha reducido la altura de 'h-4' a 'h-3' -->
+                                <div class="border-l border-slate-600 h-3 ml-3"></div>
                                 <p class="text-xs text-slate-500 -ml-1">Transbordo</p>
                             </div>
                         {% endif %}
