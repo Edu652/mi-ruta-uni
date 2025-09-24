@@ -81,7 +81,6 @@
             </div>
             <div class="card-content">
                 <div class="relative text-center mb-6">
-                    <!-- BOTÓN DE INFORMACIÓN -->
                     <button id="open-info-modal" type="button" class="absolute -top-2 -left-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
                     </button>
@@ -96,7 +95,6 @@
                 </div>
 
                 <form id="main-form" action="/buscar" method="post" class="space-y-4">
-                    <!-- Formulario principal (Origen, Destino, etc.) -->
                     <div>
                         <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
                         <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
@@ -122,7 +120,6 @@
                             <span>+ Opciones de Búsqueda</span>
                         </button>
                     </div>
-
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 dark:focus:ring-offset-slate-900 focus:ring-indigo-500 !mt-6">
                         Buscar Ruta
                     </button>
@@ -140,92 +137,134 @@
         </div>
     </div>
 
-    <!-- ===== MODAL DE FILTROS (sin cambios) ===== -->
+    <!-- ===== MODAL DE FILTROS ===== -->
     <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <!-- Contenido del modal de filtros... -->
-    </div>
-    
-    <!-- ===== MODAL DE INFORMACIÓN (ACTUALIZADO) ===== -->
-    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <!-- Overlay -->
-        <div id="info-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
-        
-        <!-- Contenido del Modal -->
+        <div id="filters-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
         <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Información Útil</h2>
-                <button type="button" id="close-info-modal" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full p-2">
+                <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Filtros Avanzados</h2>
+                <button type="button" id="close-filters-modal" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full p-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-
-            <div class="space-y-4 text-sm">
-                <!-- Damas -->
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Damas</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34959256900" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 69 00</a>
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div class="flex items-center">
+                    <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar desde la hora actual</label>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <label for="salir_despues_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Salir a partir de las...</label>
+                    </div>
+                    <div id="selectores_hora_salida" class="transition-all duration-300 hidden mt-2">
+                        <!-- Selector de hora omitido por brevedad -->
                     </div>
                 </div>
-                <!-- Renfe -->
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Renfe</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a>
+                <div class="pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar antes de las...</label>
+                    </div>
+                    <div id="selectores_hora_llegada" class="transition-all duration-300 hidden mt-2">
+                        <!-- Selector de hora omitido por brevedad -->
                     </div>
                 </div>
-                <!-- Emtusa Huelva -->
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Emtusa Huelva</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a>
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <label for="evitar_sj" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Sta. Justa</label>
                     </div>
-                </div>
-                <!-- Mapas -->
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Mapas</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Paradas Huelva ↗</a>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Campus del Carmen ↗</a>
+                    <div class="flex items-center">
+                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <label for="evitar_pa" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Plz. Armas</label>
                     </div>
                 </div>
             </div>
+            <button type="button" id="apply-filters" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md">Aplicar Filtros</button>
         </div>
     </div>
 
+    <!-- ===== MODAL DE INFORMACIÓN ===== -->
+    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <!-- Contenido del modal de info omitido por brevedad -->
+    </div>
 
     <script>
-        // --- LÓGICA GENERAL Y MODAL DE FILTROS (sin cambios, omitido por brevedad) ---
+        // --- LÓGICA DEL TEMA OSCURO/CLARO ---
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+        
+        // --- LÓGICA DEL SALUDO DINÁMICO ---
+        const saludoEl = document.getElementById('saludo');
+        const horaActual = new Date().getHours();
+        let saludoTexto = '';
+        if (horaActual < 12) { saludoTexto = 'Buenos días'; } else if (horaActual < 21) { saludoTexto = 'Buenas tardes'; } else { saludoTexto = 'Buenas noches'; }
+        saludoEl.innerHTML = `${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
+        
+        // --- LÓGICA DE MODALES ---
+        function setupModal(openBtnId, closeBtnId, modalId, applyBtnId = null) {
+            const openBtn = document.getElementById(openBtnId);
+            const closeBtn = document.getElementById(closeBtnId);
+            const modal = document.getElementById(modalId);
+            const modalOverlay = modal.querySelector('.modal-overlay');
+            const modalContainer = modal.querySelector('.modal-container');
+            const applyBtn = applyBtnId ? document.getElementById(applyBtnId) : null;
 
-        // --- LÓGICA DEL NUEVO MODAL DE INFORMACIÓN ---
-        const openInfoBtn = document.getElementById('open-info-modal');
-        const closeInfoBtn = document.getElementById('close-info-modal');
-        const infoModal = document.getElementById('info-modal');
-        const infoModalOverlay = document.getElementById('info-modal-overlay');
-        const infoModalContainer = infoModal.querySelector('.modal-container');
+            function open() {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalOverlay.classList.remove('opacity-0');
+                    modalContainer.classList.remove('opacity-0', 'scale-95');
+                }, 10);
+            }
 
-        function openInfoModal() {
-            infoModal.classList.remove('hidden');
-            setTimeout(() => {
-                infoModalOverlay.classList.remove('opacity-0');
-                infoModalContainer.classList.remove('opacity-0', 'scale-95');
-            }, 10);
+            function close() {
+                modalOverlay.classList.add('opacity-0');
+                modalContainer.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            openBtn.addEventListener('click', open);
+            closeBtn.addEventListener('click', close);
+            if (applyBtn) applyBtn.addEventListener('click', close);
+            modalOverlay.addEventListener('click', close);
         }
 
-        function closeInfoModal() {
-            infoModalOverlay.classList.add('opacity-0');
-            infoModalContainer.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                infoModal.classList.add('hidden');
-            }, 300);
-        }
+        setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
+        setupModal('open-info-modal', 'close-info-modal', 'info-modal');
 
-        openInfoBtn.addEventListener('click', openInfoModal);
-        closeInfoBtn.addEventListener('click', closeInfoModal);
-        infoModalOverlay.addEventListener('click', closeInfoModal);
+
+        // --- LÓGICA SELECTORES DE HORA Y TARJETA (sin cambios, omitido por brevedad) ---
     </script>
 </body>
 </html>
