@@ -39,6 +39,7 @@
         @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
     <script>
+        // Aplica el tema oscuro/claro al cargar la página para evitar parpadeos
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -49,15 +50,29 @@
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
-            <!-- Contenido omitido por brevedad -->
+            <div class="animated-bg" aria-hidden="true">
+                <svg viewBox="0 0 1000 1000">
+                    <path d="M-100,200 C200,50 800,150 1100,50"></path>
+                    <path d="M-100,500 C200,450 800,550 1100,450"></path>
+                    <path d="M-100,800 C200,750 800,850 1100,750"></path>
+                    <path d="M-100,1100 C200,1050 800,1150 1100,1050"></path>
+                </svg>
+            </div>
             <div class="card-content">
-                <div class="text-center mb-6">
-                    <!-- Título y botón de tema -->
+                <div class="flex justify-between items-start mb-6">
+                    <div class="text-left">
+                        <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta Uni 🚀</h1>
+                        <p id="saludo" class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
+                    </div>
+                    <button id="theme-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                    </button>
                 </div>
 
                 <form action="/buscar" method="post" class="space-y-4">
-                    <!-- Origen y Destino omitidos por brevedad -->
                     <div>
                         <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
                         <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
@@ -67,6 +82,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    
                     <div>
                         <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
                         <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
@@ -82,16 +98,15 @@
                         <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar rutas desde la hora actual</label>
                     </div>
 
-                    <!-- ===== NUEVO FILTRO DE HORA DE LLEGADA ===== -->
                     <div class="pt-2">
                         <div class="flex items-center">
                             <input id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                             <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar al destino antes de las...</label>
                         </div>
-                        <div id="selectores_hora" class="flex items-center space-x-2 mt-2 transition-opacity duration-300 opacity-50">
+                        <div id="selectores_hora" class="flex items-center space-x-2 mt-2 transition-all duration-300 hidden">
                              <select id="llegar_antes_hora" name="llegar_antes_hora" disabled class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                                 {% for h in range(24) %}
-                                <option value="{{ '%02d'|format(h) }}">{{ '%02d'|format(h) }}</option>
+                                <option value="{{ '%02d'|format(h) }}" {% if h == 9 %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
                                 {% endfor %}
                             </select>
                             <span class="font-bold">:</span>
@@ -102,7 +117,6 @@
                             </select>
                         </div>
                     </div>
-                    <!-- ============================================= -->
 
                     <div class="flex items-center">
                         <input id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
@@ -113,20 +127,89 @@
                         <label for="evitar_pa" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Plz. Armas</label>
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500 !mt-6">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 dark:focus:ring-offset-slate-900 focus:ring-indigo-500 !mt-6">
                         Buscar Ruta
                     </button>
                 </form>
                 
-                <!-- Tarjeta de frases omitida por brevedad -->
+                 <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
+                     <div class="flip-card h-16" onclick="flipCard(this)">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front bg-slate-100 dark:bg-slate-700 text-sm text-slate-500 dark:text-slate-400 italic">
+                                <p>"{{ frase }}"</p>
+                            </div>
+                            <div class="flip-card-back bg-indigo-100 dark:bg-indigo-900 text-sm text-indigo-700 dark:text-indigo-300 italic">
+                                <p id="back-frase"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- GESTIÓN DEL TEMA Y SALUDO (omitido por brevedad) ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
 
-        // ===== NUEVO SCRIPT PARA HABILITAR/DESHABILITAR LOS SELECTORES DE HORA =====
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            lightIcon.classList.remove('hidden');
+        } else {
+            darkIcon.classList.remove('hidden');
+        }
+
+        themeToggleBtn.addEventListener('click', function() {
+            darkIcon.classList.toggle('hidden');
+            lightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+
+        const saludoEl = document.getElementById('saludo');
+        const hora = new Date().getHours();
+        let saludoTexto = '';
+        if (hora < 12) { saludoTexto = 'Buenos días'; } 
+        else if (hora < 21) { saludoTexto = 'Buenas tardes'; } 
+        else { saludoTexto = 'Buenas noches'; }
+        saludoEl.innerHTML = `${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
+        
+        const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana."]' }};
+        let fraseActualIndex = frases.indexOf("{{ frase }}");
+
+        function flipCard(cardElement) {
+            const backFraseEl = document.getElementById('back-frase');
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * frases.length);
+            } while (newIndex === fraseActualIndex && frases.length > 1);
+            
+            fraseActualIndex = newIndex;
+            backFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
+            
+            cardElement.classList.add('is-flipped');
+            setTimeout(() => {
+                const frontFraseEl = cardElement.querySelector('.flip-card-front p');
+                frontFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
+                cardElement.classList.remove('is-flipped');
+            }, 800);
+        }
+
         const llegarAntesCheck = document.getElementById('llegar_antes_check');
         const selectoresHoraDiv = document.getElementById('selectores_hora');
         const horaSelect = document.getElementById('llegar_antes_hora');
@@ -136,17 +219,14 @@
             if (this.checked) {
                 horaSelect.disabled = false;
                 minutoSelect.disabled = false;
-                selectoresHoraDiv.classList.remove('opacity-50');
+                selectoresHoraDiv.classList.remove('hidden');
             } else {
                 horaSelect.disabled = true;
                 minutoSelect.disabled = true;
-                selectoresHoraDiv.classList.add('opacity-50');
+                selectoresHoraDiv.classList.add('hidden');
             }
         });
-        // ========================================================================
     </script>
 </body>
 </html>
-
-
 
