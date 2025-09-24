@@ -1,22 +1,19 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados de la Búsqueda</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SCRIPT DE CONFIGURACIÓN AÑADIDO -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
     </style>
     <script>
-        // Script para aplicar el tema guardado al cargar la página y evitar el parpadeo
+        // Aplica el tema oscuro/claro al cargar la página para evitar parpadeos
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -26,30 +23,56 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
-    <div class="max-w-2xl mx-auto p-4 md:p-6">
+    <div class="w-full max-w-4xl mx-auto p-4 md:p-6">
         
-        <!-- Cabecera Fija -->
-        <div class="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900 py-4 text-center mb-8 transition-colors">
-            <a href="/" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors">&larr; Nueva Búsqueda</a>
-            <h1 class="text-3xl font-bold mt-2">Rutas Encontradas</h1>
-            <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
+        <!-- CABECERA FIJA -->
+        <div class="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-md py-4 -mx-4 px-4 mb-4 border-b border-slate-200 dark:border-slate-700">
+            <div class="text-center max-w-2xl mx-auto">
+                <div class="flex justify-between items-center">
+                     <a href="/" class="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors text-sm whitespace-nowrap">&larr; Nueva Búsqueda</a>
+                     <div class="flex-grow text-center">
+                        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Rutas Encontradas</h1>
+                        <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
+                     </div>
+                     <div class="w-24"></div> <!-- Espaciador para mantener el título centrado -->
+                </div>
+                
+                <!-- SECCIÓN DE FILTROS APLICADOS -->
+                {% if filtros and (filtros.desde_ahora or filtros.evitar_sj or filtros.evitar_pa or filtros.llegar_antes_check or filtros.salir_despues_check) %}
+                <div class="flex flex-wrap gap-2 justify-center mt-4">
+                    {% if filtros.desde_ahora %}
+                    <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">Desde ahora</span>
+                    {% endif %}
+                    {% if filtros.salir_despues_check %}
+                    <span class="bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-sky-900 dark:text-sky-300">Salir &gt; {{ filtros.salir_despues_hora }}:{{ filtros.salir_despues_minuto }}</span>
+                    {% endif %}
+                    {% if filtros.llegar_antes_check %}
+                    <span class="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-rose-900 dark:text-rose-300">Llegar &lt; {{ filtros.llegar_antes_hora }}:{{ filtros.llegar_antes_minuto }}</span>
+                    {% endif %}
+                    {% if filtros.evitar_sj %}
+                    <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Sta. Justa</span>
+                    {% endif %}
+                    {% if filtros.evitar_pa %}
+                    <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Plz. Armas</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
         </div>
 
-        {% if resultados %}
-            <div class="space-y-6">
+        <!-- Contenedor de resultados -->
+        <div class="max-w-2xl mx-auto space-y-6">
+            {% if resultados %}
                 {% for resultado in resultados %}
-                <!-- Se añade 'relative' para posicionar el número -->
                 <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors">
-                    
-                    <!-- CORRECCIÓN: Número de la ruta más pequeño y reposicionado -->
-                    <div class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
+                     <!-- Círculo con el número -->
+                    <div class="absolute top-3 left-3 w-7 h-7 bg-indigo-500 dark:bg-indigo-400 text-white dark:text-slate-900 rounded-full flex items-center justify-center font-bold text-sm z-10">
                         {{ loop.index }}
                     </div>
-                    
+
                     <!-- RESUMEN DEL VIAJE -->
-                    <div class="p-4 bg-slate-100/50 dark:bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center transition-colors">
-                        
-                        <div>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center">
+                        <div class="text-left pl-8">
                             <p class="text-sm text-slate-500 dark:text-slate-400">Hora de Salida</p>
                             <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                                 {{ resultado.segmentos[0].Salida_str }}
@@ -75,10 +98,10 @@
                     </div>
 
                     <!-- SEGMENTOS DEL VIAJE -->
-                    <div class="p-4 space-y-4">
+                    <div class="p-4 space-y-3">
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
-                            <span class="text-2xl mr-4">{{ segmento.icono }}</span>
+                            <span class="text-2xl mr-4 mt-1">{{ segmento.icono }}</span>
                             <div class="flex-grow">
                                 <div class="flex justify-between items-center">
                                     <p class="font-semibold">{{ segmento.Compania | default('') }}</p>
@@ -103,26 +126,25 @@
                         </div>
                         {% if not loop.last %}
                             <div class="pl-10">
-                                <div class="border-l border-slate-300 dark:border-slate-600 h-3 ml-3"></div>
-                                <p class="text-xs text-slate-400 dark:text-slate-500 -ml-1">Transbordo</p>
+                                <div class="border-l-2 border-slate-300 dark:border-slate-600 h-2 ml-3"></div>
+                                <p class="text-xs text-slate-500 -ml-1">Transbordo</p>
                             </div>
                         {% endif %}
                         {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
-            </div>
-        {% else %}
-            <!-- MENSAJE SI NO HAY RUTAS -->
-            <div class="text-center bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700">
-                <p class="text-4xl mb-4">😔</p>
-                <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
-                <p class="text-slate-500 dark:text-slate-400">
-                    No hemos podido encontrar una combinación para este trayecto.
-                </p>
-            </div>
-        {% endif %}
-
+            {% else %}
+                <!-- MENSAJE SI NO HAY RUTAS -->
+                <div class="text-center bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <p class="text-4xl mb-4">😔</p>
+                    <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
+                    <p class="text-slate-500 dark:text-slate-400">
+                        No hemos podido encontrar una combinación para este trayecto con los filtros aplicados.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
 </body>
