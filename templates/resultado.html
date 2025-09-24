@@ -28,14 +28,9 @@
         <!-- CABECERA FIJA -->
         <div class="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-md py-4 -mx-4 px-4 mb-4 border-b border-slate-200 dark:border-slate-700">
             <div class="text-center max-w-2xl mx-auto">
-                <div class="flex justify-between items-center">
-                     <a href="/" class="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors text-sm whitespace-nowrap">&larr; Nueva Búsqueda</a>
-                     <div class="flex-grow text-center">
-                        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Rutas Encontradas</h1>
-                        <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
-                     </div>
-                     <div class="w-24"></div> <!-- Espaciador para mantener el título centrado -->
-                </div>
+                <a href="/" class="text-indigo-600 dark:text-indigo-400 hover:underline transition-colors text-sm">&larr; Nueva Búsqueda</a>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">Rutas Encontradas</h1>
+                <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
                 
                 <!-- SECCIÓN DE FILTROS APLICADOS -->
                 {% if filtros and (filtros.desde_ahora or filtros.evitar_sj or filtros.evitar_pa or filtros.llegar_antes_check or filtros.salir_despues_check) %}
