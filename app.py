@@ -148,7 +148,23 @@ def buscar():
     if resultados_procesados:
         resultados_procesados.sort(key=lambda x: x['llegada_final_dt_obj'])
 
-    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados)
+    return render_template(
+        "resultado.html", 
+        origen=origen, 
+        destino=destino, 
+        resultados=resultados_procesados,
+        filtros={
+            'desde_ahora': desde_ahora_check,
+            'evitar_sj': evitar_sj,
+            'evitar_pa': evitar_pa,
+            'llegar_antes_check': llegar_antes_check,
+            'llegar_antes_hora': llegar_antes_hora,
+            'llegar_antes_minuto': llegar_antes_minuto,
+            'salir_despues_check': salir_despues_check,
+            'salir_despues_hora': salir_despues_hora,
+            'salir_despues_minuto': salir_despues_minuto
+        }
+    )
 
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
