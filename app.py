@@ -73,116 +73,96 @@ def index():
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
-    origen = request.form["origen"]
-    destino = request.form["destino"]
-    desde_ahora_check = request.form.get('desde_ahora')
-    evitar_sj = request.form.get('evitar_sj')
-    evitar_pa = request.form.get('evitar_pa')
-    llegar_antes_check = request.form.get('llegar_antes_check')
-    llegar_antes_hora = request.form.get('llegar_antes_hora')
-    llegar_antes_minuto = request.form.get('llegar_antes_minuto')
-    salir_despues_check = request.form.get('salir_despues_check')
-    salir_despues_hora = request.form.get('salir_despues_hora')
-    salir_despues_minuto = request.form.get('salir_despues_minuto')
-
-    # 1. Pre-procesar horarios de rutas fijas
+    form_data = request.form.to_dict()
+    origen = form_data.get("origen")
+    destino = form_data.get("destino")
+    
     rutas_fijas = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
     rutas_fijas.loc[:, 'Salida_dt'] = pd.to_datetime(rutas_fijas['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
     rutas_fijas.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
     rutas_fijas.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
-    # 2. Encontrar rutas y aplicar filtros de estación
     candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
+    # --- APLICACIÓN DE FILTROS ---
+
+    # Filtro de estaciones
     lugares_a_evitar = []
-    if evitar_sj: lugares_a_evitar.append('Sta. Justa')
-    if evitar_pa: lugares_a_evitar.append('Plz. Armas')
+    if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
+    if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
 
     if lugares_a_evitar:
-        candidatos_filtrados = []
-        for ruta in candidatos:
-            es_valida = True
-            # Revisar puntos intermedios (transbordos)
-            for i in range(len(ruta) - 1):
-                if ruta[i]['Destino'] in lugares_a_evitar:
-                    es_valida = False
-                    break
-            if es_valida:
-                candidatos_filtrados.append(ruta)
-        candidatos = candidatos_filtrados
+        candidatos = [r for r in candidatos if not any(s['Destino'] in lugares_a_evitar for s in r[:-1])]
+
+    # Filtro de tipo de transporte
+    def route_has_train(route):
+        return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route)
+
+    def route_has_bus(route):
+        return any(any(k in str(s.get('Compania', '')).lower() for k in ['damas', 'emtusa', 'urbano']) or 'bus' in str(s.get('Transporte', '')).lower() for s in route)
+
+    solo_tren = form_data.get('solo_tren')
+    solo_bus = form_data.get('solo_bus')
     
-    # 3. Procesar tiempos y calcular resultados
+    candidatos_filtrados = []
+    for ruta in candidatos:
+        tiene_tren = route_has_train(ruta)
+        tiene_bus = route_has_bus(ruta)
+        es_transporte_publico = tiene_tren or tiene_bus
+
+        # Si no es transporte público (ej. coche), no se filtra por tipo
+        if not es_transporte_publico:
+            candidatos_filtrados.append(ruta)
+            continue
+        
+        # Lógica de exclusión: una ruta es inválida si tiene un tipo de transporte no deseado
+        es_invalida = False
+        if tiene_tren and not solo_tren:
+            es_invalida = True
+        if tiene_bus and not solo_bus:
+            es_invalida = True
+        
+        if not es_invalida:
+            candidatos_filtrados.append(ruta)
+    candidatos = candidatos_filtrados
+
+    # --- CÁLCULO DE TIEMPOS Y FILTROS DE HORA ---
     resultados_procesados = []
     for ruta in candidatos:
-        resultado = calculate_route_times(ruta, rutas_fijas, desde_ahora_check)
+        resultado = calculate_route_times(ruta, rutas_fijas, form_data.get('desde_ahora'))
         if resultado:
             resultados_procesados.append(resultado)
             
-    # 4. Aplicar filtros de hora de salida y llegada
-    if salir_despues_check and salir_despues_hora and salir_despues_minuto:
+    if form_data.get('salir_despues_check'):
         try:
-            hora_limite_salida = time(int(salir_despues_hora), int(salir_despues_minuto))
-            resultados_filtrados_salida = []
-            for res in resultados_procesados:
-                # El coche ("Flexible") no se puede filtrar por hora de salida, así que se descarta
-                if res['hora_llegada_final'] == 'Flexible':
-                    continue
-                hora_salida_ruta = res['segmentos'][0]['Salida_dt'].time()
-                if hora_salida_ruta >= hora_limite_salida:
-                    resultados_filtrados_salida.append(res)
-            resultados_procesados = resultados_filtrados_salida
-        except (ValueError, IndexError):
-            pass 
+            hora_limite = time(int(form_data.get('salir_despues_hora')), int(form_data.get('salir_despues_minuto')))
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].time() >= hora_limite]
+        except (ValueError, TypeError, IndexError): pass 
 
-    if llegar_antes_check and llegar_antes_hora and llegar_antes_minuto:
+    if form_data.get('llegar_antes_check'):
         try:
-            hora_limite = time(int(llegar_antes_hora), int(llegar_antes_minuto))
-            resultados_procesados = [
-                r for r in resultados_procesados 
-                if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hora_limite
-            ]
-        except ValueError:
-            pass
+            hora_limite = time(int(form_data.get('llegar_antes_hora')), int(form_data.get('llegar_antes_minuto')))
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hora_limite]
+        except (ValueError, TypeError): pass
             
-    # 5. Ordenar y devolver
     if resultados_procesados:
         resultados_procesados.sort(key=lambda x: x['llegada_final_dt_obj'])
 
-    return render_template(
-        "resultado.html", 
-        origen=origen, 
-        destino=destino, 
-        resultados=resultados_procesados,
-        filtros={
-            'desde_ahora': desde_ahora_check,
-            'evitar_sj': evitar_sj,
-            'evitar_pa': evitar_pa,
-            'llegar_antes_check': llegar_antes_check,
-            'llegar_antes_hora': llegar_antes_hora,
-            'llegar_antes_minuto': llegar_antes_minuto,
-            'salir_despues_check': salir_despues_check,
-            'salir_despues_hora': salir_despues_hora,
-            'salir_despues_minuto': salir_despues_minuto
-        }
-    )
+    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data)
+
 
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
-    # Prioridad 1: Rutas directas (1 tramo)
     rutas.extend([[r] for _, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows()])
-    
-    # Prioridad 2: Rutas de 2 tramos
     for _, t1 in df[df['Origen'] == origen].iterrows():
         for _, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
-            rutas.append([t1, t2])
-
-    # Prioridad 3: Rutas de 3 tramos (solo si no hay más simples)
+            if [t1, t2] not in rutas: rutas.append([t1, t2])
     if not rutas:
         for _, t1 in df[df['Origen'] == origen].iterrows():
             for _, t2 in df[df['Origen'] == t1['Destino']].iterrows():
                 if t2['Destino'] in [origen, destino]: continue
                 for _, t3 in df[(df['Origen'] == t2['Destino']) & (df['Destino'] == destino)].iterrows():
-                    rutas.append([t1, t2, t3])
+                    if [t1, t2, t3] not in rutas: rutas.append([t1, t2, t3])
     return rutas
 
 def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
@@ -200,17 +180,15 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
             seg_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
             return {
                 "segmentos": [seg_dict], "precio_total": seg.get('Precio', 0),
-                "llegada_final_dt_obj": datetime.min,
-                "hora_llegada_final": "Flexible",
+                "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible",
                 "duracion_total_str": format_timedelta(duracion)
             }
 
         anchor_index = -1
         for i, seg in enumerate(segmentos):
-            if seg['Tipo_Horario'] == 'Fijo':
-                if seg.name in rutas_fijas.index:
-                    anchor_index = i
-                    break
+            if seg['Tipo_Horario'] == 'Fijo' and seg.name in rutas_fijas.index:
+                anchor_index = i
+                break
         
         if anchor_index != -1:
             anchor_seg = segmentos[anchor_index]
@@ -256,7 +234,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas, desde_ahora_check):
         if desde_ahora_check:
             tz = pytz.timezone('Europe/Madrid')
             ahora = datetime.now(tz)
-            if segmentos[0]['Salida_dt'].replace(tzinfo=tz) < ahora:
+            if segmentos and segmentos[0].get('Salida_dt') and segmentos[0]['Salida_dt'].replace(tzinfo=tz) < ahora:
                 raise ValueError("La hora de salida ya ha pasado.")
 
         segmentos_formateados = []
