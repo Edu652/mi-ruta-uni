@@ -38,10 +38,10 @@
         .animated-bg path:nth-child(4) { animation-delay: -15s; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
 
-        /* ===== ESTILOS PARA EL NUEVO SELECTOR DE RUEDA ===== */
+        /* ===== ESTILOS PARA EL SELECTOR DE RUEDA ===== */
         .time-picker-wrapper {
             position: relative;
-            height: 160px; /* Altura del contenedor principal */
+            height: 160px;
             padding: 0 1rem;
         }
         .selection-indicator {
@@ -49,7 +49,7 @@
             top: 50%;
             left: 1rem; right: 1rem;
             transform: translateY(-50%);
-            height: 40px; /* Altura del item seleccionado */
+            height: 40px;
             pointer-events: none;
             border-top: 2px solid #a5b4fc;
             border-bottom: 2px solid #a5b4fc;
@@ -68,7 +68,7 @@
         .wheel-container::-webkit-scrollbar { display: none; }
         
         .wheel-item {
-            height: 40px; /* Altura de cada número */
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -104,7 +104,7 @@
         
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
             <div class="animated-bg" aria-hidden="true">
-                <!-- SVG omitido por brevedad -->
+                <!-- SVG OMITIDO -->
             </div>
             <div class="card-content">
                 <div class="relative text-center mb-6">
@@ -117,7 +117,6 @@
                 </div>
 
                 <form action="/buscar" method="post" class="space-y-4">
-                    <!-- Origen y Destino omitidos por brevedad -->
                     <div>
                         <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
                         <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
@@ -143,29 +142,54 @@
                         <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar rutas desde la hora actual</label>
                     </div>
 
+                    <!-- NUEVO FILTRO DE SALIDA -->
+                    <div class="pt-2">
+                        <div class="flex items-center">
+                            <input id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                            <label for="salir_despues_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Salir a partir de las...</label>
+                        </div>
+                        <div id="selectores_hora_salida" class="transition-all duration-300 hidden mt-2">
+                            <div class="time-picker-wrapper">
+                                <div class="selection-indicator"></div>
+                                <div class="flex justify-center items-center h-full">
+                                    <div class="wheel-container" id="hour-wheel-salida">
+                                        <div class="h-[60px]"></div>
+                                        {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
+                                        <div class="h-[60px]"></div>
+                                    </div>
+                                    <span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span>
+                                    <div class="wheel-container" id="minute-wheel-salida">
+                                        <div class="h-[60px]"></div>
+                                        {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
+                                        <div class="h-[60px]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="salir_despues_hora" id="salir_despues_hora" value="07" disabled>
+                            <input type="hidden" name="salir_despues_minuto" id="salir_despues_minuto" value="00" disabled>
+                        </div>
+                    </div>
+
+                    <!-- FILTRO DE LLEGADA -->
                     <div class="pt-2">
                         <div class="flex items-center">
                             <input id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                             <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar al destino antes de las...</label>
                         </div>
-                        <div id="selectores_hora" class="transition-all duration-300 hidden mt-2">
+                        <div id="selectores_hora_llegada" class="transition-all duration-300 hidden mt-2">
                             <div class="time-picker-wrapper">
                                 <div class="selection-indicator"></div>
                                 <div class="flex justify-center items-center h-full">
-                                    <div class="wheel-container" id="hour-wheel">
-                                        <div class="h-[60px]"></div> <!-- Espaciador superior -->
-                                        {% for h in range(24) %}
-                                        <div class="wheel-item">{{ '%02d'|format(h) }}</div>
-                                        {% endfor %}
-                                        <div class="h-[60px]"></div> <!-- Espaciador inferior -->
+                                    <div class="wheel-container" id="hour-wheel-llegada">
+                                        <div class="h-[60px]"></div>
+                                        {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
+                                        <div class="h-[60px]"></div>
                                     </div>
                                     <span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span>
-                                    <div class="wheel-container" id="minute-wheel">
-                                        <div class="h-[60px]"></div> <!-- Espaciador superior -->
-                                        {% for m in range(0, 60, 5) %}
-                                        <div class="wheel-item">{{ '%02d'|format(m) }}</div>
-                                        {% endfor %}
-                                        <div class="h-[60px]"></div> <!-- Espaciador inferior -->
+                                    <div class="wheel-container" id="minute-wheel-llegada">
+                                        <div class="h-[60px]"></div>
+                                        {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
+                                        <div class="h-[60px]"></div>
                                     </div>
                                 </div>
                             </div>
@@ -190,7 +214,7 @@
                 
                  <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
                      <div class="flip-card h-16" onclick="flipCard(this)">
-                        <!-- Contenido de la tarjeta de frases omitido por brevedad -->
+                        <!-- CONTENIDO OMITIDO -->
                      </div>
                 </div>
             </div>
@@ -198,69 +222,92 @@
     </div>
 
     <script>
-        // --- Lógica del Tema y Saludo omitida por brevedad ---
-
-        // --- Lógica de la Tarjeta de Frases ---
+        // --- LÓGICA GENERAL ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { lightIcon.classList.remove('hidden'); } else { darkIcon.classList.remove('hidden'); }
+        themeToggleBtn.addEventListener('click', function() {
+            darkIcon.classList.toggle('hidden'); lightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) { if (localStorage.getItem('color-theme') === 'light') { document.documentElement.classList.add('dark'); localStorage.setItem('color-theme', 'dark'); } else { document.documentElement.classList.remove('dark'); localStorage.setItem('color-theme', 'light'); } } else { if (document.documentElement.classList.contains('dark')) { document.documentElement.classList.remove('dark'); localStorage.setItem('color-theme', 'light'); } else { document.documentElement.classList.add('dark'); localStorage.setItem('color-theme', 'dark'); } }
+        });
+        const saludoEl = document.getElementById('saludo');
+        const horaActual = new Date().getHours();
+        let saludoTexto = '';
+        if (horaActual < 12) { saludoTexto = 'Buenos días'; } else if (horaActual < 21) { saludoTexto = 'Buenas tardes'; } else { saludoTexto = 'Buenas noches'; }
+        saludoEl.innerHTML = `${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
         const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana."]' }};
-        // ... (resto de la lógica de la tarjeta)
-
-        // --- LÓGICA DEL NUEVO SELECTOR DE HORA ---
-        const llegarAntesCheck = document.getElementById('llegar_antes_check');
-        const selectoresHoraDiv = document.getElementById('selectores_hora');
-        const horaInput = document.getElementById('llegar_antes_hora');
-        const minutoInput = document.getElementById('llegar_antes_minuto');
-        const hourWheel = document.getElementById('hour-wheel');
-        const minuteWheel = document.getElementById('minute-wheel');
-
-        const handleWheelScroll = (wheel, input, items) => {
-            clearTimeout(wheel.scrollTimeout);
-            wheel.scrollTimeout = setTimeout(() => {
-                const itemHeight = items[0].offsetHeight;
-                const scroll_top = wheel.scrollTop;
-                const selected_index = Math.round(scroll_top / itemHeight);
-                
-                if (items[selected_index]) {
-                    input.value = items[selected_index].textContent;
-                    items.forEach((item, index) => {
-                        item.classList.toggle('is-selected', index === selected_index);
-                    });
-                }
-            }, 150); // Pequeño retardo para detectar el final del scroll
-        };
-
-        const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
-        const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
-        
-        hourWheel.addEventListener('scroll', () => handleWheelScroll(hourWheel, horaInput, hourItems));
-        minuteWheel.addEventListener('scroll', () => handleWheelScroll(minuteWheel, minutoInput, minuteItems));
-
-        function initializeWheels() {
-            const initialHourIndex = 9;
-            const initialMinuteIndex = 0;
-            const itemHeight = 40;
-
-            hourWheel.scrollTop = initialHourIndex * itemHeight;
-            minuteWheel.scrollTop = initialMinuteIndex * itemHeight;
-
-            // Disparamos el evento manualmente para que se apliquen los estilos iniciales
+        let fraseActualIndex = frases.indexOf("{{ frase }}");
+        function flipCard(cardElement) {
+            const backFraseEl = cardElement.querySelector('.flip-card-back p');
+            let newIndex;
+            do { newIndex = Math.floor(Math.random() * frases.length); } while (newIndex === fraseActualIndex && frases.length > 1);
+            fraseActualIndex = newIndex;
+            backFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
+            cardElement.classList.add('is-flipped');
             setTimeout(() => {
-                hourWheel.dispatchEvent(new Event('scroll'));
-                minuteWheel.dispatchEvent(new Event('scroll'));
-            }, 200);
+                const frontFraseEl = cardElement.querySelector('.flip-card-front p');
+                frontFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
+                cardElement.classList.remove('is-flipped');
+            }, 800);
         }
 
-        llegarAntesCheck.addEventListener('change', function() {
-            if (this.checked) {
-                selectoresHoraDiv.classList.remove('hidden');
-                horaInput.disabled = false;
-                minutoInput.disabled = false;
-                setTimeout(initializeWheels, 50);
-            } else {
-                selectoresHoraDiv.classList.add('hidden');
-                horaInput.disabled = true;
-                minutoInput.disabled = true;
+        // --- LÓGICA PARA LOS SELECTORES DE HORA ---
+        function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
+            const check = document.getElementById(checkId);
+            const container = document.getElementById(containerId);
+            const hourWheel = document.getElementById(hourWheelId);
+            const minuteWheel = document.getElementById(minuteWheelId);
+            const hourInput = document.getElementById(hourInputId);
+            const minuteInput = document.getElementById(minuteInputId);
+            const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
+            const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
+
+            const handleWheelScroll = (wheel, input, items) => {
+                clearTimeout(wheel.scrollTimeout);
+                wheel.scrollTimeout = setTimeout(() => {
+                    const itemHeight = items[0].offsetHeight;
+                    const scrollTop = wheel.scrollTop;
+                    const selectedIndex = Math.round(scrollTop / itemHeight);
+                    if (items[selectedIndex]) {
+                        input.value = items[selectedIndex].textContent;
+                        items.forEach((item, index) => item.classList.toggle('is-selected', index === selectedIndex));
+                    }
+                }, 150);
+            };
+
+            hourWheel.addEventListener('scroll', () => handleWheelScroll(hourWheel, hourInput, hourItems));
+            minuteWheel.addEventListener('scroll', () => handleWheelScroll(minuteWheel, minuteInput, minuteItems));
+
+            function initializeWheels() {
+                const itemHeight = 40;
+                const initialHourIndex = defaultHour;
+                const initialMinuteIndex = defaultMinute / 5;
+                hourWheel.scrollTop = initialHourIndex * itemHeight;
+                minuteWheel.scrollTop = initialMinuteIndex * itemHeight;
+                setTimeout(() => {
+                    hourWheel.dispatchEvent(new Event('scroll'));
+                    minuteWheel.dispatchEvent(new Event('scroll'));
+                }, 200);
             }
-        });
+
+            check.addEventListener('change', function() {
+                if (this.checked) {
+                    container.classList.remove('hidden');
+                    hourInput.disabled = false;
+                    minuteInput.disabled = false;
+                    setTimeout(initializeWheels, 50);
+                } else {
+                    container.classList.add('hidden');
+                    hourInput.disabled = true;
+                    minuteInput.disabled = true;
+                }
+            });
+        }
+
+        // Inicializar ambos selectores
+        setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
+        setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
     </script>
 </body>
 </html>
