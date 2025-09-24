@@ -37,9 +37,11 @@
         .animated-bg path:nth-child(3) { animation-delay: -10s; }
         .animated-bg path:nth-child(4) { animation-delay: -15s; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
+        
+        .number-spinner button { transition: background-color 0.2s; }
+        .number-spinner span { min-width: 50px; }
     </style>
     <script>
-        // Aplica el tema oscuro/claro al cargar la página para evitar parpadeos
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -102,18 +104,22 @@
                             <input id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                             <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar al destino antes de las...</label>
                         </div>
-                        <div id="selectores_hora" class="flex items-center space-x-2 mt-2 transition-all duration-300 hidden">
-                             <select id="llegar_antes_hora" name="llegar_antes_hora" disabled class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                {% for h in range(24) %}
-                                <option value="{{ '%02d'|format(h) }}" {% if h == 9 %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="font-bold">:</span>
-                             <select id="llegar_antes_minuto" name="llegar_antes_minuto" disabled class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                {% for m in range(0, 60, 5) %}
-                                <option value="{{ '%02d'|format(m) }}">{{ '%02d'|format(m) }}</option>
-                                {% endfor %}
-                            </select>
+                        <div id="selectores_hora" class="flex items-center justify-center space-x-4 mt-2 transition-all duration-300 hidden">
+                            <!-- Selector de Hora -->
+                            <div class="number-spinner flex items-center justify-center border-y border-slate-300 dark:border-slate-600 rounded-md">
+                                <button type="button" onclick="updateHour(-1)" class="px-3 py-1 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-l-md">-</button>
+                                <span id="hora-display" class="text-xl font-semibold text-center text-indigo-600 dark:text-indigo-400">09</span>
+                                <button type="button" onclick="updateHour(1)" class="px-3 py-1 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-r-md">+</button>
+                                <input type="hidden" name="llegar_antes_hora" id="llegar_antes_hora" value="09" disabled>
+                            </div>
+                            <span class="text-2xl font-bold text-slate-400 dark:text-slate-500">:</span>
+                            <!-- Selector de Minutos -->
+                            <div class="number-spinner flex items-center justify-center border-y border-slate-300 dark:border-slate-600 rounded-md">
+                                <button type="button" onclick="updateMinute(-1)" class="px-3 py-1 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-l-md">-</button>
+                                <span id="minuto-display" class="text-xl font-semibold text-center text-indigo-600 dark:text-indigo-400">00</span>
+                                <button type="button" onclick="updateMinute(1)" class="px-3 py-1 text-xl font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-r-md">+</button>
+                                <input type="hidden" name="llegar_antes_minuto" id="llegar_antes_minuto" value="00" disabled>
+                            </div>
                         </div>
                     </div>
 
@@ -148,6 +154,7 @@
     </div>
 
     <script>
+        // --- Lógica del Tema ---
         const themeToggleBtn = document.getElementById('theme-toggle');
         const darkIcon = document.getElementById('theme-toggle-dark-icon');
         const lightIcon = document.getElementById('theme-toggle-light-icon');
@@ -180,27 +187,25 @@
             }
         });
 
+        // --- Lógica del Saludo ---
         const saludoEl = document.getElementById('saludo');
-        const hora = new Date().getHours();
+        const horaActual = new Date().getHours();
         let saludoTexto = '';
-        if (hora < 12) { saludoTexto = 'Buenos días'; } 
-        else if (hora < 21) { saludoTexto = 'Buenas tardes'; } 
+        if (horaActual < 12) { saludoTexto = 'Buenos días'; } 
+        else if (horaActual < 21) { saludoTexto = 'Buenas tardes'; } 
         else { saludoTexto = 'Buenas noches'; }
         saludoEl.innerHTML = `${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
         
+        // --- Lógica de la Tarjeta de Frases ---
         const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana."]' }};
         let fraseActualIndex = frases.indexOf("{{ frase }}");
 
         function flipCard(cardElement) {
             const backFraseEl = document.getElementById('back-frase');
             let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * frases.length);
-            } while (newIndex === fraseActualIndex && frases.length > 1);
-            
+            do { newIndex = Math.floor(Math.random() * frases.length); } while (newIndex === fraseActualIndex && frases.length > 1);
             fraseActualIndex = newIndex;
             backFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
-            
             cardElement.classList.add('is-flipped');
             setTimeout(() => {
                 const frontFraseEl = cardElement.querySelector('.flip-card-front p');
@@ -209,20 +214,44 @@
             }, 800);
         }
 
+        // --- Lógica del Selector de Hora ---
         const llegarAntesCheck = document.getElementById('llegar_antes_check');
         const selectoresHoraDiv = document.getElementById('selectores_hora');
-        const horaSelect = document.getElementById('llegar_antes_hora');
-        const minutoSelect = document.getElementById('llegar_antes_minuto');
+        const horaDisplay = document.getElementById('hora-display');
+        const horaInput = document.getElementById('llegar_antes_hora');
+        const minutoDisplay = document.getElementById('minuto-display');
+        const minutoInput = document.getElementById('llegar_antes_minuto');
+
+        let currentHour = 9;
+        let currentMinute = 0;
+
+        function updateHour(change) {
+            currentHour += change;
+            if (currentHour > 23) currentHour = 0;
+            if (currentHour < 0) currentHour = 23;
+            const formattedHour = String(currentHour).padStart(2, '0');
+            horaDisplay.textContent = formattedHour;
+            horaInput.value = formattedHour;
+        }
+
+        function updateMinute(change) {
+            currentMinute += change * 5;
+            if (currentMinute > 55) currentMinute = 0;
+            if (currentMinute < 0) currentMinute = 55;
+            const formattedMinute = String(currentMinute).padStart(2, '0');
+            minutoDisplay.textContent = formattedMinute;
+            minutoInput.value = formattedMinute;
+        }
 
         llegarAntesCheck.addEventListener('change', function() {
             if (this.checked) {
-                horaSelect.disabled = false;
-                minutoSelect.disabled = false;
                 selectoresHoraDiv.classList.remove('hidden');
+                horaInput.disabled = false;
+                minutoInput.disabled = false;
             } else {
-                horaSelect.disabled = true;
-                minutoSelect.disabled = true;
                 selectoresHoraDiv.classList.add('hidden');
+                horaInput.disabled = true;
+                minutoInput.disabled = true;
             }
         });
     </script>
