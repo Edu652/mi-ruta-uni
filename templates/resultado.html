@@ -11,23 +11,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .beta-banner-wrapper {
+            position: absolute; top: 0; left: 0;
+            width: 150px; height: 150px;
+            overflow: hidden; z-index: 10;
+            pointer-events: none; /* Evita que el wrapper bloquee los clics */
+        }
         .beta-banner {
-            position: absolute; /* Cambiado a absoluto para que esté dentro de la tarjeta */
-            top: 35px;
-            left: -45px;
-            width: 200px;
-            padding: 5px 0;
-            background-color: #f59e0b;
-            color: #111827;
-            font-weight: bold;
-            text-align: center;
-            transform: rotate(-45deg);
-            z-index: 10;
-            opacity: 0.15;
-            pointer-events: none;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-size: 0.8rem;
+            position: absolute; top: 35px; left: -45px;
+            width: 200px; padding: 5px 0;
+            background-color: #f59e0b; color: #111827; font-weight: bold;
+            text-align: center; transform: rotate(-45deg);
+            opacity: 0.15; text-transform: uppercase;
+            letter-spacing: 0.1em; font-size: 0.8rem;
         }
     </style>
     <script>
@@ -56,10 +52,10 @@
                     {% if filtros.desde_ahora %}<span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">Desde ahora</span>{% endif %}
                     {% if filtros.salir_despues_check %}<span class="bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-sky-900 dark:text-sky-300">Salir &gt; {{ filtros.salir_despues_hora }}:{{ filtros.salir_despues_minuto }}</span>{% endif %}
                     {% if filtros.llegar_antes_check %}<span class="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-rose-900 dark:text-rose-300">Llegar &lt; {{ filtros.llegar_antes_hora }}:{{ filtros.llegar_antes_minuto }}</span>{% endif %}
-                    {% if filtros.evitar_sj %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Sta. Justa</span>{% endif %}
-                    {% if filtros.evitar_pa %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Plz. Armas</span>{% endif %}
                     {% if filtros.solo_tren %}<span class="bg-cyan-100 text-cyan-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-cyan-900 dark:text-cyan-300">Solo Tren 🚆</span>{% endif %}
                     {% if filtros.solo_bus %}<span class="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-teal-900 dark:text-teal-300">Solo Bus 🚌</span>{% endif %}
+                    {% if filtros.evitar_sj %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Sta. Justa</span>{% endif %}
+                    {% if filtros.evitar_pa %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Plz. Armas</span>{% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -70,7 +66,7 @@
             {% if resultados %}
                 {% for resultado in resultados %}
                 <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors">
-                     <div class="beta-banner">Modo Beta</div>
+                     <div class="beta-banner-wrapper"><div class="beta-banner">Modo Beta</div></div>
                      <div class="absolute top-3 left-3 w-7 h-7 bg-indigo-500 dark:bg-indigo-400 text-white dark:text-slate-900 rounded-full flex items-center justify-center font-bold text-sm z-10">{{ loop.index }}</div>
 
                     <div class="p-4 bg-slate-50 dark:bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center">
