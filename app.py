@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Lógica Reconstruida
+# Archivo: app.py | Versión: Final con Lógica de Hora Corregida
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -77,9 +77,15 @@ def buscar():
     origen = form_data.get("origen")
     destino = form_data.get("destino")
     
+    # --- CORRECCIÓN CLAVE: ASIGNAR FECHA DE HOY A LOS HORARIOS ---
     rutas_fijas_df = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
-    rutas_fijas_df['Salida_dt'] = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
-    rutas_fijas_df['Llegada_dt'] = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
+    today = datetime.now(pytz.timezone('Europe/Madrid')).date()
+    
+    salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M:%S', errors='coerce').dt.time
+    llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M:%S', errors='coerce').dt.time
+
+    rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today, t) if pd.notna(t) else pd.NaT)
+    rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
     # PASO 1: Encontrar todas las plantillas de ruta posibles
@@ -96,52 +102,37 @@ def buscar():
         idx_ancla = indices_fijos[0]
         ancla_plantilla = ruta_plantilla[idx_ancla]
         
-        # --- CORRECCIÓN CLAVE ---
-        # Búsqueda más robusta que considera múltiples columnas
-        mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & \
-               (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
-
-        if pd.notna(ancla_plantilla.get('Compania')):
-            mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
-        if pd.notna(ancla_plantilla.get('Transporte')):
-            mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
-
+        mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
+        if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
+        if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
         posibles_anclas = rutas_fijas_df[mask]
         
         for _, ancla_real in posibles_anclas.iterrows():
-            nueva_ruta = ruta_plantilla[:]
-            nueva_ruta[idx_ancla] = ancla_real
+            nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
             candidatos_expandidos.append(nueva_ruta)
     
     # PASO 3: Calcular los tiempos para todas las rutas posibles
     resultados_procesados = []
     for ruta in candidatos_expandidos:
         resultado = calculate_route_times(ruta, form_data.get('desde_ahora'))
-        if resultado:
-            resultados_procesados.append(resultado)
+        if resultado: resultados_procesados.append(resultado)
 
     # PASO 4: Aplicar TODOS los filtros a la lista completa
     if form_data.get('desde_ahora'):
-        tz = pytz.timezone('Europe/Madrid')
-        ahora = datetime.now(tz)
+        tz = pytz.timezone('Europe/Madrid'); ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
-    def route_has_main_train(route):
-        return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
-    
-    def route_has_main_bus(route):
-        return any('damas' in str(s.get('Compania', '')).lower() or 'bus' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
-
-    def route_is_valid_for_transport_filter(route):
-        solo_tren, solo_bus = form_data.get('solo_tren'), form_data.get('solo_bus')
-        if not solo_tren and not solo_bus: return True
-        tiene_tren, tiene_bus = route_has_main_train(route), route_has_main_bus(route)
-        if not tiene_tren and not tiene_bus: return True
-        if solo_tren and tiene_tren: return True
-        if solo_bus and tiene_bus: return True
+    def route_has_main_train(route): return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
+    def route_has_main_bus(route): return any('damas' in str(s.get('Compania', '')).lower() or 'bus' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
+    def route_is_valid(route):
+        st, sb = form_data.get('solo_tren'), form_data.get('solo_bus')
+        if not st and not sb: return True
+        tt, tb = route_has_main_train(route), route_has_main_bus(route)
+        if not tt and not tb: return True
+        if st and tt: return True
+        if sb and tb: return True
         return False
-
-    resultados_procesados = [r for r in resultados_procesados if route_is_valid_for_transport_filter(r)]
+    resultados_procesados = [r for r in resultados_procesados if route_is_valid(r)]
 
     lugares_a_evitar = []
     if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
@@ -151,19 +142,17 @@ def buscar():
 
     if form_data.get('salir_despues_check'):
         try:
-            hora_limite = time(int(form_data.get('salir_despues_hora')), int(form_data.get('salir_despues_minuto')))
-            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].time() >= hora_limite]
+            hl = time(int(form_data.get('salir_despues_hora')), int(form_data.get('salir_despues_minuto')))
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].time() >= hl]
         except: pass 
-
     if form_data.get('llegar_antes_check'):
         try:
-            hora_limite = time(int(form_data.get('llegar_antes_hora')), int(form_data.get('llegar_antes_minuto')))
-            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hora_limite]
+            hl = time(int(form_data.get('llegar_antes_hora')), int(form_data.get('llegar_antes_minuto')))
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hl]
         except: pass
             
     # PASO 5: Eliminar duplicados y ordenar
     resultados_unicos = {r['duracion_total_str'] + r['segmentos'][0]['Salida_str']: r for r in resultados_procesados}.values()
-    
     if resultados_unicos:
         resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x['llegada_final_dt_obj'])
 
@@ -191,66 +180,41 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
-            seg = segmentos[0]
-            duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+            seg, duracion = segmentos[0], timedelta(minutes=segmentos[0]['Duracion_Trayecto_Min'])
             seg_dict = seg.to_dict()
-            seg_dict['icono'] = get_icon_for_compania(seg.get('Compania'))
-            seg_dict['Salida_str'] = "A tu aire"
-            seg_dict['Llegada_str'] = ""
-            seg_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
-            seg_dict['Salida_dt'] = datetime.now(pytz.timezone('Europe/Madrid'))
-            return {
-                "segmentos": [seg_dict], "precio_total": seg.get('Precio', 0),
-                "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible",
-                "duracion_total_str": format_timedelta(duracion)
-            }
+            seg_dict.update({'icono': get_icon_for_compania(seg.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': seg['Duracion_Trayecto_Min'], 'Salida_dt': datetime.now(pytz.timezone('Europe/Madrid'))})
+            return {"segmentos": [seg_dict], "precio_total": seg.get('Precio', 0), "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
-        anchor_index = -1
-        for i, seg in enumerate(segmentos):
-            if 'Salida_dt' in seg and pd.notna(seg['Salida_dt']):
-                anchor_index = i
-                break
+        anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
         
         if anchor_index != -1:
-            anchor_seg = segmentos[anchor_index]
-            llegada_siguiente_dt = anchor_seg['Salida_dt']
+            llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
-                seg = segmentos[i]
-                duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                seg['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
-                seg['Salida_dt'] = seg['Llegada_dt'] - duracion
-                llegada_siguiente_dt = seg['Salida_dt']
-            
-            llegada_anterior_dt = anchor_seg['Llegada_dt']
+                dur = timedelta(minutes=segmentos[i]['Duracion_Trayecto_Min'])
+                segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
+                segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
+                llegada_siguiente_dt = segmentos[i]['Salida_dt']
+            llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
             for i in range(anchor_index + 1, len(segmentos)):
-                seg = segmentos[i]
-                duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
-                seg['Llegada_dt'] = seg['Salida_dt'] + duracion
-                llegada_anterior_dt = seg['Llegada_dt']
+                dur = timedelta(minutes=segmentos[i]['Duracion_Trayecto_Min'])
+                segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
+                llegada_anterior_dt = segmentos[i]['Llegada_dt']
         else: # Ruta solo de frecuencia
-            llegada_anterior_dt = None
             start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
+            llegada_anterior_dt = None
             for i, seg in enumerate(segmentos):
-                duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                if i == 0:
-                    seg['Salida_dt'] = start_time
-                else:
-                    seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
-                seg['Llegada_dt'] = seg['Salida_dt'] + duracion
+                dur = timedelta(minutes=seg['Duracion_Trayecto_Min'])
+                seg['Salida_dt'] = start_time if i == 0 else llegada_anterior_dt + TIEMPO_TRANSBORDO
+                seg['Llegada_dt'] = seg['Salida_dt'] + dur
                 llegada_anterior_dt = seg['Llegada_dt']
         
         primera_salida_dt = segmentos[0]['Salida_dt']
-
         segmentos_formateados = []
         for seg in segmentos:
             seg_dict = seg.to_dict()
-            seg_dict['icono'] = get_icon_for_compania(seg.get('Compania'))
-            seg_dict['Salida_str'] = seg['Salida_dt'].strftime('%H:%M')
-            seg_dict['Llegada_str'] = seg['Llegada_dt'].strftime('%H:%M')
-            seg_dict['Duracion_Tramo_Min'] = (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60
+            seg_dict.update({'icono': get_icon_for_compania(seg.get('Compania')), 'Salida_str': seg['Salida_dt'].strftime('%H:%M'), 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60})
             segmentos_formateados.append(seg_dict)
-        
         segmentos_formateados[0]['Salida_dt'] = primera_salida_dt
 
         return {
