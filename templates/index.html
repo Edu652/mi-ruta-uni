@@ -34,7 +34,6 @@
         .dark .animated-bg svg { stroke: #818cf8; opacity: 0.15; }
         .animated-bg path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 20s linear infinite; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
-
         .time-picker-wrapper { position: relative; height: 160px; padding: 0 1rem; }
         .selection-indicator {
             position: absolute; top: 50%; left: 1rem; right: 1rem; transform: translateY(-50%);
@@ -53,7 +52,6 @@
         .dark .wheel-item { color: #d1d5db; }
         .wheel-item.is-selected { opacity: 1; transform: scale(1.1); font-weight: 600; color: #4f46e5; }
         .dark .wheel-item.is-selected { color: #818cf8; }
-
         .modal-overlay { transition: opacity 0.3s ease-in-out; }
         .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
     </style>
@@ -68,7 +66,6 @@
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
             <div class="animated-bg" aria-hidden="true">
                  <svg><path d="M-200,300 C-200,300 100,200 400,300 C700,400 900,200 1200,300 C1500,400 1700,200 2000,300"></path></svg>
@@ -78,10 +75,8 @@
                     <button id="open-info-modal" type="button" class="absolute -top-2 -left-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
                     </button>
-                    
                     <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta Uni 🚀</h1>
                     <p id="saludo" class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
-                    
                     <button id="theme-toggle" type="button" class="absolute -top-2 -right-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
                         <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
                         <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
@@ -93,22 +88,16 @@
                         <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
                         <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}
-                                <option value="{{ lugar }}">{{ lugar }}</option>
-                            {% endfor %}
+                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                         </select>
                     </div>
-                    
                     <div>
                         <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
                         <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}
-                                <option value="{{ lugar }}">{{ lugar }}</option>
-                            {% endfor %}
+                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                         </select>
                     </div>
-
                     <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
                         <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
                             <span>+ Opciones de Búsqueda</span>
@@ -152,14 +141,7 @@
                         <label for="salir_despues_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Salir a partir de las...</label>
                     </div>
                     <div id="selectores_hora_salida" class="transition-all duration-300 hidden mt-2">
-                        <div class="time-picker-wrapper">
-                            <div class="selection-indicator"></div>
-                            <div class="flex justify-center items-center h-full">
-                                <div class="wheel-container" id="hour-wheel-salida"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div>
-                                <span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span>
-                                <div class="wheel-container" id="minute-wheel-salida"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div>
-                            </div>
-                        </div>
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-salida"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span><div class="wheel-container" id="minute-wheel-salida"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
                         <input form="main-form" type="hidden" name="salir_despues_hora" id="salir_despues_hora" value="07" disabled>
                         <input form="main-form" type="hidden" name="salir_despues_minuto" id="salir_despues_minuto" value="00" disabled>
                     </div>
@@ -170,14 +152,7 @@
                         <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar antes de las...</label>
                     </div>
                     <div id="selectores_hora_llegada" class="transition-all duration-300 hidden mt-2">
-                        <div class="time-picker-wrapper">
-                            <div class="selection-indicator"></div>
-                            <div class="flex justify-center items-center h-full">
-                                <div class="wheel-container" id="hour-wheel-llegada"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div>
-                                <span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span>
-                                <div class="wheel-container" id="minute-wheel-llegada"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div>
-                            </div>
-                        </div>
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-llegada"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold text-slate-400 dark:text-slate-500 mx-2">:</span><div class="wheel-container" id="minute-wheel-llegada"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
                         <input form="main-form" type="hidden" name="llegar_antes_hora" id="llegar_antes_hora" value="09" disabled>
                         <input form="main-form" type="hidden" name="llegar_antes_minuto" id="llegar_antes_minuto" value="00" disabled>
                     </div>
@@ -188,7 +163,7 @@
                         <label for="solo_tren" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Solo Tren 🚆</label>
                     </div>
                     <div class="flex items-center">
-                        <input form="main-form" id="solo_bus" name="solo_bus" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <input form="main-form" id="solo_bus" name="solo_bus" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                         <label for="solo_bus" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Solo Bus 🚌</label>
                     </div>
                 </div>
@@ -218,182 +193,32 @@
                 </button>
             </div>
             <div class="space-y-4 text-sm">
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Damas</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34959256900" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 69 00</a>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Renfe</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Emtusa Huelva</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a>
-                        <a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Mapas</p>
-                    <div class="flex justify-between mt-1">
-                        <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Paradas Huelva ↗</a>
-                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Campus del Carmen ↗</a>
-                    </div>
-                </div>
+                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Damas</p><div class="flex justify-between mt-1"><a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a><a href="tel:+34959256900" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 69 00</a></div></div>
+                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Renfe</p><div class="flex justify-between mt-1"><a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a><a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a></div></div>
+                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Emtusa Huelva</p><div class="flex justify-between mt-1"><a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a><a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a></div></div>
+                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Mapas</p><div class="flex justify-between mt-1"><a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Paradas Huelva ↗</a><a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Campus del Carmen ↗</a></div></div>
             </div>
         </div>
     </div>
 
     <script>
         // --- LÓGICA DEL TEMA OSCURO/CLARO ---
-        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            themeToggleLightIcon.classList.remove('hidden');
-        } else {
-            themeToggleDarkIcon.classList.remove('hidden');
-        }
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        themeToggleBtn.addEventListener('click', function() {
-            themeToggleDarkIcon.classList.toggle('hidden');
-            themeToggleLightIcon.classList.toggle('hidden');
-            if (localStorage.getItem('color-theme')) {
-                if (localStorage.getItem('color-theme') === 'light') {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                }
-            } else {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('color-theme', 'light');
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('color-theme', 'dark');
-                }
-            }
-        });
+        const themeToggleDarkIcon=document.getElementById("theme-toggle-dark-icon"),themeToggleLightIcon=document.getElementById("theme-toggle-light-icon");localStorage.getItem("color-theme")==="dark"||!("color-theme"in localStorage)&&window.matchMedia("(prefers-color-scheme: dark)").matches?themeToggleLightIcon.classList.remove("hidden"):themeToggleDarkIcon.classList.remove("hidden");const themeToggleBtn=document.getElementById("theme-toggle");themeToggleBtn.addEventListener("click",function(){themeToggleDarkIcon.classList.toggle("hidden"),themeToggleLightIcon.classList.toggle("hidden"),localStorage.getItem("color-theme")?localStorage.getItem("color-theme")==="light"?(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark")):(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):document.documentElement.classList.contains("dark")?(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark"))});
         
         // --- LÓGICA DEL SALUDO DINÁMICO ---
-        const saludoEl = document.getElementById('saludo');
-        const horaActual = new Date().getHours();
-        let saludoTexto = '';
-        if (horaActual < 12) { saludoTexto = 'Buenos días'; } else if (horaActual < 21) { saludoTexto = 'Buenas tardes'; } else { saludoTexto = 'Buenas noches'; }
-        saludoEl.innerHTML = `${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
+        const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
         
         // --- LÓGICA DE MODALES ---
-        function setupModal(openBtnId, closeBtnId, modalId, applyBtnId = null) {
-            const openBtn = document.getElementById(openBtnId);
-            const closeBtn = document.getElementById(closeBtnId);
-            const modal = document.getElementById(modalId);
-            const modalOverlay = modal.querySelector('.modal-overlay');
-            const modalContainer = modal.querySelector('.modal-container');
-            const applyBtn = applyBtnId ? document.getElementById(applyBtnId) : null;
-
-            function open() {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modalOverlay.classList.remove('opacity-0');
-                    modalContainer.classList.remove('opacity-0', 'scale-95');
-                }, 10);
-            }
-
-            function close() {
-                modalOverlay.classList.add('opacity-0');
-                modalContainer.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
-            }
-
-            if(openBtn) openBtn.addEventListener('click', open);
-            if(closeBtn) closeBtn.addEventListener('click', close);
-            if (applyBtn) applyBtn.addEventListener('click', close);
-            if (modalOverlay) modalOverlay.addEventListener('click', close);
-        }
-
-        setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
-        setupModal('open-info-modal', 'close-info-modal', 'info-modal');
+        function setupModal(e,t,l,o=null){const n=document.getElementById(e),d=document.getElementById(t),c=document.getElementById(l),a=c.querySelector(".modal-overlay"),i=c.querySelector(".modal-container"),s=o?document.getElementById(o):null;function r(){c.classList.remove("hidden"),setTimeout(()=>{a.classList.remove("opacity-0"),i.classList.remove("opacity-0","scale-95")},10)}function m(){a.classList.add("opacity-0"),i.classList.add("opacity-0","scale-95"),setTimeout(()=>{c.classList.add("hidden")},300)}n&&n.addEventListener("click",r),d&&d.addEventListener("click",m),s&&s.addEventListener("click",m),a&&a.addEventListener("click",m)}setupModal("open-filters-modal","close-filters-modal","filters-modal","apply-filters"),setupModal("open-info-modal","close-info-modal","info-modal");
 
         // --- LÓGICA SELECTORES DE HORA ---
-        function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
-            const check = document.getElementById(checkId);
-            const container = document.getElementById(containerId);
-            const hourWheel = document.getElementById(hourWheelId);
-            const minuteWheel = document.getElementById(minuteWheelId);
-            const hourInput = document.getElementById(hourInputId);
-            const minuteInput = document.getElementById(minuteInputId);
-            const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
-            const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
-
-            const handleWheelScroll = (wheel, input, items) => {
-                clearTimeout(wheel.scrollTimeout);
-                wheel.scrollTimeout = setTimeout(() => {
-                    const itemHeight = items[0].offsetHeight;
-                    const scrollTop = wheel.scrollTop;
-                    const selectedIndex = Math.round(scrollTop / itemHeight);
-                    if (items[selectedIndex]) {
-                        input.value = items[selectedIndex].textContent;
-                        items.forEach((item, index) => item.classList.toggle('is-selected', index === selectedIndex));
-                    }
-                }, 150);
-            };
-
-            hourWheel.addEventListener('scroll', () => handleWheelScroll(hourWheel, hourInput, hourItems));
-            minuteWheel.addEventListener('scroll', () => handleWheelScroll(minuteWheel, minuteInput, minuteItems));
-
-            function initializeWheels() {
-                const itemHeight = 40;
-                const initialHourIndex = defaultHour;
-                const initialMinuteIndex = defaultMinute / 5;
-                hourWheel.scrollTop = initialHourIndex * itemHeight;
-                minuteWheel.scrollTop = initialMinuteIndex * itemHeight;
-                setTimeout(() => {
-                    hourWheel.dispatchEvent(new Event('scroll'));
-                    minuteWheel.dispatchEvent(new Event('scroll'));
-                }, 200);
-            }
-
-            check.addEventListener('change', function() {
-                if (this.checked) {
-                    container.classList.remove('hidden');
-                    hourInput.disabled = false;
-                    minuteInput.disabled = false;
-                    setTimeout(initializeWheels, 50);
-                } else {
-                    container.classList.add('hidden');
-                    hourInput.disabled = true;
-                    minuteInput.disabled = true;
-                }
-            });
-        }
-        setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
-        setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
+        function setupTimePicker(e,t,l,o,n,d,c,a){const i=document.getElementById(e),s=document.getElementById(t),r=document.getElementById(l),m=document.getElementById(o),u=document.getElementById(n),h=document.getElementById(d),p=Array.from(r.querySelectorAll(".wheel-item")),f=Array.from(m.querySelectorAll(".wheel-item"));function g(e,t,l){clearTimeout(e.scrollTimeout),e.scrollTimeout=setTimeout(()=>{const o=l[0].offsetHeight,n=e.scrollTop,d=Math.round(n/o);l[d]&&(t.value=l[d].textContent,l.forEach((e,t)=>{e.classList.toggle("is-selected",t===d)}))},150)}r.addEventListener("scroll",()=>g(r,u,p)),m.addEventListener("scroll",()=>g(m,h,f)),i.addEventListener("change",function(){if(this.checked){s.classList.remove("hidden"),u.disabled=!1,h.disabled=!1;const e=c,t=a/5;r.scrollTop=40*e,m.scrollTop=40*t,setTimeout(()=>{r.dispatchEvent(new Event("scroll")),m.dispatchEvent(new Event("scroll"))},200)}else s.classList.add("hidden"),u.disabled=!0,h.disabled=!0})}setupTimePicker("salir_despues_check","selectores_hora_salida","hour-wheel-salida","minute-wheel-salida","salir_despues_hora","salir_despues_minuto",7,0),setupTimePicker("llegar_antes_check","selectores_hora_llegada","hour-wheel-llegada","minute-wheel-llegada","llegar_antes_hora","llegar_antes_minuto",9,0);
         
         // --- LÓGICA TARJETA DE FRASES ---
-        const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana."]' }};
-        let fraseActualIndex = frases.indexOf("{{ frase }}");
-        function flipCard(cardElement) {
-            const backFraseEl = cardElement.querySelector('.flip-card-back p');
-            let newIndex;
-            do { newIndex = Math.floor(Math.random() * frases.length); } while (newIndex === fraseActualIndex && frases.length > 1);
-            fraseActualIndex = newIndex;
-            backFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
-            cardElement.classList.add('is-flipped');
-            setTimeout(() => {
-                const frontFraseEl = cardElement.querySelector('.flip-card-front p');
-                frontFraseEl.textContent = `"${frases[fraseActualIndex]}"`;
-                cardElement.classList.remove('is-flipped');
-            }, 800);
-        }
+        const frases={{frases|tojson|safe if frases else'["El esfuerzo de hoy es el éxito de mañana."]'}};let fraseActualIndex=frases.indexOf("{{ frase }}");function flipCard(e){const t=e.querySelector(".flip-card-back p");let l;do{l=Math.floor(Math.random()*frases.length)}while(l===fraseActualIndex&&frases.length>1);fraseActualIndex=l,t.textContent=`"${frases[fraseActualIndex]}"`,e.classList.add("is-flipped"),setTimeout(()=>{e.querySelector(".flip-card-front p").textContent=`"${frases[fraseActualIndex]}"`,e.classList.remove("is-flipped")},800)}
+
+        // --- LÓGICA CHECKBOXES EXCLUYENTES (TREN/BUS) ---
+        const soloTrenCheck=document.getElementById("solo_tren"),soloBusCheck=document.getElementById("solo_bus");soloTrenCheck.addEventListener("change",()=>{soloTrenCheck.checked&&(soloBusCheck.checked=!1)}),soloBusCheck.addEventListener("change",()=>{soloBusCheck.checked&&(soloTrenCheck.checked=!1)});
     </script>
 </body>
 </html>
