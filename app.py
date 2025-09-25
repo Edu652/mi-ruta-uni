@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Estable con Lógica Corregida
+# Archivo: app.py | Versión: Estable con Lógica de Filtros Definitiva
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -82,19 +82,19 @@ def buscar():
     rutas_fijas_df.loc[:, 'Llegada_dt'] = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M:%S', errors='coerce').dt.to_pydatetime()
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
-    # 1. Encontrar plantillas de rutas
+    # PASO 1: Encontrar todas las plantillas de ruta posibles
     candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_df_global)
 
-    # 2. Expandir rutas con todos los horarios fijos disponibles
+    # PASO 2: Expandir plantillas con todos los horarios fijos del día
     candidatos_expandidos = []
-    for ruta in candidatos_plantilla:
-        indices_fijos = [i for i, seg in enumerate(ruta) if seg['Tipo_Horario'] == 'Fijo']
-        if not indices_fijos:
-            candidatos_expandidos.append(ruta)
+    for ruta_plantilla in candidatos_plantilla:
+        if all(s['Tipo_Horario'] == 'Frecuencia' for s in ruta_plantilla):
+            candidatos_expandidos.append(ruta_plantilla)
             continue
         
+        indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
         idx_ancla = indices_fijos[0]
-        ancla_plantilla = ruta[idx_ancla]
+        ancla_plantilla = ruta_plantilla[idx_ancla]
         
         posibles_anclas = rutas_fijas_df[
             (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) &
@@ -103,64 +103,67 @@ def buscar():
         ]
         
         for _, ancla_real in posibles_anclas.iterrows():
-            nueva_ruta = ruta[:]
+            nueva_ruta = ruta_plantilla[:]
             nueva_ruta[idx_ancla] = ancla_real
             candidatos_expandidos.append(nueva_ruta)
-
-    # 3. Aplicar filtros de exclusión
-    lugares_a_evitar = []
-    if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
-    if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
-    if lugares_a_evitar:
-        candidatos_expandidos = [r for r in candidatos_expandidos if not any(s['Destino'] in lugares_a_evitar for s in r[:-1])]
-
-    def route_has_train(route):
-        return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route)
-    def route_has_bus(route):
-        return any(any(k in str(s.get('Compania', '')).lower() for k in ['damas', 'emtusa', 'urbano']) or 'bus' in str(s.get('Transporte', '')).lower() for s in route)
-
-    solo_tren = form_data.get('solo_tren')
-    solo_bus = form_data.get('solo_bus')
     
-    candidatos_filtrados = []
-    for ruta in candidatos_expandidos:
-        tiene_tren = route_has_train(ruta)
-        tiene_bus = route_has_bus(ruta)
-        es_solo_coche = not tiene_tren and not tiene_bus
-
-        if es_solo_coche:
-            candidatos_filtrados.append(ruta)
-            continue
-
-        if not solo_tren and not solo_bus: # Si ninguno está marcado, se muestran todas
-            candidatos_filtrados.append(ruta)
-            continue
-        
-        if solo_tren and tiene_tren and not tiene_bus:
-            candidatos_filtrados.append(ruta)
-        
-        if solo_bus and tiene_bus and not tiene_tren:
-            candidatos_filtrados.append(ruta)
-    candidatos_expandidos = candidatos_filtrados
-
-
-    # 4. Calcular tiempos
+    # PASO 3: Calcular los tiempos para todas las rutas posibles
     resultados_procesados = []
     for ruta in candidatos_expandidos:
-        resultado = calculate_route_times(ruta, rutas_fijas_df)
+        resultado = calculate_route_times(ruta)
         if resultado:
             resultados_procesados.append(resultado)
+
+    # PASO 4: Aplicar TODOS los filtros a la lista completa
     
-    # 5. Aplicar filtros de hora
+    # Filtro "Desde Ahora"
     if form_data.get('desde_ahora'):
         tz = pytz.timezone('Europe/Madrid')
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
+    # Filtros de tipo de transporte (LÓGICA CORREGIDA)
+    def route_has_main_train(route):
+        return any('renfe' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
+    
+    def route_has_main_bus(route):
+        return any('damas' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
+
+    def route_is_valid_for_transport_filter(route):
+        solo_tren = form_data.get('solo_tren')
+        solo_bus = form_data.get('solo_bus')
+        
+        if not solo_tren and not solo_bus:
+            return True
+
+        tiene_tren = route_has_main_train(route)
+        tiene_bus = route_has_main_bus(route)
+        
+        if not tiene_tren and not tiene_bus:
+            return True 
+
+        if solo_tren and tiene_tren:
+            return True
+        
+        if solo_bus and tiene_bus:
+            return True
+        
+        return False
+
+    resultados_procesados = [r for r in resultados_procesados if route_is_valid_for_transport_filter(r)]
+
+    # Filtro de estaciones
+    lugares_a_evitar = []
+    if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
+    if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
+    if lugares_a_evitar:
+        resultados_procesados = [r for r in resultados_procesados if not any(s['Destino'] in lugares_a_evitar for s in r['segmentos'][:-1])]
+
+    # Filtros de hora de llegada/salida
     if form_data.get('salir_despues_check'):
         try:
             hora_limite = time(int(form_data.get('salir_despues_hora')), int(form_data.get('salir_despues_minuto')))
-            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and r['segmentos'][0].get('Salida_dt') and r['segmentos'][0]['Salida_dt'].time() >= hora_limite)]
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].time() >= hora_limite]
         except: pass 
 
     if form_data.get('llegar_antes_check'):
@@ -169,7 +172,7 @@ def buscar():
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hora_limite]
         except: pass
             
-    # 6. Eliminar duplicados y ordenar
+    # PASO 5: Eliminar duplicados y ordenar
     resultados_unicos = {r['duracion_total_str'] + r['segmentos'][0]['Salida_str']: r for r in resultados_procesados}.values()
     
     if resultados_unicos:
@@ -198,7 +201,7 @@ def find_all_routes_intelligently(origen, destino, df):
                         rutas.append([t1, t2, t3]); rutas_indices_unicos.add(indices)
     return rutas
 
-def calculate_route_times(ruta_series_list, rutas_fijas_df):
+def calculate_route_times(ruta_series_list):
     try:
         segmentos = [s.copy() for s in ruta_series_list]
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
@@ -211,6 +214,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df):
             seg_dict['Salida_str'] = "A tu aire"
             seg_dict['Llegada_str'] = ""
             seg_dict['Duracion_Tramo_Min'] = seg['Duracion_Trayecto_Min']
+            seg_dict['Salida_dt'] = datetime.now(pytz.timezone('Europe/Madrid'))
             return {
                 "segmentos": [seg_dict], "precio_total": seg.get('Precio', 0),
                 "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible",
@@ -223,7 +227,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df):
                 anchor_index = i
                 break
         
-        if anchor_index != -1: # Ruta con al menos un tramo fijo
+        if anchor_index != -1:
             anchor_seg = segmentos[anchor_index]
             llegada_siguiente_dt = anchor_seg['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
@@ -237,16 +241,14 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df):
                 seg = segmentos[i]
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 if seg['Tipo_Horario'] == 'Fijo':
-                    if seg.name not in rutas_fijas_df.index: raise ValueError("Fijo no disponible")
                     if seg['Salida_dt'] < llegada_anterior_dt + TIEMPO_TRANSBORDO: raise ValueError("Sin tiempo de transbordo")
                 else:
-                    frecuencia = timedelta(minutes=seg['Frecuencia_Min'])
-                    seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO + frecuencia
+                    seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
-        else: # Rutas solo de frecuencia
+        else:
             llegada_anterior_dt = None
-            start_time = datetime.combine(datetime.today(), time(7,0)) # Por defecto, sin "desde ahora"
+            start_time = datetime.combine(datetime.today(), time(7,0)) 
             for i, seg in enumerate(segmentos):
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 if i == 0:
@@ -256,16 +258,18 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df):
                 seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
         
+        primera_salida_dt = segmentos[0]['Salida_dt']
+
         segmentos_formateados = []
-        for i, seg in enumerate(segmentos):
+        for seg in segmentos:
             seg_dict = seg.to_dict()
             seg_dict['icono'] = get_icon_for_compania(seg.get('Compania'))
             seg_dict['Salida_str'] = seg['Salida_dt'].strftime('%H:%M')
             seg_dict['Llegada_str'] = seg['Llegada_dt'].strftime('%H:%M')
             seg_dict['Duracion_Tramo_Min'] = (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60
-            if i == 0: # Guardamos el objeto datetime real del primer tramo
-                seg_dict['Salida_dt'] = seg['Salida_dt']
             segmentos_formateados.append(seg_dict)
+        
+        segmentos_formateados[0]['Salida_dt'] = primera_salida_dt
 
         return {
             "segmentos": segmentos_formateados,
