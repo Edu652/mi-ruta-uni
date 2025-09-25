@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Lógica de Filtros y Hora Corregida
+# Archivo: app.py | Versión: Final con Lógica Reconstruida
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -96,11 +96,17 @@ def buscar():
         idx_ancla = indices_fijos[0]
         ancla_plantilla = ruta_plantilla[idx_ancla]
         
-        posibles_anclas = rutas_fijas_df[
-            (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) &
-            (rutas_fijas_df['Destino'] == ancla_plantilla['Destino']) &
-            (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
-        ]
+        # --- CORRECCIÓN CLAVE ---
+        # Búsqueda más robusta que considera múltiples columnas
+        mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & \
+               (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
+
+        if pd.notna(ancla_plantilla.get('Compania')):
+            mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
+        if pd.notna(ancla_plantilla.get('Transporte')):
+            mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
+
+        posibles_anclas = rutas_fijas_df[mask]
         
         for _, ancla_real in posibles_anclas.iterrows():
             nueva_ruta = ruta_plantilla[:]
@@ -115,51 +121,34 @@ def buscar():
             resultados_procesados.append(resultado)
 
     # PASO 4: Aplicar TODOS los filtros a la lista completa
-    
-    # Filtro "Desde Ahora"
     if form_data.get('desde_ahora'):
         tz = pytz.timezone('Europe/Madrid')
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
-    # Filtros de tipo de transporte (LÓGICA CORREGIDA)
     def route_has_main_train(route):
-        return any('renfe' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
+        return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
     
     def route_has_main_bus(route):
-        return any('damas' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
+        return any('damas' in str(s.get('Compania', '')).lower() or 'bus' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
 
     def route_is_valid_for_transport_filter(route):
-        solo_tren = form_data.get('solo_tren')
-        solo_bus = form_data.get('solo_bus')
-        
-        if not solo_tren and not solo_bus:
-            return True
-
-        tiene_tren = route_has_main_train(route)
-        tiene_bus = route_has_main_bus(route)
-        
-        if not tiene_tren and not tiene_bus: # Coche, Urbano solo, etc.
-            return True 
-
-        if solo_tren and tiene_tren:
-            return True
-        
-        if solo_bus and tiene_bus:
-            return True
-        
+        solo_tren, solo_bus = form_data.get('solo_tren'), form_data.get('solo_bus')
+        if not solo_tren and not solo_bus: return True
+        tiene_tren, tiene_bus = route_has_main_train(route), route_has_main_bus(route)
+        if not tiene_tren and not tiene_bus: return True
+        if solo_tren and tiene_tren: return True
+        if solo_bus and tiene_bus: return True
         return False
 
     resultados_procesados = [r for r in resultados_procesados if route_is_valid_for_transport_filter(r)]
 
-    # Filtro de estaciones
     lugares_a_evitar = []
     if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
     if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
     if lugares_a_evitar:
         resultados_procesados = [r for r in resultados_procesados if not any(s['Destino'] in lugares_a_evitar for s in r['segmentos'][:-1])]
 
-    # Filtros de hora de llegada/salida
     if form_data.get('salir_despues_check'):
         try:
             hora_limite = time(int(form_data.get('salir_despues_hora')), int(form_data.get('salir_despues_minuto')))
@@ -239,7 +228,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
                 seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
-        else: # Rutas solo de frecuencia
+        else: # Ruta solo de frecuencia
             llegada_anterior_dt = None
             start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             for i, seg in enumerate(segmentos):
