@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Estable con Lógica de Filtros Definitiva
+# Archivo: app.py | Versión: Final con Lógica Corregida
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -110,7 +110,7 @@ def buscar():
     # PASO 3: Calcular los tiempos para todas las rutas posibles
     resultados_procesados = []
     for ruta in candidatos_expandidos:
-        resultado = calculate_route_times(ruta)
+        resultado = calculate_route_times(ruta, form_data.get('desde_ahora'))
         if resultado:
             resultados_procesados.append(resultado)
 
@@ -122,7 +122,7 @@ def buscar():
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
-    # Filtros de tipo de transporte (LÓGICA CORREGIDA)
+    # Filtros de tipo de transporte
     def route_has_main_train(route):
         return any('renfe' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
     
@@ -201,7 +201,7 @@ def find_all_routes_intelligently(origen, destino, df):
                         rutas.append([t1, t2, t3]); rutas_indices_unicos.add(indices)
     return rutas
 
-def calculate_route_times(ruta_series_list):
+def calculate_route_times(ruta_series_list, desde_ahora_check):
     try:
         segmentos = [s.copy() for s in ruta_series_list]
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
@@ -246,9 +246,9 @@ def calculate_route_times(ruta_series_list):
                     seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
-        else:
+        else: # Rutas solo de frecuencia (CORREGIDO)
             llegada_anterior_dt = None
-            start_time = datetime.combine(datetime.today(), time(7,0)) 
+            start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             for i, seg in enumerate(segmentos):
                 duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
                 if i == 0:
