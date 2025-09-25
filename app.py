@@ -84,6 +84,7 @@ def buscar():
 
     candidatos = find_all_routes_intelligently(origen, destino, rutas_df_global)
     
+    # Filtro de estaciones
     lugares_a_evitar = []
     if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
     if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
@@ -91,6 +92,7 @@ def buscar():
     if lugares_a_evitar:
         candidatos = [r for r in candidatos if not any(s['Destino'] in lugares_a_evitar for s in r[:-1])]
 
+    # Filtro de tipo de transporte (Lógica corregida)
     def route_has_train(route):
         return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route)
 
@@ -104,17 +106,24 @@ def buscar():
     for ruta in candidatos:
         tiene_tren = route_has_train(ruta)
         tiene_bus = route_has_bus(ruta)
-        es_transporte_publico = tiene_tren or tiene_bus
+        es_solo_coche = not tiene_tren and not tiene_bus
 
-        if not es_transporte_publico:
+        # El coche siempre pasa, no es afectado por este filtro
+        if es_solo_coche:
+            candidatos_filtrados.append(ruta)
+            continue
+
+        # Si no se filtra, pasan todas las de transporte público
+        if not solo_tren and not solo_bus:
             candidatos_filtrados.append(ruta)
             continue
         
-        es_invalida = False
-        if tiene_tren and not solo_tren: es_invalida = True
-        if tiene_bus and not solo_bus: es_invalida = True
-        
-        if not es_invalida: candidatos_filtrados.append(ruta)
+        # Aplicar filtros inclusivos
+        if solo_tren and tiene_tren:
+            candidatos_filtrados.append(ruta)
+        elif solo_bus and tiene_bus:
+            candidatos_filtrados.append(ruta)
+            
     candidatos = candidatos_filtrados
 
     resultados_procesados = []
@@ -142,21 +151,15 @@ def buscar():
 
 
 def find_all_routes_intelligently(origen, destino, df):
-    """
-    Función corregida para encontrar rutas sin generar el error de ambigüedad de Pandas.
-    Utiliza un set de tuplas de índices para evitar duplicados de forma segura.
-    """
     rutas = []
     rutas_indices_unicos = set()
 
-    # 1 tramo
     for index, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows():
         indices = (index,)
         if indices not in rutas_indices_unicos:
             rutas.append([r])
             rutas_indices_unicos.add(indices)
     
-    # 2 tramos
     for t1_index, t1 in df[df['Origen'] == origen].iterrows():
         for t2_index, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
             indices = (t1_index, t2_index)
@@ -164,7 +167,6 @@ def find_all_routes_intelligently(origen, destino, df):
                 rutas.append([t1, t2])
                 rutas_indices_unicos.add(indices)
 
-    # 3 tramos (solo si no se encontraron rutas más simples)
     if not rutas:
         for t1_index, t1 in df[df['Origen'] == origen].iterrows():
             for t2_index, t2 in df[df['Origen'] == t1['Destino']].iterrows():
