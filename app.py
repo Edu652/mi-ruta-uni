@@ -92,7 +92,7 @@ def buscar():
     if lugares_a_evitar:
         candidatos = [r for r in candidatos if not any(s['Destino'] in lugares_a_evitar for s in r[:-1])]
 
-    # Filtro de tipo de transporte (Lógica corregida)
+    # Filtro de tipo de transporte (Lógica corregida y más estricta)
     def route_has_train(route):
         return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route)
 
@@ -108,21 +108,24 @@ def buscar():
         tiene_bus = route_has_bus(ruta)
         es_solo_coche = not tiene_tren and not tiene_bus
 
-        # El coche siempre pasa, no es afectado por este filtro
+        # El coche siempre se evalúa, no es afectado por este filtro
         if es_solo_coche:
             candidatos_filtrados.append(ruta)
             continue
 
-        # Si no se filtra, pasan todas las de transporte público
+        # Si no hay filtros de tipo, se muestran todas
         if not solo_tren and not solo_bus:
             candidatos_filtrados.append(ruta)
             continue
         
-        # Aplicar filtros inclusivos
-        if solo_tren and tiene_tren:
-            candidatos_filtrados.append(ruta)
-        elif solo_bus and tiene_bus:
-            candidatos_filtrados.append(ruta)
+        # Aplicar filtros estrictos
+        if solo_tren:
+            if tiene_tren and not tiene_bus: # Debe tener tren, pero no bus
+                candidatos_filtrados.append(ruta)
+        
+        if solo_bus:
+            if tiene_bus and not tiene_tren: # Debe tener bus, pero no tren
+                candidatos_filtrados.append(ruta)
             
     candidatos = candidatos_filtrados
 
