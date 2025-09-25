@@ -93,7 +93,6 @@ def buscar():
             candidatos_expandidos.append(ruta)
             continue
         
-        # Por ahora, solo expandimos el primer tramo fijo que encontremos
         idx_ancla = indices_fijos[0]
         ancla_plantilla = ruta[idx_ancla]
         
@@ -134,9 +133,9 @@ def buscar():
                 candidatos_filtrados.append(ruta)
                 continue
             
-            if solo_tren and tiene_tren:
+            if solo_tren and tiene_tren and not tiene_bus:
                 candidatos_filtrados.append(ruta)
-            elif solo_bus and tiene_bus:
+            elif solo_bus and tiene_bus and not tiene_tren:
                 candidatos_filtrados.append(ruta)
         candidatos_expandidos = candidatos_filtrados
 
@@ -194,7 +193,6 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df, desde_ahora_check):
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
-            # ... (código sin cambios)
             seg = segmentos[0]
             duracion = timedelta(minutes=seg['Duracion_Trayecto_Min'])
             seg_dict = seg.to_dict()
@@ -214,7 +212,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df, desde_ahora_check):
                 anchor_index = i
                 break
         
-        if anchor_index != -1: # Ruta con al menos un tramo fijo
+        if anchor_index != -1:
             anchor_seg = segmentos[anchor_index]
             llegada_siguiente_dt = anchor_seg['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
@@ -235,7 +233,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df, desde_ahora_check):
                     seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO + frecuencia
                     seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
-        else: # Rutas solo de frecuencia
+        else:
             llegada_anterior_dt = None
             start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             for i, seg in enumerate(segmentos):
@@ -243,7 +241,6 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df, desde_ahora_check):
                 if i == 0:
                     seg['Salida_dt'] = start_time
                 else:
-                    # Corrección: No sumar frecuencia, solo transbordo
                     seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 seg['Llegada_dt'] = seg['Salida_dt'] + duracion
                 llegada_anterior_dt = seg['Llegada_dt']
@@ -251,6 +248,7 @@ def calculate_route_times(ruta_series_list, rutas_fijas_df, desde_ahora_check):
         if desde_ahora_check:
             tz = pytz.timezone('Europe/Madrid')
             ahora = datetime.now(tz)
+            # Comparamos sin timezone para evitar errores de offset-naive vs offset-aware
             if segmentos and segmentos[0].get('Salida_dt') and segmentos[0]['Salida_dt'].replace(tzinfo=None) < ahora.replace(tzinfo=None):
                  raise ValueError("La hora de salida ya ha pasado.")
 
