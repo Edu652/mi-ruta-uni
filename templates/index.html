@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta Uni 🚀</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -198,7 +201,9 @@
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Renfe</p><div class="flex justify-between mt-1"><a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a><a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a></div></div>
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Emtusa Huelva</p><div class="flex justify-between mt-1"><a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web ↗</a><a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a></div></div>
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold text-slate-800 dark:text-slate-200">Mapas</p><div class="flex justify-between mt-1"><a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Paradas Huelva ↗</a><a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Campus del Carmen ↗</a></div></div>
-                <img src="{{ url_for('static', filename='campus.jpg') }}" alt="Foto del Campus del Carmen" class="w-full h-auto rounded-lg mt-4">
+                <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="block mt-4 rounded-lg overflow-hidden group">
+                    <img src="{{ url_for('static', filename='campus.jpg') }}" alt="Foto del Campus del Carmen" class="w-full h-auto group-hover:opacity-80 transition-opacity duration-300">
+                </a>
             </div>
         </div>
     </div>
