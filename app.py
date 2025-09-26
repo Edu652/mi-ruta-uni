@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Lógica de Hora Corregida
+# Archivo: app.py | Versión: Final con Lógica de Días de la Semana
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -77,21 +77,42 @@ def buscar():
     origen = form_data.get("origen")
     destino = form_data.get("destino")
     
-    # --- CORRECCIÓN CLAVE: ASIGNAR FECHA DE HOY A LOS HORARIOS ---
-    rutas_fijas_df = rutas_df_global[rutas_df_global['Tipo_Horario'] == 'Fijo'].copy()
-    today = datetime.now(pytz.timezone('Europe/Madrid')).date()
+    # --- LÓGICA DE FILTRADO POR DÍA DE LA SEMANA ---
+    tz = pytz.timezone('Europe/Madrid')
+    now = datetime.now(tz)
+    today_weekday = now.weekday() # Lunes=0, Domingo=6
+    
+    # Mapeo para obtener el nombre del día en español
+    dias_semana_map = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
+    nombre_dia = dias_semana_map[today_weekday]
+
+    rutas_hoy_df = rutas_df_global.copy()
+    if 'Dias' in rutas_hoy_df.columns:
+        rutas_hoy_df['Dias'] = rutas_hoy_df['Dias'].fillna('L-D').str.strip()
+        
+        is_weekday = today_weekday < 5
+        is_saturday = today_weekday == 5
+        is_sunday = today_weekday == 6
+
+        mask = (rutas_hoy_df['Dias'] == 'L-D') | \
+               (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | \
+               ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | \
+               (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | \
+               (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
+        
+        rutas_hoy_df = rutas_hoy_df[mask]
+
+    rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
+    today_date = now.date()
     
     salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M:%S', errors='coerce').dt.time
     llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M:%S', errors='coerce').dt.time
-
-    rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today, t) if pd.notna(t) else pd.NaT)
-    rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today, t) if pd.notna(t) else pd.NaT)
+    rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
+    rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
-    # PASO 1: Encontrar todas las plantillas de ruta posibles
-    candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_df_global)
-
-    # PASO 2: Expandir plantillas con todos los horarios fijos del día
+    candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
+    
     candidatos_expandidos = []
     for ruta_plantilla in candidatos_plantilla:
         if all(s['Tipo_Horario'] == 'Frecuencia' for s in ruta_plantilla):
@@ -111,15 +132,13 @@ def buscar():
             nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
             candidatos_expandidos.append(nueva_ruta)
     
-    # PASO 3: Calcular los tiempos para todas las rutas posibles
     resultados_procesados = []
     for ruta in candidatos_expandidos:
         resultado = calculate_route_times(ruta, form_data.get('desde_ahora'))
         if resultado: resultados_procesados.append(resultado)
 
-    # PASO 4: Aplicar TODOS los filtros a la lista completa
     if form_data.get('desde_ahora'):
-        tz = pytz.timezone('Europe/Madrid'); ahora = datetime.now(tz)
+        ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
     def route_has_main_train(route): return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
@@ -151,12 +170,11 @@ def buscar():
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] != 'Flexible' and r['llegada_final_dt_obj'].time() < hl]
         except: pass
             
-    # PASO 5: Eliminar duplicados y ordenar
     resultados_unicos = {r['duracion_total_str'] + r['segmentos'][0]['Salida_str']: r for r in resultados_procesados}.values()
     if resultados_unicos:
         resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x['llegada_final_dt_obj'])
 
-    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data)
+    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
 
 def find_all_routes_intelligently(origen, destino, df):
