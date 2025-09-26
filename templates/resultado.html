@@ -34,15 +34,15 @@
                  <a href="/" class="block text-indigo-600 dark:text-indigo-400 hover:underline transition-colors text-sm mb-2">&larr; Nueva Búsqueda</a>
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Rutas Encontradas</h1>
                 <p class="text-slate-500 dark:text-slate-400">{{ origen }} &rarr; {{ destino }}</p>
-                <!-- NUEVO: Mostrar el día de la semana -->
+                <!-- Mostrar el día de la semana -->
                 {% if dia_semana %}
-                <p class="text-sm text-slate-400 mt-1">Horarios para hoy, <span class="font-semibold">{{ dia_semana }}</span></p>
+                <p class="text-sm text-slate-400 mt-1">Horarios para: <span class="font-semibold">{{ dia_semana }}</span></p>
                 {% endif %}
                 
                 <!-- SECCIÓN DE FILTROS APLICADOS -->
                 {% if filtros %}
                 <div class="flex flex-wrap gap-2 justify-center mt-4">
-                    {% if filtros.desde_ahora %}<span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">Desde ahora</span>{% endif %}
+                    {% if filtros.desde_ahora and dia_semana|lower == filtros.dia_actual|lower %}<span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">Desde ahora</span>{% endif %}
                     {% if filtros.salir_despues_check %}<span class="bg-sky-100 text-sky-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-sky-900 dark:text-sky-300">Salir &gt; {{ filtros.salir_despues_hora }}:{{ filtros.salir_despues_minuto }}</span>{% endif %}
                     {% if filtros.llegar_antes_check %}<span class="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-rose-900 dark:text-rose-300">Llegar &lt; {{ filtros.llegar_antes_hora }}:{{ filtros.llegar_antes_minuto }}</span>{% endif %}
                     {% if filtros.evitar_sj %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Sta. Justa</span>{% endif %}
@@ -82,7 +82,11 @@
                     <div class="p-4 space-y-3">
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
-                            <span class="text-2xl mr-4 mt-1">{{ segmento.icono }}</span>
+                             {% if segmento.icono == 'LOGO_CONSORCIO' %}
+                                <img src="{{ url_for('static', filename='Logo Junta.jpg') }}" alt="Logo Consorcio" class="w-6 h-6 mr-4 mt-1">
+                            {% else %}
+                                <span class="text-2xl mr-4 mt-1">{{ segmento.icono }}</span>
+                            {% endif %}
                             <div class="flex-grow">
                                 <div class="flex justify-between items-center">
                                     <p class="font-semibold">{{ segmento.Compania | default('') }}</p>
