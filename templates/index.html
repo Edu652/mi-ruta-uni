@@ -57,6 +57,9 @@
         .dark .wheel-item.is-selected { color: #818cf8; }
         .modal-overlay { transition: opacity 0.3s ease-in-out; }
         .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        /* Estilos para el nuevo dropdown con buscador */
+        .searchable-dropdown ul::-webkit-scrollbar { width: 5px; }
+        .searchable-dropdown ul::-webkit-scrollbar-thumb { background-color: #4f46e5; border-radius: 10px; }
     </style>
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -88,20 +91,40 @@
                 </div>
 
                 <form id="main-form" action="/buscar" method="post" class="space-y-4">
-                    <div>
-                        <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
-                        <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                        </select>
+                    <!-- NUEVO DROPDOWN CON BUSCADOR PARA ORIGEN -->
+                    <div class="searchable-dropdown" id="origen-dropdown-wrapper">
+                        <label for="origen-button" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
+                        <input type="hidden" name="origen" id="origen-value" required>
+                        <button type="button" id="origen-button" class="w-full text-left bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            Selecciona un origen
+                        </button>
+                        <div id="origen-panel" class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-lg hidden">
+                            <input type="text" id="origen-search" class="w-full p-2 border-b border-slate-300 dark:border-slate-600 focus:outline-none bg-slate-100 dark:bg-slate-700" placeholder="Buscar...">
+                            <ul id="origen-list" class="max-h-48 overflow-y-auto">
+                                {% for lugar in lugares %}
+                                    <li data-value="{{ lugar }}" class="px-3 py-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900">{{ lugar }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
-                    <div>
-                        <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
-                        <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                        </select>
+                    
+                    <!-- NUEVO DROPDOWN CON BUSCADOR PARA DESTINO -->
+                    <div class="searchable-dropdown" id="destino-dropdown-wrapper">
+                        <label for="destino-button" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
+                        <input type="hidden" name="destino" id="destino-value" required>
+                        <button type="button" id="destino-button" class="w-full text-left bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            Selecciona un destino
+                        </button>
+                        <div id="destino-panel" class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-lg hidden">
+                            <input type="text" id="destino-search" class="w-full p-2 border-b border-slate-300 dark:border-slate-600 focus:outline-none bg-slate-100 dark:bg-slate-700" placeholder="Buscar...">
+                            <ul id="destino-list" class="max-h-48 overflow-y-auto">
+                                {% for lugar in lugares %}
+                                    <li data-value="{{ lugar }}" class="px-3 py-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900">{{ lugar }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
+
                     <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
                         <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
                             <span>+ Opciones de Búsqueda</span>
@@ -210,7 +233,6 @@
                     <p class="font-semibold text-slate-800 dark:text-slate-200">Campus del Carmen</p>
                     <div class="flex justify-between items-center mt-1">
                         <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Mapa</a>
-                        <!-- CORRECCIÓN: Nombre de archivo actualizado -->
                         <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver Foto</a>
                     </div>
                 </div>
@@ -220,12 +242,78 @@
     </div>
 
     <script>
-        const themeToggleDarkIcon=document.getElementById("theme-toggle-dark-icon"),themeToggleLightIcon=document.getElementById("theme-toggle-light-icon");localStorage.getItem("color-theme")==="dark"||!("color-theme"in localStorage)&&window.matchMedia("(prefers-color-scheme: dark)").matches?themeToggleLightIcon.classList.remove("hidden"):themeToggleDarkIcon.classList.remove("hidden");const themeToggleBtn=document.getElementById("theme-toggle");themeToggleBtn.addEventListener("click",function(){themeToggleDarkIcon.classList.toggle("hidden"),themeToggleLightIcon.classList.toggle("hidden"),localStorage.getItem("color-theme")?localStorage.getItem("color-theme")==="light"?(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark")):(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):document.documentElement.classList.contains("dark")?(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark"))});
-        const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
-        function setupModal(e,t,l,o=null){const n=document.getElementById(e),d=document.getElementById(t),c=document.getElementById(l),a=c.querySelector(".modal-overlay"),i=c.querySelector(".modal-container"),s=o?document.getElementById(o):null;function r(){c.classList.remove("hidden"),setTimeout(()=>{a.classList.remove("opacity-0"),i.classList.remove("opacity-0","scale-95")},10)}function m(){a.classList.add("opacity-0"),i.classList.add("opacity-0","scale-95"),setTimeout(()=>{c.classList.add("hidden")},300)}n&&n.addEventListener("click",r),d&&d.addEventListener("click",m),s&&s.addEventListener("click",m),a&&a.addEventListener("click",m)}setupModal("open-filters-modal","close-filters-modal","filters-modal","apply-filters"),setupModal("open-info-modal","close-info-modal","info-modal");
-        function setupTimePicker(e,t,l,o,n,d,c,a){const i=document.getElementById(e),s=document.getElementById(t),r=document.getElementById(l),m=document.getElementById(o),u=document.getElementById(n),h=document.getElementById(d),p=Array.from(r.querySelectorAll(".wheel-item")),f=Array.from(m.querySelectorAll(".wheel-item"));function g(e,t,l){clearTimeout(e.scrollTimeout),e.scrollTimeout=setTimeout(()=>{const o=l[0].offsetHeight,n=e.scrollTop,d=Math.round(n/o);l[d]&&(t.value=l[d].textContent,l.forEach((e,t)=>{e.classList.toggle("is-selected",t===d)}))},150)}r.addEventListener("scroll",()=>g(r,u,p)),m.addEventListener("scroll",()=>g(m,h,f)),i.addEventListener("change",function(){if(this.checked){s.classList.remove("hidden"),u.disabled=!1,h.disabled=!1;const e=c,t=a/5;r.scrollTop=40*e,m.scrollTop=40*t,setTimeout(()=>{r.dispatchEvent(new Event("scroll")),m.dispatchEvent(new Event("scroll"))},200)}else s.classList.add("hidden"),u.disabled=!0,h.disabled=!0})}setupTimePicker("salir_despues_check","selectores_hora_salida","hour-wheel-salida","minute-wheel-salida","salir_despues_hora","salir_despues_minuto",7,0),setupTimePicker("llegar_antes_check","selectores_hora_llegada","hour-wheel-llegada","minute-wheel-llegada","llegar_antes_hora","llegar_antes_minuto",9,0);
-        const frases={{frases|tojson|safe if frases else'["El esfuerzo de hoy es el éxito de mañana."]'}};let fraseActualIndex=frases.indexOf("{{ frase }}");function flipCard(e){const t=e.querySelector(".flip-card-back p");let l;do{l=Math.floor(Math.random()*frases.length)}while(l===fraseActualIndex&&frases.length>1);fraseActualIndex=l,t.textContent=`"${frases[fraseActualIndex]}"`,e.classList.add("is-flipped"),setTimeout(()=>{e.querySelector(".flip-card-front p").textContent=`"${frases[fraseActualIndex]}"`,e.classList.remove("is-flipped")},800)}
-        const soloTrenCheck=document.getElementById("solo_tren"),soloBusCheck=document.getElementById("solo_bus");soloTrenCheck.addEventListener("change",()=>{soloTrenCheck.checked&&(soloBusCheck.checked=!1)}),soloBusCheck.addEventListener("change",()=>{soloBusCheck.checked&&(soloTrenCheck.checked=!1)});
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- LÓGICA DEL TEMA OSCURO/CLARO ---
+            const themeToggleDarkIcon=document.getElementById("theme-toggle-dark-icon"),themeToggleLightIcon=document.getElementById("theme-toggle-light-icon");if(localStorage.getItem("color-theme")==="dark"||!("color-theme"in localStorage)&&window.matchMedia("(prefers-color-scheme: dark)").matches){themeToggleLightIcon.classList.remove("hidden")}else{themeToggleDarkIcon.classList.remove("hidden")}const themeToggleBtn=document.getElementById("theme-toggle");themeToggleBtn.addEventListener("click",function(){themeToggleDarkIcon.classList.toggle("hidden"),themeToggleLightIcon.classList.toggle("hidden"),localStorage.getItem("color-theme")?localStorage.getItem("color-theme")==="light"?(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark")):(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):document.documentElement.classList.contains("dark")?(document.documentElement.classList.remove("dark"),localStorage.setItem("color-theme","light")):(document.documentElement.classList.add("dark"),localStorage.setItem("color-theme","dark"))});
+            
+            // --- LÓGICA DEL SALUDO DINÁMICO ---
+            const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="nombre-saludo">Noa</span>`;
+            
+            // --- LÓGICA DE MODALES ---
+            function setupModal(e,t,l,o=null){const n=document.getElementById(e),d=document.getElementById(t),c=document.getElementById(l),a=c.querySelector(".modal-overlay"),i=c.querySelector(".modal-container"),s=o?document.getElementById(o):null;function r(){c.classList.remove("hidden"),setTimeout(()=>{a.classList.remove("opacity-0"),i.classList.remove("opacity-0","scale-95")},10)}function m(){a.classList.add("opacity-0"),i.classList.add("opacity-0","scale-95"),setTimeout(()=>{c.classList.add("hidden")},300)}n&&n.addEventListener("click",r),d&&d.addEventListener("click",m),s&&s.addEventListener("click",m),a&&a.addEventListener("click",m)}setupModal("open-filters-modal","close-filters-modal","filters-modal","apply-filters"),setupModal("open-info-modal","close-info-modal","info-modal");
+            
+            // --- LÓGICA SELECTORES DE HORA ---
+            function setupTimePicker(e,t,l,o,n,d,c,a){const i=document.getElementById(e),s=document.getElementById(t),r=document.getElementById(l),m=document.getElementById(o),u=document.getElementById(n),h=document.getElementById(d),p=Array.from(r.querySelectorAll(".wheel-item")),f=Array.from(m.querySelectorAll(".wheel-item"));function g(e,t,l){clearTimeout(e.scrollTimeout),e.scrollTimeout=setTimeout(()=>{const o=l[0].offsetHeight,n=e.scrollTop,d=Math.round(n/o);l[d]&&(t.value=l[d].textContent,l.forEach((e,t)=>{e.classList.toggle("is-selected",t===d)}))},150)}r.addEventListener("scroll",()=>g(r,u,p)),m.addEventListener("scroll",()=>g(m,h,f)),i.addEventListener("change",function(){if(this.checked){s.classList.remove("hidden"),u.disabled=!1,h.disabled=!1;const e=c,t=a/5;r.scrollTop=40*e,m.scrollTop=40*t,setTimeout(()=>{r.dispatchEvent(new Event("scroll")),m.dispatchEvent(new Event("scroll"))},200)}else s.classList.add("hidden"),u.disabled=!0,h.disabled=!0})}setupTimePicker("salir_despues_check","selectores_hora_salida","hour-wheel-salida","minute-wheel-salida","salir_despues_hora","salir_despues_minuto",7,0),setupTimePicker("llegar_antes_check","selectores_hora_llegada","hour-wheel-llegada","minute-wheel-llegada","llegar_antes_hora","llegar_antes_minuto",9,0);
+            
+            // --- LÓGICA TARJETA DE FRASES ---
+            const frases={{frases|tojson|safe if frases else'["El esfuerzo de hoy es el éxito de mañana."]'}};let fraseActualIndex=frases.indexOf("{{ frase }}");function flipCard(e){const t=e.querySelector(".flip-card-back p");let l;do{l=Math.floor(Math.random()*frases.length)}while(l===fraseActualIndex&&frases.length>1);fraseActualIndex=l,t.textContent=`"${frases[fraseActualIndex]}"`,e.classList.add("is-flipped"),setTimeout(()=>{e.querySelector(".flip-card-front p").textContent=`"${frases[fraseActualIndex]}"`,e.classList.remove("is-flipped")},800)}
+            
+            // --- LÓGICA CHECKBOXES EXCLUYENTES (TREN/BUS) ---
+            const soloTrenCheck=document.getElementById("solo_tren"),soloBusCheck=document.getElementById("solo_bus");soloTrenCheck.addEventListener("change",()=>{soloTrenCheck.checked&&(soloBusCheck.checked=!1)}),soloBusCheck.addEventListener("change",()=>{soloBusCheck.checked&&(soloTrenCheck.checked=!1)});
+
+            // --- LÓGICA DROPDOWNS CON BÚSQUEDA ---
+            function setupSearchableDropdown(idPrefix) {
+                const wrapper = document.getElementById(`${idPrefix}-dropdown-wrapper`);
+                const hiddenInput = document.getElementById(`${idPrefix}-value`);
+                const button = document.getElementById(`${idPrefix}-button`);
+                const panel = document.getElementById(`${idPrefix}-panel`);
+                const searchInput = document.getElementById(`${idPrefix}-search`);
+                const listItems = panel.querySelectorAll('li');
+
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Ocultar el otro dropdown si está abierto
+                    const otherPrefix = idPrefix === 'origen' ? 'destino' : 'origen';
+                    document.getElementById(`${otherPrefix}-panel`).classList.add('hidden');
+                    
+                    panel.classList.toggle('hidden');
+                    if (!panel.classList.contains('hidden')) {
+                        searchInput.focus();
+                        searchInput.value = '';
+                        listItems.forEach(item => item.style.display = '');
+                    }
+                });
+
+                searchInput.addEventListener('keyup', () => {
+                    const filter = searchInput.value.toLowerCase();
+                    listItems.forEach(item => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(filter) ? '' : 'none';
+                    });
+                });
+
+                listItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        const value = item.getAttribute('data-value');
+                        hiddenInput.value = value;
+                        button.textContent = value;
+                        panel.classList.add('hidden');
+                    });
+                });
+            }
+
+            setupSearchableDropdown('origen');
+            setupSearchableDropdown('destino');
+
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('origen-dropdown-wrapper').contains(e.target)) {
+                    document.getElementById('origen-panel').classList.add('hidden');
+                }
+                if (!document.getElementById('destino-dropdown-wrapper').contains(e.target)) {
+                    document.getElementById('destino-panel').classList.add('hidden');
+                }
+            });
+        });
     </script>
 </body>
 </html>
