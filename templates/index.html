@@ -207,11 +207,13 @@
                 </div>
 
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Mapa del Campus del Carmen</p>
-                    <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="block mt-2 rounded-lg overflow-hidden group">
-                        <img src="{{ url_for('static', filename='campus.jpg') }}" alt="Foto del Campus del Carmen" class="w-full h-auto group-hover:opacity-80 transition-opacity duration-300">
-                    </a>
+                    <p class="font-semibold text-slate-800 dark:text-slate-200">Campus del Carmen</p>
+                    <div class="flex justify-between items-center mt-1">
+                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Mapa</a>
+                        <a href="{{ url_for('static', filename='campus.jpg') }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver Foto</a>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
