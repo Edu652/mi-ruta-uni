@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Lógica de Días de la Semana
+# Archivo: app.py | Versión: Final con Selector de Día
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -80,26 +80,26 @@ def buscar():
     # --- LÓGICA DE FILTRADO POR DÍA DE LA SEMANA ---
     tz = pytz.timezone('Europe/Madrid')
     now = datetime.now(tz)
-    today_weekday = now.weekday() # Lunes=0, Domingo=6
-    
-    # Mapeo para obtener el nombre del día en español
+    dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
+
+    if dia_seleccionado != 'hoy':
+        try:
+            target_weekday = int(dia_seleccionado)
+        except (ValueError, TypeError):
+            target_weekday = now.weekday()
+    else:
+        target_weekday = now.weekday()
+
     dias_semana_map = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
-    nombre_dia = dias_semana_map[today_weekday]
+    nombre_dia = dias_semana_map[target_weekday]
 
     rutas_hoy_df = rutas_df_global.copy()
     if 'Dias' in rutas_hoy_df.columns:
         rutas_hoy_df['Dias'] = rutas_hoy_df['Dias'].fillna('L-D').str.strip()
-        
-        is_weekday = today_weekday < 5
-        is_saturday = today_weekday == 5
-        is_sunday = today_weekday == 6
-
-        mask = (rutas_hoy_df['Dias'] == 'L-D') | \
-               (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | \
-               ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | \
-               (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | \
-               (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
-        
+        is_weekday = target_weekday < 5
+        is_saturday = target_weekday == 5
+        is_sunday = target_weekday == 6
+        mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
         rutas_hoy_df = rutas_hoy_df[mask]
 
     rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
@@ -118,26 +118,25 @@ def buscar():
         if all(s['Tipo_Horario'] == 'Frecuencia' for s in ruta_plantilla):
             candidatos_expandidos.append(ruta_plantilla)
             continue
-        
         indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
         idx_ancla = indices_fijos[0]
         ancla_plantilla = ruta_plantilla[idx_ancla]
-        
         mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
         if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
         if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
         posibles_anclas = rutas_fijas_df[mask]
-        
         for _, ancla_real in posibles_anclas.iterrows():
             nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
             candidatos_expandidos.append(nueva_ruta)
     
     resultados_procesados = []
     for ruta in candidatos_expandidos:
-        resultado = calculate_route_times(ruta, form_data.get('desde_ahora'))
+        # Solo se pasa "desde_ahora" si el día seleccionado es hoy
+        is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
+        resultado = calculate_route_times(ruta, is_desde_ahora)
         if resultado: resultados_procesados.append(resultado)
 
-    if form_data.get('desde_ahora'):
+    if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
