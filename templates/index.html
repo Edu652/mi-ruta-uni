@@ -54,20 +54,6 @@
         .dark .wheel-item.is-selected { color: #818cf8; }
         .modal-overlay { transition: opacity 0.3s ease-in-out; }
         .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
-        .beta-banner-wrapper {
-            position: absolute; top: 0; left: 0;
-            width: 150px; height: 150px;
-            overflow: hidden; z-index: 10;
-            pointer-events: none; /* CORRECCIÓN: Evita que el wrapper bloquee los clics */
-        }
-        .beta-banner {
-            position: absolute; top: 35px; left: -45px;
-            width: 200px; padding: 5px 0;
-            background-color: #f59e0b; color: #111827; font-weight: bold;
-            text-align: center; transform: rotate(-45deg);
-            opacity: 0.15; text-transform: uppercase;
-            letter-spacing: 0.1em; font-size: 0.8rem;
-        }
     </style>
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -82,8 +68,6 @@
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
             
-            <div class="beta-banner-wrapper"><div class="beta-banner">Modo Beta</div></div>
-
             <div class="animated-bg" aria-hidden="true">
                  <svg><path d="M-200,300 C-200,300 100,200 400,300 C700,400 900,200 1200,300 C1500,400 1700,200 2000,300"></path></svg>
             </div>
