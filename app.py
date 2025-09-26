@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Selector de Día
+# Archivo: app.py | Versión: Final con Lógica de Días de la Semana
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -8,12 +8,14 @@ import pytz
 
 app = Flask(__name__)
 
-# --- Funciones de Ayuda (sin cambios) ---
+# --- Funciones de Ayuda (con nueva compañía) ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
     if 'damas' in compania_str: return '🚌'
     if 'renfe' in compania_str: return '🚆'
+    # MODIFICADO: Devuelve un código especial para el logo de Consorcio
+    if 'consorcio' in compania_str: return 'LOGO_CONSORCIO'
     if 'coche' in compania_str or 'particular' in compania_str: return '🚗'
     transporte_str = str(transporte).lower()
     if 'tren' in transporte_str: return '🚆'
@@ -131,7 +133,6 @@ def buscar():
     
     resultados_procesados = []
     for ruta in candidatos_expandidos:
-        # Solo se pasa "desde_ahora" si el día seleccionado es hoy
         is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
         resultado = calculate_route_times(ruta, is_desde_ahora)
         if resultado: resultados_procesados.append(resultado)
