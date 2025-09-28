@@ -1,17 +1,18 @@
-# Archivo: app.py | Versión: Lee desde Google Drive
+# Archivo: app.py | Versión Completa y Robusta
 from flask import Flask, render_template, request
 import pandas as pd
 import json
 import random
 from datetime import datetime, timedelta, time
 import pytz
-import requests 
+import requests
+import io # <-- Importante añadir io
 
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-# Pega aquí el enlace .csv que obtuviste al publicar tu Hoja de Cálculo de Google
-GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
+# URL del fichero CSV publicado desde Google Sheets
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
@@ -46,13 +47,33 @@ def clean_minutes_column(series):
         return 0
     return series.apply(to_minutes)
 
-# --- Carga de Datos ---
+# --- Carga de Datos (VERSIÓN CON DEPURACIÓN) ---
+print("--- INICIANDO CARGA DE DATOS ---")
 try:
-    if GOOGLE_SHEET_URL != "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV":
-        rutas_df_global = pd.read_csv(GOOGLE_SHEET_URL)
-    else:
+    if "PEGA_AQUI" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
+        print("Cargando datos desde el archivo local 'rutas.xlsx'...")
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    
+    else:
+        print(f"Intentando cargar datos desde la URL: {GOOGLE_SHEET_URL}")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+        }
+        
+        print("Paso 1: Realizando petición GET a la URL...")
+        response = requests.get(GOOGLE_SHEET_URL, headers=headers, timeout=15)
+        response.raise_for_status()
+        print(f"Paso 2: Petición exitosa (Código {response.status_code}).")
+
+        response.encoding = 'utf-8'
+        csv_content = response.text
+        print(f"Paso 3: Contenido descargado (primeros 100 caracteres): {csv_content[:100]}")
+
+        print("Paso 4: Intentando leer el contenido con pandas...")
+        csv_data_io = io.StringIO(csv_content)
+        rutas_df_global = pd.read_csv(csv_data_io)
+        print(f"Paso 5: ¡Éxito! Datos cargados en DataFrame. Dimensiones: {rutas_df_global.shape}")
+
+    # Limpieza de datos
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
         rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
@@ -61,25 +82,34 @@ try:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     if 'Precio' in rutas_df_global.columns:
         rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
+    print("--- LIMPIEZA DE DATOS COMPLETADA ---")
 
+except requests.exceptions.RequestException as e:
+    print(f"--- ERROR CRÍTICO DE RED ---")
+    print(f"No se pudo acceder a la URL. Detalles: {e}")
+    rutas_df_global = pd.DataFrame()
 except Exception as e:
-    print(f"ERROR CRÍTICO al cargar los datos: {e}")
+    print(f"--- ERROR CRÍTICO EN PROCESAMIENTO ---")
+    print(f"El fichero se descargó pero falló al procesarlo. Detalles: {e}")
     rutas_df_global = pd.DataFrame()
 
+# --- Carga de frases motivadoras ---
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
         frases = json.load(f)
 except Exception:
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
+# --- Rutas de la Aplicación (sin cambios) ---
 @app.route("/")
 def index():
     lugares = []
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
+    else:
+        print("ADVERTENCIA: El DataFrame de rutas está vacío al renderizar la página de inicio.")
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
-
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
@@ -181,7 +211,6 @@ def buscar():
 
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
-
 def find_all_routes_intelligently(origen, destino, df):
     rutas, indices_unicos = [], set()
     for i, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows():
@@ -252,4 +281,3 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
