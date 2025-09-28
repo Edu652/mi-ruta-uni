@@ -1,4 +1,6 @@
 Flask
 pandas
 openpyxl
+pytz
 gunicorn
+requests
