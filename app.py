@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Final con Lógica de Filtros y Hora Corregida
+# Archivo: app.py | Versión: Lee desde Google Drive
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -6,12 +6,12 @@ import random
 from datetime import datetime, timedelta, time
 import pytz
 import requests 
-import io
 
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
+# Pega aquí el enlace .csv que obtuviste al publicar tu Hoja de Cálculo de Google
+GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
@@ -47,38 +47,24 @@ def clean_minutes_column(series):
     return series.apply(to_minutes)
 
 # --- Carga de Datos ---
-rutas_df_global = pd.DataFrame()
 try:
     if GOOGLE_SHEET_URL != "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV":
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(GOOGLE_SHEET_URL, headers=headers)
-        response.raise_for_status()
-        csv_data = io.StringIO(response.text)
-        rutas_df_global = pd.read_csv(csv_data)
-        print("Datos cargados exitosamente desde Google Drive.")
+        rutas_df_global = pd.read_csv(GOOGLE_SHEET_URL)
     else:
-        raise ValueError("URL de Google Sheet no configurada.")
-except Exception as e:
-    print(f"FALLO al cargar desde Google Drive: {e}. Intentando leer archivo local.")
-    try:
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
-        print("Datos cargados exitosamente desde el archivo local 'rutas.xlsx'.")
-    except Exception as e_local:
-        print(f"ERROR CRÍTICO: No se pudo cargar ni desde Google Drive ni el archivo local. Error: {e_local}")
+    
+    rutas_df_global.columns = rutas_df_global.columns.str.strip()
+    if 'Compañía' in rutas_df_global.columns:
+        rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
+    for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
+        if col in rutas_df_global.columns:
+            rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
+    if 'Precio' in rutas_df_global.columns:
+        rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
 
-if not rutas_df_global.empty:
-    try:
-        rutas_df_global.columns = rutas_df_global.columns.str.strip()
-        if 'Compañía' in rutas_df_global.columns:
-            rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
-        for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
-            if col in rutas_df_global.columns:
-                rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
-        if 'Precio' in rutas_df_global.columns:
-            rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-    except Exception as e_proc:
-        print(f"ERROR al procesar las columnas del DataFrame: {e_proc}")
-        rutas_df_global = pd.DataFrame()
+except Exception as e:
+    print(f"ERROR CRÍTICO al cargar los datos: {e}")
+    rutas_df_global = pd.DataFrame()
 
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
@@ -94,6 +80,7 @@ def index():
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
+
 @app.route("/buscar", methods=["POST"])
 def buscar():
     form_data = request.form.to_dict()
@@ -104,19 +91,22 @@ def buscar():
     now = datetime.now(tz)
     dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
 
-    target_weekday = now.weekday()
     if dia_seleccionado != 'hoy':
         try: target_weekday = int(dia_seleccionado)
-        except: pass
+        except: target_weekday = now.weekday()
+    else:
+        target_weekday = now.weekday()
 
     dias_semana_map = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
     nombre_dia = dias_semana_map[target_weekday]
-    
+
     rutas_hoy_df = rutas_df_global.copy()
     if 'Dias' in rutas_hoy_df.columns:
         rutas_hoy_df['Dias'] = rutas_hoy_df['Dias'].fillna('L-D').str.strip()
-        is_weekday, is_saturday, is_sunday = target_weekday < 5, target_weekday == 5, target_weekday == 6
-        mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday | is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
+        is_weekday = target_weekday < 5
+        is_saturday = target_weekday == 5
+        is_sunday = target_weekday == 6
+        mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
         rutas_hoy_df = rutas_hoy_df[mask]
 
     rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
@@ -138,12 +128,10 @@ def buscar():
         indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
         idx_ancla = indices_fijos[0]
         ancla_plantilla = ruta_plantilla[idx_ancla]
-        
         mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
         if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
         if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
         posibles_anclas = rutas_fijas_df[mask]
-        
         for _, ancla_real in posibles_anclas.iterrows():
             nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
             candidatos_expandidos.append(nueva_ruta)
@@ -159,7 +147,7 @@ def buscar():
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
 
     def route_has_main_train(route): return any('renfe' in str(s.get('Compania', '')).lower() or 'tren' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
-    def route_has_main_bus(route): return any('damas' in str(s.get('Compania', '')).lower() for s in route['segmentos'])
+    def route_has_main_bus(route): return any('damas' in str(s.get('Compania', '')).lower() or 'bus' in str(s.get('Transporte', '')).lower() for s in route['segmentos'])
     def route_is_valid(route):
         st, sb = form_data.get('solo_tren'), form_data.get('solo_bus')
         if not st and not sb: return True
@@ -191,7 +179,7 @@ def buscar():
     if resultados_unicos:
         resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x['llegada_final_dt_obj'])
 
-    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia, dia_actual=dias_semana_map[now.weekday()])
+    return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
 
 def find_all_routes_intelligently(origen, destino, df):
