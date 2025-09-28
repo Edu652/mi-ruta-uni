@@ -11,7 +11,7 @@ import io
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
