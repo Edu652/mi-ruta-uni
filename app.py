@@ -1,21 +1,25 @@
-# Archivo: app.py | Versión: Final con Lógica de Días de la Semana
+# Archivo: app.py | Versión: Lee desde Google Drive
 from flask import Flask, render_template, request
 import pandas as pd
 import json
 import random
 from datetime import datetime, timedelta, time
 import pytz
+import requests 
 
 app = Flask(__name__)
 
-# --- Funciones de Ayuda (con nueva compañía) ---
+# --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
+# Pega aquí el enlace .csv que obtuviste al publicar tu Hoja de Cálculo de Google
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
+
+# --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
     if 'damas' in compania_str: return '🚌'
     if 'renfe' in compania_str: return '🚆'
-    # MODIFICADO: Devuelve un código especial para el logo de Consorcio
-    if 'consorcio' in compania_str: return 'LOGO_CONSORCIO'
+    if 'consorcio' in compania_str: return '🟢A'
     if 'coche' in compania_str or 'particular' in compania_str: return '🚗'
     transporte_str = str(transporte).lower()
     if 'tren' in transporte_str: return '🚆'
@@ -44,11 +48,16 @@ def clean_minutes_column(series):
 
 # --- Carga de Datos ---
 try:
-    rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
+    # MODIFICADO: Ahora lee el archivo CSV desde la URL de Google Sheets
+    if GOOGLE_SHEET_URL == "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV":
+        # Si no se ha configurado la URL, intenta leer el archivo local como respaldo
+        rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
+    else:
+        rutas_df_global = pd.read_csv(GOOGLE_SHEET_URL)
+    
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
         rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
-    
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
         if col in rutas_df_global.columns:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
@@ -56,7 +65,7 @@ try:
         rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
 
 except Exception as e:
-    print(f"ERROR CRÍTICO al cargar 'rutas.xlsx': {e}")
+    print(f"ERROR CRÍTICO al cargar los datos: {e}")
     rutas_df_global = pd.DataFrame()
 
 try:
@@ -64,6 +73,8 @@ try:
         frases = json.load(f)
 except Exception:
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
+
+# --- El resto del archivo app.py permanece sin cambios ---
 
 @app.route("/")
 def index():
@@ -73,22 +84,20 @@ def index():
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
+
 @app.route("/buscar", methods=["POST"])
 def buscar():
     form_data = request.form.to_dict()
     origen = form_data.get("origen")
     destino = form_data.get("destino")
     
-    # --- LÓGICA DE FILTRADO POR DÍA DE LA SEMANA ---
     tz = pytz.timezone('Europe/Madrid')
     now = datetime.now(tz)
     dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
 
     if dia_seleccionado != 'hoy':
-        try:
-            target_weekday = int(dia_seleccionado)
-        except (ValueError, TypeError):
-            target_weekday = now.weekday()
+        try: target_weekday = int(dia_seleccionado)
+        except: target_weekday = now.weekday()
     else:
         target_weekday = now.weekday()
 
