@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Lee desde Google Drive con Requests
+# Archivo: app.py | Versión: Sistema de Respaldo Corregido
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -6,12 +6,12 @@ import random
 from datetime import datetime, timedelta, time
 import pytz
 import requests 
-import io # Necesario para leer el texto descargado
+import io
 
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
+GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
@@ -46,33 +46,44 @@ def clean_minutes_column(series):
         return 0
     return series.apply(to_minutes)
 
-# --- Carga de Datos (LÓGICA CORREGIDA) ---
+# --- Carga de Datos (LÓGICA DE RESPALDO CORREGIDA) ---
+rutas_df_global = pd.DataFrame() # Empezamos con un DataFrame vacío
 try:
     if GOOGLE_SHEET_URL != "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV":
-        # Nos "disfrazamos" de navegador para evitar ser bloqueados
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+        # Plan A: Intentar leer desde Google Drive
+        headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(GOOGLE_SHEET_URL, headers=headers)
-        response.raise_for_status() # Esto lanzará un error si la descarga falla
-        
-        # Leemos el contenido descargado con pandas
+        response.raise_for_status()
         csv_data = io.StringIO(response.text)
         rutas_df_global = pd.read_csv(csv_data)
+        print("Datos cargados exitosamente desde Google Drive.")
     else:
-        # Plan B: Si no hay URL, leer el archivo local
-        rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    
-    rutas_df_global.columns = rutas_df_global.columns.str.strip()
-    if 'Compañía' in rutas_df_global.columns:
-        rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
-    for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
-        if col in rutas_df_global.columns:
-            rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
-    if 'Precio' in rutas_df_global.columns:
-        rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-
+        # Si la URL no está configurada, forzamos la excepción para pasar al Plan B
+        raise ValueError("URL de Google Sheet no configurada.")
 except Exception as e:
-    print(f"ERROR CRÍTICO al cargar los datos: {e}")
-    rutas_df_global = pd.DataFrame()
+    print(f"FALLO al cargar desde Google Drive: {e}. Intentando leer archivo local.")
+    try:
+        # Plan B: Intentar leer el archivo Excel local
+        rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
+        print("Datos cargados exitosamente desde el archivo local 'rutas.xlsx'.")
+    except Exception as e_local:
+        print(f"ERROR CRÍTICO: No se pudo cargar ni desde Google Drive ni el archivo local. Error: {e_local}")
+        rutas_df_global = pd.DataFrame() # Último recurso: DataFrame vacío
+
+# Procesamiento de datos (común para ambas fuentes)
+if not rutas_df_global.empty:
+    try:
+        rutas_df_global.columns = rutas_df_global.columns.str.strip()
+        if 'Compañía' in rutas_df_global.columns:
+            rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
+        for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
+            if col in rutas_df_global.columns:
+                rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
+        if 'Precio' in rutas_df_global.columns:
+            rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
+    except Exception as e_proc:
+        print(f"ERROR al procesar las columnas del DataFrame: {e_proc}")
+        rutas_df_global = pd.DataFrame()
 
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
