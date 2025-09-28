@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión: Lee desde Google Drive
+# Archivo: app.py | Versión: Lee desde Google Drive con Requests
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -6,12 +6,12 @@ import random
 from datetime import datetime, timedelta, time
 import pytz
 import requests 
+import io # Necesario para leer el texto descargado
 
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-# Pega aquí el enlace .csv que obtuviste al publicar tu Hoja de Cálculo de Google
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
+GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
@@ -46,11 +46,19 @@ def clean_minutes_column(series):
         return 0
     return series.apply(to_minutes)
 
-# --- Carga de Datos ---
+# --- Carga de Datos (LÓGICA CORREGIDA) ---
 try:
     if GOOGLE_SHEET_URL != "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV":
-        rutas_df_global = pd.read_csv(GOOGLE_SHEET_URL)
+        # Nos "disfrazamos" de navegador para evitar ser bloqueados
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+        response = requests.get(GOOGLE_SHEET_URL, headers=headers)
+        response.raise_for_status() # Esto lanzará un error si la descarga falla
+        
+        # Leemos el contenido descargado con pandas
+        csv_data = io.StringIO(response.text)
+        rutas_df_global = pd.read_csv(csv_data)
     else:
+        # Plan B: Si no hay URL, leer el archivo local
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
     
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
@@ -72,6 +80,7 @@ try:
 except Exception:
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
+# --- El resto del archivo app.py permanece sin cambios ---
 @app.route("/")
 def index():
     lugares = []
@@ -79,7 +88,6 @@ def index():
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
-
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
