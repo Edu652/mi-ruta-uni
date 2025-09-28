@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
 # Pega aquí el enlace .csv que obtuviste al publicar tu Hoja de Cálculo de Google
-GOOGLE_SHEET_URL = "aqui el enlace xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+GOOGLE_SHEET_URL = "PEGA_AQUI_TU_ENLACE_DE_GOOGLE_SHEET_PUBLICADO_COMO_CSV"
 
 # --- Funciones de Ayuda (sin cambios) ---
 def get_icon_for_compania(compania, transporte=None):
