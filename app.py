@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión Completa y Robusta
+# Archivo: app.py | Versión con Depuración de Lógica de Búsqueda
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -6,12 +6,11 @@ import random
 from datetime import datetime, timedelta, time
 import pytz
 import requests
-import io # <-- Importante añadir io
+import io
 
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-# URL del fichero CSV publicado desde Google Sheets
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
 
 # --- Funciones de Ayuda (sin cambios) ---
@@ -47,33 +46,20 @@ def clean_minutes_column(series):
         return 0
     return series.apply(to_minutes)
 
-# --- Carga de Datos (VERSIÓN CON DEPURACIÓN) ---
+# --- Carga de Datos ---
 print("--- INICIANDO CARGA DE DATOS ---")
 try:
     if "PEGA_AQUI" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
-        print("Cargando datos desde el archivo local 'rutas.xlsx'...")
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
     else:
-        print(f"Intentando cargar datos desde la URL: {GOOGLE_SHEET_URL}")
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
-        }
-        
-        print("Paso 1: Realizando petición GET a la URL...")
+        headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(GOOGLE_SHEET_URL, headers=headers, timeout=15)
         response.raise_for_status()
-        print(f"Paso 2: Petición exitosa (Código {response.status_code}).")
-
         response.encoding = 'utf-8'
         csv_content = response.text
-        print(f"Paso 3: Contenido descargado (primeros 100 caracteres): {csv_content[:100]}")
-
-        print("Paso 4: Intentando leer el contenido con pandas...")
         csv_data_io = io.StringIO(csv_content)
         rutas_df_global = pd.read_csv(csv_data_io)
-        print(f"Paso 5: ¡Éxito! Datos cargados en DataFrame. Dimensiones: {rutas_df_global.shape}")
-
-    # Limpieza de datos
+    
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
         rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
@@ -82,15 +68,9 @@ try:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     if 'Precio' in rutas_df_global.columns:
         rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-    print("--- LIMPIEZA DE DATOS COMPLETADA ---")
-
-except requests.exceptions.RequestException as e:
-    print(f"--- ERROR CRÍTICO DE RED ---")
-    print(f"No se pudo acceder a la URL. Detalles: {e}")
-    rutas_df_global = pd.DataFrame()
+    print("--- CARGA DE DATOS COMPLETADA ---")
 except Exception as e:
-    print(f"--- ERROR CRÍTICO EN PROCESAMIENTO ---")
-    print(f"El fichero se descargó pero falló al procesarlo. Detalles: {e}")
+    print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
 
 # --- Carga de frases motivadoras ---
@@ -100,22 +80,23 @@ try:
 except Exception:
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
-# --- Rutas de la Aplicación (sin cambios) ---
+# --- Rutas de la Aplicación ---
 @app.route("/")
 def index():
     lugares = []
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
-    else:
-        print("ADVERTENCIA: El DataFrame de rutas está vacío al renderizar la página de inicio.")
     frase = random.choice(frases)
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
+    # --- INICIO DEPURACIÓN BÚSQUEDA ---
+    print("\n--- INICIANDO NUEVA BÚSQUEDA ---")
     form_data = request.form.to_dict()
     origen = form_data.get("origen")
     destino = form_data.get("destino")
+    print(f"Buscando desde '{origen}' hasta '{destino}'")
     
     tz = pytz.timezone('Europe/Madrid')
     now = datetime.now(tz)
@@ -129,6 +110,7 @@ def buscar():
 
     dias_semana_map = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
     nombre_dia = dias_semana_map[target_weekday]
+    print(f"Día seleccionado para la búsqueda: {nombre_dia}")
 
     rutas_hoy_df = rutas_df_global.copy()
     if 'Dias' in rutas_hoy_df.columns:
@@ -138,6 +120,8 @@ def buscar():
         is_sunday = target_weekday == 6
         mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
         rutas_hoy_df = rutas_hoy_df[mask]
+    
+    print(f"Paso 1 (Filtro por día): Quedan {len(rutas_hoy_df)} rutas candidatas.")
 
     rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
     today_date = now.date()
@@ -149,29 +133,37 @@ def buscar():
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
     candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
+    print(f"Paso 2 (Búsqueda inteligente): Se encontraron {len(candidatos_plantilla)} combinaciones de ruta posibles.")
     
     candidatos_expandidos = []
-    for ruta_plantilla in candidatos_plantilla:
-        if all(s['Tipo_Horario'] == 'Frecuencia' for s in ruta_plantilla):
-            candidatos_expandidos.append(ruta_plantilla)
-            continue
-        indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
-        idx_ancla = indices_fijos[0]
-        ancla_plantilla = ruta_plantilla[idx_ancla]
-        mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
-        if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
-        if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
-        posibles_anclas = rutas_fijas_df[mask]
-        for _, ancla_real in posibles_anclas.iterrows():
-            nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
-            candidatos_expandidos.append(nueva_ruta)
+    if candidatos_plantilla:
+        for ruta_plantilla in candidatos_plantilla:
+            if all(s['Tipo_Horario'] == 'Frecuencia' for s in ruta_plantilla):
+                candidatos_expandidos.append(ruta_plantilla)
+                continue
+            indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
+            if not indices_fijos: continue # Si no hay horarios fijos, saltar
+            idx_ancla = indices_fijos[0]
+            ancla_plantilla = ruta_plantilla[idx_ancla]
+            mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
+            if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla['Compania'])
+            if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla['Transporte'])
+            posibles_anclas = rutas_fijas_df[mask]
+            for _, ancla_real in posibles_anclas.iterrows():
+                nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
+                candidatos_expandidos.append(nueva_ruta)
+    print(f"Paso 3 (Expansión de horarios): Se generaron {len(candidatos_expandidos)} rutas con horarios específicos.")
     
     resultados_procesados = []
     for ruta in candidatos_expandidos:
         is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
         resultado = calculate_route_times(ruta, is_desde_ahora)
         if resultado: resultados_procesados.append(resultado)
-
+    
+    print(f"Paso 4 (Cálculo de tiempos): Se procesaron {len(resultados_procesados)} rutas con éxito.")
+    
+    # --- RESTO DE FILTROS ---
+    # ... (El resto de la función buscar se mantiene igual) ...
     if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
@@ -208,9 +200,11 @@ def buscar():
     resultados_unicos = {r['duracion_total_str'] + r['segmentos'][0]['Salida_str']: r for r in resultados_procesados}.values()
     if resultados_unicos:
         resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x['llegada_final_dt_obj'])
-
+    
+    print(f"--- BÚSQUEDA FINALIZADA: {len(resultados_procesados)} resultados para mostrar. ---")
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
+# --- El resto de funciones (find_all_routes_intelligently, calculate_route_times, etc.) se mantienen igual ---
 def find_all_routes_intelligently(origen, destino, df):
     rutas, indices_unicos = [], set()
     for i, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows():
