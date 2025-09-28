@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión con Depuración de Lógica de Búsqueda
+# Archivo: app.py | Versión Completa y Corregida (28/09/2025)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -13,7 +13,7 @@ app = Flask(__name__)
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
 
-# --- Funciones de Ayuda (sin cambios) ---
+# --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
@@ -91,7 +91,6 @@ def index():
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
-    # --- INICIO DEPURACIÓN BÚSQUEDA ---
     print("\n--- INICIANDO NUEVA BÚSQUEDA ---")
     form_data = request.form.to_dict()
     origen = form_data.get("origen")
@@ -126,8 +125,11 @@ def buscar():
     rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
     today_date = now.date()
     
-    salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M:%S', errors='coerce').dt.time
-    llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M:%S', errors='coerce').dt.time
+    # === CORRECCIÓN DEL FORMATO DE HORA ===
+    salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M', errors='coerce').dt.time
+    llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M', errors='coerce').dt.time
+    # =======================================
+    
     rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
@@ -142,7 +144,7 @@ def buscar():
                 candidatos_expandidos.append(ruta_plantilla)
                 continue
             indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg['Tipo_Horario'] == 'Fijo']
-            if not indices_fijos: continue # Si no hay horarios fijos, saltar
+            if not indices_fijos: continue
             idx_ancla = indices_fijos[0]
             ancla_plantilla = ruta_plantilla[idx_ancla]
             mask = (rutas_fijas_df['Origen'] == ancla_plantilla['Origen']) & (rutas_fijas_df['Destino'] == ancla_plantilla['Destino'])
@@ -162,8 +164,6 @@ def buscar():
     
     print(f"Paso 4 (Cálculo de tiempos): Se procesaron {len(resultados_procesados)} rutas con éxito.")
     
-    # --- RESTO DE FILTROS ---
-    # ... (El resto de la función buscar se mantiene igual) ...
     if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
         ahora = datetime.now(tz)
         resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora.replace(tzinfo=None)]
@@ -204,7 +204,6 @@ def buscar():
     print(f"--- BÚSQUEDA FINALIZADA: {len(resultados_procesados)} resultados para mostrar. ---")
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
-# --- El resto de funciones (find_all_routes_intelligently, calculate_route_times, etc.) se mantienen igual ---
 def find_all_routes_intelligently(origen, destino, df):
     rutas, indices_unicos = [], set()
     for i, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows():
@@ -246,7 +245,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
                 segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
                 llegada_anterior_dt = segmentos[i]['Llegada_dt']
-        else: # Ruta solo de frecuencia
+        else:
             start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             llegada_anterior_dt = None
             for i, seg in enumerate(segmentos):
