@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta</title>
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
     
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#4f46e5">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -72,7 +73,7 @@
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
             
             <div class="animated-bg" aria-hidden="true">
-                 <svg><path d="M-200,300 C-200,300 100,200 400,300 C700,400 900,200 1200,300 C1500,400 1700,200 2000,300"></path></svg>
+                <svg><path d="M-200,300 C-200,300 100,200 400,300 C700,400 900,200 1200,300 C1500,400 1700,200 2000,300"></path></svg>
             </div>
             <div class="card-content">
                 <div class="relative text-center mb-6">
@@ -114,17 +115,16 @@
                 
                  <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
                      <div class="flip-card h-16" onclick="flipCard(this)">
-                        <div class="flip-card-inner">
-                            <div class="flip-card-front bg-slate-200 dark:bg-slate-700"><p>"{{ frase }}"</p></div>
-                            <div class="flip-card-back bg-indigo-200 dark:bg-indigo-900"><p></p></div>
-                        </div>
+                         <div class="flip-card-inner">
+                             <div class="flip-card-front bg-slate-200 dark:bg-slate-700"><p>"{{ frase }}"</p></div>
+                             <div class="flip-card-back bg-indigo-200 dark:bg-indigo-900"><p></p></div>
+                         </div>
                      </div>
-                </div>
+                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== MODAL DE FILTROS ===== -->
     <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
         <div id="filters-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
         <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
@@ -199,7 +199,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL DE INFORMACIÓN ===== -->
     <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
         <div id="info-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
         <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
@@ -239,6 +238,19 @@
         const frases={{frases|tojson|safe if frases else'["El esfuerzo de hoy es el éxito de mañana."]'}};let fraseActualIndex=frases.indexOf("{{ frase }}");function flipCard(e){const t=e.querySelector(".flip-card-back p");let l;do{l=Math.floor(Math.random()*frases.length)}while(l===fraseActualIndex&&frases.length>1);fraseActualIndex=l,t.textContent=`"${frases[fraseActualIndex]}"`,e.classList.add("is-flipped"),setTimeout(()=>{e.querySelector(".flip-card-front p").textContent=`"${frases[fraseActualIndex]}"`,e.classList.remove("is-flipped")},800)}
         const soloTrenCheck=document.getElementById("solo_tren"),soloBusCheck=document.getElementById("solo_bus");soloTrenCheck.addEventListener("change",()=>{soloTrenCheck.checked&&(soloBusCheck.checked=!1)}),soloBusCheck.addEventListener("change",()=>{soloBusCheck.checked&&(soloTrenCheck.checked=!1)});
     </script>
-</body>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Fallo en el registro del Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+    </body>
 </html>
-
