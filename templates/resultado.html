@@ -93,12 +93,8 @@
                                     {% if segmento.Llegada_str %}| <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}{% endif %}
                                     | <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
                                     
-                                    {% set compania_lower = segmento.Compania|string|lower %}
-                                    {% if ('urbano' in compania_lower or 'emtusa' in compania_lower) and segmento.Linea and segmento.Linea|string|lower != 'nan' %}
-                                        {% set linea_int = segmento.Linea | int %}
-                                        {% if linea_int > 0 %}
-                                            | <span class="font-medium">Línea:</span> {{ linea_int }}
-                                        {% endif %}
+                                    {% if segmento.Linea and segmento.Linea|string|lower != 'nan' %}
+                                        | <span class="font-medium">Línea:</span> {{ segmento.Linea }}
                                     {% endif %}
                                     </p>
                             </div>
