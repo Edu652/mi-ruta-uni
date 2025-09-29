@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    
+
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#4f46e5">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -15,7 +17,6 @@
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
     </style>
     <script>
-        // Aplica el tema oscuro/claro al cargar la página para evitar parpadeos
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -93,10 +94,12 @@
                                     {% if segmento.Llegada_str %}| <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}{% endif %}
                                     | <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
                                     
+                                    {% set compania_lower = segmento.Compania|string|lower %}
                                     {% if segmento.Linea and segmento.Linea|string|lower != 'nan' %}
                                         | <span class="font-medium">Línea:</span> {{ segmento.Linea }}
                                     {% endif %}
-                                    </p>
+
+                                </p>
                             </div>
                         </div>
                         {% if not loop.last %}
@@ -119,5 +122,18 @@
         </div>
     </div>
 
-</body>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Fallo en el registro del Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+    </body>
 </html>
