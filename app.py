@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión Completa y Corregida (28/09/2025)
+# Archivo: app.py | Versión con URL de Exportación Directa y Correcta
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -11,7 +11,8 @@ import io
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrJgafot53JC9r3-UJV9YFNXvfD3NhJ3vjto_7z0F-SSAR-s35BEseky4tDeJRpg/pub?output=csv"
+# URL de exportación directa para evitar problemas de caché
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
@@ -49,7 +50,7 @@ def clean_minutes_column(series):
 # --- Carga de Datos ---
 print("--- INICIANDO CARGA DE DATOS ---")
 try:
-    if "PEGA_AQUI" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
+    if "PEGA_AQUÍ" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
     else:
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -91,11 +92,9 @@ def index():
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
-    print("\n--- INICIANDO NUEVA BÚSQUEDA ---")
     form_data = request.form.to_dict()
     origen = form_data.get("origen")
     destino = form_data.get("destino")
-    print(f"Buscando desde '{origen}' hasta '{destino}'")
     
     tz = pytz.timezone('Europe/Madrid')
     now = datetime.now(tz)
@@ -109,7 +108,6 @@ def buscar():
 
     dias_semana_map = {0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves", 4: "Viernes", 5: "Sábado", 6: "Domingo"}
     nombre_dia = dias_semana_map[target_weekday]
-    print(f"Día seleccionado para la búsqueda: {nombre_dia}")
 
     rutas_hoy_df = rutas_df_global.copy()
     if 'Dias' in rutas_hoy_df.columns:
@@ -120,22 +118,17 @@ def buscar():
         mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
         rutas_hoy_df = rutas_hoy_df[mask]
     
-    print(f"Paso 1 (Filtro por día): Quedan {len(rutas_hoy_df)} rutas candidatas.")
-
     rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
     today_date = now.date()
     
-    # === CORRECCIÓN DEL FORMATO DE HORA ===
     salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M', errors='coerce').dt.time
     llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M', errors='coerce').dt.time
-    # =======================================
     
     rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
     rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
     candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
-    print(f"Paso 2 (Búsqueda inteligente): Se encontraron {len(candidatos_plantilla)} combinaciones de ruta posibles.")
     
     candidatos_expandidos = []
     if candidatos_plantilla:
@@ -154,15 +147,12 @@ def buscar():
             for _, ancla_real in posibles_anclas.iterrows():
                 nueva_ruta = ruta_plantilla[:]; nueva_ruta[idx_ancla] = ancla_real
                 candidatos_expandidos.append(nueva_ruta)
-    print(f"Paso 3 (Expansión de horarios): Se generaron {len(candidatos_expandidos)} rutas con horarios específicos.")
     
     resultados_procesados = []
     for ruta in candidatos_expandidos:
         is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
         resultado = calculate_route_times(ruta, is_desde_ahora)
         if resultado: resultados_procesados.append(resultado)
-    
-    print(f"Paso 4 (Cálculo de tiempos): Se procesaron {len(resultados_procesados)} rutas con éxito.")
     
     if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
         ahora = datetime.now(tz)
@@ -201,7 +191,6 @@ def buscar():
     if resultados_unicos:
         resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x['llegada_final_dt_obj'])
     
-    print(f"--- BÚSQUEDA FINALIZADA: {len(resultados_procesados)} resultados para mostrar. ---")
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
 def find_all_routes_intelligently(origen, destino, df):
