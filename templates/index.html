@@ -8,6 +8,7 @@
     
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#4f46e5">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -190,10 +191,10 @@
                         <label for="evitar_sj" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Sta. Justa</label>
                     </div>
                     <div class="flex items-center">
-                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                         <label for="evitar_pa" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Plz. Armas</label>
                     </div>
-                </div>
+                    </div>
             </div>
             <button type="button" id="apply-filters" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md">Aplicar Filtros</button>
         </div>
@@ -252,5 +253,6 @@
             });
         }
     </script>
-    </body>
+
+</body>
 </html>
