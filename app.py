@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión con URL de Exportación Directa y Correcta
+# Archivo: app.py | Versión con Paradas en los Tramos
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -11,7 +11,6 @@ import io
 app = Flask(__name__)
 
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
-# URL de exportación directa para evitar problemas de caché
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
 # --- Funciones de Ayuda ---
@@ -59,7 +58,17 @@ try:
         response.encoding = 'utf-8'
         csv_content = response.text
         csv_data_io = io.StringIO(csv_content)
+        # Leemos el CSV. Pandas renombrará la segunda columna "Parada" a "Parada.1"
         rutas_df_global = pd.read_csv(csv_data_io)
+
+        # ===== NUEVAS LÍNEAS PARA RENOMBRAR COLUMNAS =====
+        # Creamos un diccionario para mapear los nombres viejos a los nuevos
+        column_mapping = {
+            'Parada': 'Parada_Origen',
+            'Parada.1': 'Parada_Destino'
+        }
+        rutas_df_global.rename(columns=column_mapping, inplace=True)
+        # ====================================================
     
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
@@ -73,6 +82,8 @@ try:
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
+
+# ... (El resto del fichero app.py se mantiene exactamente igual) ...
 
 # --- Carga de frases motivadoras ---
 try:
