@@ -80,7 +80,7 @@
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
                             {% if segmento.icono == 'LOGO_CONSORCIO' %}
-                                <img src="{{ url_for('static', filename='Logo Junta.jpg') }}" alt="Logo Consorcio" class="w-6 h-6 mr-4 mt-1">
+                                <img src="{{ url_for('static', filename='logo_junta.jpg') }}" alt="Logo Consorcio" class="w-6 h-6 mr-4 mt-1">
                             {% else %}
                                 <span class="text-2xl mr-4 mt-1">{{ segmento.icono }}</span>
                             {% endif %}
@@ -101,6 +101,7 @@
                                         <span class="text-slate-400">({{ segmento.Parada_Destino }})</span>
                                     {% endif %}
                                 </p>
+
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} 
                                     {% if segmento.Llegada_str %}| <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}{% endif %}
