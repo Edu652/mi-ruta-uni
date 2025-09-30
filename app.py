@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión con corrección para KeyError
+# Archivo app.py FINAL Y COMPLETO (30/09/2025)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, time
 import pytz
 import requests
 import io
+from collections import defaultdict
 
 app = Flask(__name__)
 
@@ -48,22 +49,16 @@ def clean_minutes_column(series):
 
 # --- Carga de Datos ---
 try:
-    if "PEGA_AQUÍ" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
-        rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
-    else:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(GOOGLE_SHEET_URL, headers=headers, timeout=15)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        csv_content = response.text
-        csv_data_io = io.StringIO(csv_content)
-        rutas_df_global = pd.read_csv(csv_data_io)
+    headers = {"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache"}
+    response = requests.get(GOOGLE_SHEET_URL, headers=headers, timeout=15)
+    response.raise_for_status()
+    response.encoding = 'utf-8'
+    csv_content = response.text
+    csv_data_io = io.StringIO(csv_content)
+    rutas_df_global = pd.read_csv(csv_data_io)
 
-        column_mapping = {
-            'Parada': 'Parada_Origen',
-            'Parada.1': 'Parada_Destino'
-        }
-        rutas_df_global.rename(columns=column_mapping, inplace=True)
+    column_mapping = {'Parada': 'Parada_Origen', 'Parada.1': 'Parada_Destino'}
+    rutas_df_global.rename(columns=column_mapping, inplace=True)
     
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
@@ -196,20 +191,37 @@ def buscar():
     
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
+# ===== FUNCIÓN DE BÚSQUEDA ULTRA-OPTIMIZADA =====
 def find_all_routes_intelligently(origen, destino, df):
-    rutas, indices_unicos = [], set()
-    for i, r in df[(df['Origen'] == origen) & (df['Destino'] == destino)].iterrows():
-        if (i,) not in indices_unicos: rutas.append([r]); indices_unicos.add((i,))
-    for i1, t1 in df[df['Origen'] == origen].iterrows():
-        for i2, t2 in df[(df['Origen'] == t1['Destino']) & (df['Destino'] == destino)].iterrows():
-            if (i1, i2) not in indices_unicos: rutas.append([t1, t2]); indices_unicos.add((i1, i2))
-    if not rutas:
-        for i1, t1 in df[df['Origen'] == origen].iterrows():
-            for i2, t2 in df[df['Origen'] == t1['Destino']].iterrows():
-                if t2['Destino'] in [origen, destino]: continue
-                for i3, t3 in df[(df['Origen'] == t2['Destino']) & (df['Destino'] == destino)].iterrows():
-                    if (i1, i2, i3) not in indices_unicos: rutas.append([t1, t2, t3]); indices_unicos.add((i1, i2, i3))
+    rutas = []
+    rutas_por_origen = defaultdict(list)
+    for _, row in df.iterrows():
+        rutas_por_origen[row['Origen']].append(row)
+
+    # 1. Rutas directas (1 tramo)
+    for r1 in rutas_por_origen.get(origen, []):
+        if r1['Destino'] == destino:
+            rutas.append([r1])
+
+    # 2. Rutas con 1 transbordo (2 tramos)
+    for r1 in rutas_por_origen.get(origen, []):
+        origen_r2 = r1['Destino']
+        for r2 in rutas_por_origen.get(origen_r2, []):
+            if r2['Destino'] == destino:
+                rutas.append([r1, r2])
+
+    # 3. Rutas con 2 transbordos (3 tramos)
+    for r1 in rutas_por_origen.get(origen, []):
+        origen_r2 = r1['Destino']
+        for r2 in rutas_por_origen.get(origen_r2, []):
+            if r2['Destino'] == origen: continue
+            origen_r3 = r2['Destino']
+            for r3 in rutas_por_origen.get(origen_r3, []):
+                if r3['Destino'] == destino:
+                    rutas.append([r1, r2, r3])
+    
     return rutas
+# ==================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check):
     try:
@@ -217,52 +229,62 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
-            # ... (código sin cambios) ...
-            return {"segmentos": [...]}
+            dur_min = segmentos[0].get('Duracion_Trayecto_Min', 0)
+            duracion = timedelta(minutes=dur_min)
+            seg_dict = segmentos[0].to_dict()
+            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': datetime.now(pytz.timezone('Europe/Madrid'))})
+            return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
         
         if anchor_index != -1:
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
-                dur = timedelta(minutes=segmentos[i]['Duracion_Trayecto_Min'])
+                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0)
+                dur = timedelta(minutes=dur_min)
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
                 
-            llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
+            llegada_anterior_dt = segmentos[anchor_index].get('Llegada_dt')
             for i in range(anchor_index + 1, len(segmentos)):
-                dur = timedelta(minutes=segmentos[i]['Duracion_Trayecto_Min'])
-                # ===== CORRECCIÓN PARA EVITAR EL ERROR =====
-                # Antes de calcular, nos aseguramos de que el segmento anterior tiene una hora de llegada
+                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0)
+                dur = timedelta(minutes=dur_min)
                 if pd.notna(llegada_anterior_dt):
                     segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
-                    llegada_anterior_dt = segmentos[i]['Llegada_dt']
+                    llegada_anterior_dt = segmentos[i].get('Llegada_dt')
                 else:
-                    # Si el segmento anterior no tiene hora, este tampoco puede tenerla, así que lo invalidamos
                     segmentos[i]['Salida_dt'] = pd.NaT
                     segmentos[i]['Llegada_dt'] = pd.NaT
                     llegada_anterior_dt = pd.NaT
-                # =========================================
         else:
-            start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             llegada_anterior_dt = None
+            start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             for i, seg in enumerate(segmentos):
-                dur = timedelta(minutes=seg['Duracion_Trayecto_Min'])
-                seg['Salida_dt'] = start_time if i == 0 else llegada_anterior_dt + TIEMPO_TRANSBORDO
-                seg['Llegada_dt'] = seg['Salida_dt'] + dur
-                llegada_anterior_dt = seg['Llegada_dt']
+                dur_min = seg.get('Duracion_Trayecto_Min', 0)
+                dur = timedelta(minutes=dur_min)
+                if i == 0:
+                    seg['Salida_dt'] = start_time
+                elif pd.notna(llegada_anterior_dt):
+                     seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                else:
+                    seg['Salida_dt'] = pd.NaT
+
+                if pd.notna(seg.get('Salida_dt')):
+                    seg['Llegada_dt'] = seg.get('Salida_dt') + dur
+                else:
+                    seg['Llegada_dt'] = pd.NaT
+                llegada_anterior_dt = seg.get('Llegada_dt')
         
-        # Comprobación final para asegurarse de que todos los segmentos tienen horas válidas
-        if any(pd.isna(s['Salida_dt']) or pd.isna(s['Llegada_dt']) for s in segmentos):
+        if any(pd.isna(s.get('Salida_dt')) or pd.isna(s.get('Llegada_dt')) for s in segmentos):
             return None
 
         primera_salida_dt = segmentos[0]['Salida_dt']
         segmentos_formateados = []
         for seg in segmentos:
             seg_dict = seg.to_dict()
-            seg_dict.update({'icono': get_icon_for_compania(seg.get('Compania')), 'Salida_str': seg['Salida_dt'].strftime('%H:%M'), 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60})
+            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': seg['Salida_dt'].strftime('%H:%M'), 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60})
             segmentos_formateados.append(seg_dict)
         segmentos_formateados[0]['Salida_dt'] = primera_salida_dt
 
@@ -274,7 +296,6 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - segmentos[0]['Salida_dt'])
         }
     except Exception as e:
-        # Añadimos un print para ver si ocurre cualquier otro error inesperado
         print(f"Error inesperado en calculate_route_times: {e}")
         return None
 
