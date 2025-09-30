@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión con Paradas en los Tramos
+# Archivo: app.py | Versión con Logo Consorcio Corregido
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -19,7 +19,9 @@ def get_icon_for_compania(compania, transporte=None):
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
     if 'damas' in compania_str: return '🚌'
     if 'renfe' in compania_str: return '🚆'
-    if 'consorcio' in compania_str: return '🟢A'
+    # ===== LÍNEA CORREGIDA AQUÍ =====
+    if 'consorcio' in compania_str: return 'LOGO_CONSORCIO'
+    # ================================
     if 'coche' in compania_str or 'particular' in compania_str: return '🚗'
     transporte_str = str(transporte).lower()
     if 'tren' in transporte_str: return '🚆'
@@ -58,17 +60,13 @@ try:
         response.encoding = 'utf-8'
         csv_content = response.text
         csv_data_io = io.StringIO(csv_content)
-        # Leemos el CSV. Pandas renombrará la segunda columna "Parada" a "Parada.1"
         rutas_df_global = pd.read_csv(csv_data_io)
 
-        # ===== NUEVAS LÍNEAS PARA RENOMBRAR COLUMNAS =====
-        # Creamos un diccionario para mapear los nombres viejos a los nuevos
         column_mapping = {
             'Parada': 'Parada_Origen',
             'Parada.1': 'Parada_Destino'
         }
         rutas_df_global.rename(columns=column_mapping, inplace=True)
-        # ====================================================
     
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
@@ -82,8 +80,6 @@ try:
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
-
-# ... (El resto del fichero app.py se mantiene exactamente igual) ...
 
 # --- Carga de frases motivadoras ---
 try:
