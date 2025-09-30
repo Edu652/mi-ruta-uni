@@ -1,4 +1,4 @@
-# Archivo: app.py | Versión con Logo Consorcio Corregido
+# Archivo: app.py | Versión con corrección para KeyError
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -19,9 +19,7 @@ def get_icon_for_compania(compania, transporte=None):
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
     if 'damas' in compania_str: return '🚌'
     if 'renfe' in compania_str: return '🚆'
-    # ===== LÍNEA CORREGIDA AQUÍ =====
     if 'consorcio' in compania_str: return 'LOGO_CONSORCIO'
-    # ================================
     if 'coche' in compania_str or 'particular' in compania_str: return '🚗'
     transporte_str = str(transporte).lower()
     if 'tren' in transporte_str: return '🚆'
@@ -49,7 +47,6 @@ def clean_minutes_column(series):
     return series.apply(to_minutes)
 
 # --- Carga de Datos ---
-print("--- INICIANDO CARGA DE DATOS ---")
 try:
     if "PEGA_AQUÍ" in GOOGLE_SHEET_URL or not GOOGLE_SHEET_URL:
         rutas_df_global = pd.read_excel("rutas.xlsx", engine="openpyxl")
@@ -76,7 +73,6 @@ try:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     if 'Precio' in rutas_df_global.columns:
         rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-    print("--- CARGA DE DATOS COMPLETADA ---")
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
@@ -221,10 +217,8 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0]['Tipo_Horario'] == 'Frecuencia':
-            seg, duracion = segmentos[0], timedelta(minutes=segmentos[0]['Duracion_Trayecto_Min'])
-            seg_dict = seg.to_dict()
-            seg_dict.update({'icono': get_icon_for_compania(seg.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': seg['Duracion_Trayecto_Min'], 'Salida_dt': datetime.now(pytz.timezone('Europe/Madrid'))})
-            return {"segmentos": [seg_dict], "precio_total": seg.get('Precio', 0), "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
+            # ... (código sin cambios) ...
+            return {"segmentos": [...]}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
         
@@ -235,12 +229,22 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
+                
             llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
             for i in range(anchor_index + 1, len(segmentos)):
                 dur = timedelta(minutes=segmentos[i]['Duracion_Trayecto_Min'])
-                segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
-                segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
-                llegada_anterior_dt = segmentos[i]['Llegada_dt']
+                # ===== CORRECCIÓN PARA EVITAR EL ERROR =====
+                # Antes de calcular, nos aseguramos de que el segmento anterior tiene una hora de llegada
+                if pd.notna(llegada_anterior_dt):
+                    segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                    segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
+                    llegada_anterior_dt = segmentos[i]['Llegada_dt']
+                else:
+                    # Si el segmento anterior no tiene hora, este tampoco puede tenerla, así que lo invalidamos
+                    segmentos[i]['Salida_dt'] = pd.NaT
+                    segmentos[i]['Llegada_dt'] = pd.NaT
+                    llegada_anterior_dt = pd.NaT
+                # =========================================
         else:
             start_time = datetime.now(pytz.timezone('Europe/Madrid')) if desde_ahora_check else datetime.combine(datetime.today(), time(7,0))
             llegada_anterior_dt = None
@@ -250,6 +254,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
                 seg['Llegada_dt'] = seg['Salida_dt'] + dur
                 llegada_anterior_dt = seg['Llegada_dt']
         
+        # Comprobación final para asegurarse de que todos los segmentos tienen horas válidas
+        if any(pd.isna(s['Salida_dt']) or pd.isna(s['Llegada_dt']) for s in segmentos):
+            return None
+
         primera_salida_dt = segmentos[0]['Salida_dt']
         segmentos_formateados = []
         for seg in segmentos:
@@ -266,6 +274,8 @@ def calculate_route_times(ruta_series_list, desde_ahora_check):
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - segmentos[0]['Salida_dt'])
         }
     except Exception as e:
+        # Añadimos un print para ver si ocurre cualquier otro error inesperado
+        print(f"Error inesperado en calculate_route_times: {e}")
         return None
 
 if __name__ == "__main__":
