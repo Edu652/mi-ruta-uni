@@ -1,6 +1,7 @@
-# Fichero: celery_worker.py (Corregido el IndentationError)
+# Fichero: celery_worker.py (100% Completo, con time_limit)
 import os
 from celery import Celery
+from celery.exceptions import SoftTimeLimitExceeded
 import pandas as pd
 from datetime import datetime, timedelta, time
 import pytz
@@ -77,8 +78,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             dur_min = segmentos[0].get('Duracion_Trayecto_Min', 0)
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
-            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            seg_dict['Salida_dt'] = seg_dict['Salida_dt'].isoformat()
+            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min})
             return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": datetime.min.isoformat(), "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
@@ -133,8 +133,6 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 
                 'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60
             })
-            # Añadimos Salida_dt en formato iso para que Celery lo pueda manejar
-            seg_dict['Salida_dt'] = seg['Salida_dt'].isoformat()
             segmentos_formateados.append(seg_dict)
         
         llegada_final_dt_obj_iso = segmentos[-1]['Llegada_dt'].isoformat()
@@ -152,12 +150,11 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         return None
 
 # --- La Tarea Principal ---
-@celery.task(bind=True)
+@celery.task(bind=True, soft_time_limit=80, time_limit=90)
 def find_routes_task(self, origen, destino, dia_seleccionado, form_data, now_iso):
-    now = datetime.fromisoformat(now_iso).replace(tzinfo=pytz.timezone('Europe/Madrid'))
-    
-    # ===== BLOQUE TRY/EXCEPT CORREGIDO =====
     try:
+        now = datetime.fromisoformat(now_iso).replace(tzinfo=pytz.timezone('Europe/Madrid'))
+        
         # 1. Carga los datos
         GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
         headers = {"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache"}
@@ -167,6 +164,7 @@ def find_routes_task(self, origen, destino, dia_seleccionado, form_data, now_iso
         csv_content = response.text
         csv_data_io = io.StringIO(csv_content)
         rutas_df_global = pd.read_csv(csv_data_io)
+
         column_mapping = {'Parada': 'Parada_Origen', 'Parada.1': 'Parada_Destino'}
         rutas_df_global.rename(columns=column_mapping, inplace=True)
         rutas_df_global.columns = rutas_df_global.columns.str.strip()
@@ -228,26 +226,23 @@ def find_routes_task(self, origen, destino, dia_seleccionado, form_data, now_iso
             is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
             resultado = calculate_route_times(ruta, is_desde_ahora, now)
             if resultado: resultados_procesados.append(resultado)
-
-        # (Filtros adicionales como "solo_tren", "evitar_sj", etc. se omiten aquí
-        # porque no los pasamos en `form_data` en esta versión, pero se pueden añadir de nuevo si se necesitan)
+        
+        # Aquí irían los filtros adicionales si los pasáramos en `form_data`
                 
-        # Ordenamiento final
         if resultados_procesados:
             for r in resultados_procesados:
-                # Convertimos el texto iso de nuevo a objeto datetime para poder ordenar
                 if r.get('llegada_final_dt_obj') and isinstance(r['llegada_final_dt_obj'], str):
                     r['llegada_final_dt_obj_dt'] = datetime.fromisoformat(r['llegada_final_dt_obj'])
                 else:
-                    # Ponemos una fecha muy lejana para los que no tienen hora (como los de Frecuencia)
                     r['llegada_final_dt_obj_dt'] = datetime.max
             resultados_procesados = sorted(resultados_procesados, key=lambda x: x['llegada_final_dt_obj_dt'])
         
         return resultados_procesados
 
+    except SoftTimeLimitExceeded:
+        # Esto no es un error, es una condición esperada.
+        # Devolvemos un diccionario especial para que el frontend sepa qué pasó.
+        return {"task_status": "TIMED_OUT"}
     except Exception as e:
-        # Si algo falla, actualizamos el estado de la tarea con el error
         self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
-        # Y relanzamos la excepción para que Celery la registre
         raise e
-    # =========================================
