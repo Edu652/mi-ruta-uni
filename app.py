@@ -1,4 +1,4 @@
-# Archivo app.py FINAL Y COMPLETO (30/09/2025)
+# Archivo app.py FINAL Y COMPLETO (01/10/2025)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -191,7 +191,7 @@ def buscar():
     
     return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
-# ===== FUNCIÓN DE BÚSQUEDA ULTRA-OPTIMIZADA =====
+# ===== FUNCIÓN DE BÚSQUEDA CORREGIDA Y OPTIMIZADA =====
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
     rutas_por_origen = defaultdict(list)
@@ -205,6 +205,10 @@ def find_all_routes_intelligently(origen, destino, df):
 
     # 2. Rutas con 1 transbordo (2 tramos)
     for r1 in rutas_por_origen.get(origen, []):
+        # REGLA: Si el primer tramo ya llega al destino, no busques más transbordos.
+        if r1['Destino'] == destino:
+            continue
+        
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
             if r2['Destino'] == destino:
@@ -212,16 +216,23 @@ def find_all_routes_intelligently(origen, destino, df):
 
     # 3. Rutas con 2 transbordos (3 tramos)
     for r1 in rutas_por_origen.get(origen, []):
+        # REGLA: Si el primer tramo ya llega al destino, no busques más.
+        if r1['Destino'] == destino:
+            continue
+        
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
-            if r2['Destino'] == origen: continue
+            # REGLA: Si el segundo tramo ya llega al destino o vuelve al origen, no sigas.
+            if r2['Destino'] == destino or r2['Destino'] == origen:
+                continue
+            
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
                 if r3['Destino'] == destino:
                     rutas.append([r1, r2, r3])
     
     return rutas
-# ==================================================
+# =========================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check):
     try:
