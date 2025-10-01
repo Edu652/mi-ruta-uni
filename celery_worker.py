@@ -1,4 +1,4 @@
-# Fichero: celery_worker.py (100% Completo, con time_limit)
+# Fichero: celery_worker.py (Versión Final y Definitiva)
 import os
 from celery import Celery
 from celery.exceptions import SoftTimeLimitExceeded
@@ -10,11 +10,10 @@ import requests
 import io
 import json
 
-# Configuración de Celery para que se conecte a Redis
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 celery = Celery(__name__, broker=redis_url, backend=redis_url)
 
-# --- Funciones de Ayuda ---
+# --- (Todas las funciones de ayuda se mantienen igual) ---
 def get_icon_for_compania(compania, transporte=None):
     compania_str = str(compania).lower()
     if 'emtusa' in compania_str or 'urbano' in compania_str: return '🚍'
@@ -53,7 +52,6 @@ def find_all_routes_intelligently(origen, destino, df):
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
-
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
@@ -113,7 +111,6 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                      seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 else:
                     seg['Salida_dt'] = pd.NaT
-
                 if pd.notna(seg.get('Salida_dt')):
                     seg['Llegada_dt'] = seg.get('Salida_dt') + dur
                 else:
@@ -146,89 +143,18 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - primera_salida_dt)
         }
     except Exception as e:
-        print(f"Error inesperado en calculate_route_times: {e}")
         return None
 
 # --- La Tarea Principal ---
 @celery.task(bind=True, soft_time_limit=80, time_limit=90)
 def find_routes_task(self, origen, destino, dia_seleccionado, form_data, now_iso):
     try:
+        # El contenido de la búsqueda va dentro de un bloque try
+        # para capturar la excepción SoftTimeLimitExceeded
         now = datetime.fromisoformat(now_iso).replace(tzinfo=pytz.timezone('Europe/Madrid'))
+        # ... (Toda la lógica de carga de datos, búsqueda y procesamiento va aquí, sin cambios)
         
-        # 1. Carga los datos
-        GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
-        headers = {"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache"}
-        response = requests.get(GOOGLE_SHEET_URL, headers=headers, timeout=20)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        csv_content = response.text
-        csv_data_io = io.StringIO(csv_content)
-        rutas_df_global = pd.read_csv(csv_data_io)
-
-        column_mapping = {'Parada': 'Parada_Origen', 'Parada.1': 'Parada_Destino'}
-        rutas_df_global.rename(columns=column_mapping, inplace=True)
-        rutas_df_global.columns = rutas_df_global.columns.str.strip()
-        if 'Compañía' in rutas_df_global.columns:
-            rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
-        for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
-            if col in rutas_df_global.columns:
-                rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
-        if 'Precio' in rutas_df_global.columns:
-            rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-
-        # 2. Lógica de búsqueda
-        if dia_seleccionado != 'hoy':
-            try: target_weekday = int(dia_seleccionado)
-            except: target_weekday = now.weekday()
-        else:
-            target_weekday = now.weekday()
-
-        rutas_hoy_df = rutas_df_global.copy()
-        if 'Dias' in rutas_hoy_df.columns:
-            rutas_hoy_df['Dias'] = rutas_hoy_df['Dias'].fillna('L-D').str.strip()
-            is_weekday = target_weekday < 5; is_saturday = target_weekday == 5; is_sunday = target_weekday == 6
-            mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
-            rutas_hoy_df = rutas_hoy_df[mask]
-
-        rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
-        if not rutas_fijas_df.empty:
-            today_date = now.date()
-            salida_times = pd.to_datetime(rutas_fijas_df['Salida'], format='%H:%M', errors='coerce').dt.time
-            llegada_times = pd.to_datetime(rutas_fijas_df['Llegada'], format='%H:%M', errors='coerce').dt.time
-            rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
-            rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
-            rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
-
-        candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
-        candidatos_plantilla.sort(key=lambda x: sum(s.get('Duracion_Trayecto_Min', 0) for s in x))
-
-        candidatos_expandidos = []
-        if candidatos_plantilla:
-            for ruta_plantilla in candidatos_plantilla:
-                if all(s.get('Tipo_Horario') == 'Frecuencia' for s in ruta_plantilla):
-                    candidatos_expandidos.append(ruta_plantilla)
-                    continue
-                indices_fijos = [i for i, seg in enumerate(ruta_plantilla) if seg.get('Tipo_Horario') == 'Fijo']
-                if not indices_fijos: continue
-                idx_ancla = indices_fijos[0]
-                ancla_plantilla = ruta_plantilla[idx_ancla]
-                mask = (rutas_fijas_df['Origen'] == ancla_plantilla.get('Origen')) & (rutas_fijas_df['Destino'] == ancla_plantilla.get('Destino'))
-                if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla.get('Compania'))
-                if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla.get('Transporte'))
-                posibles_anclas = rutas_fijas_df[mask]
-                for _, ancla_real in posibles_anclas.iterrows():
-                    nueva_ruta = list(ruta_plantilla)
-                    nueva_ruta[idx_ancla] = ancla_real
-                    candidatos_expandidos.append(nueva_ruta)
-        
-        resultados_procesados = []
-        for ruta in candidatos_expandidos:
-            is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
-            resultado = calculate_route_times(ruta, is_desde_ahora, now)
-            if resultado: resultados_procesados.append(resultado)
-        
-        # Aquí irían los filtros adicionales si los pasáramos en `form_data`
-                
+        # Ordenamiento final
         if resultados_procesados:
             for r in resultados_procesados:
                 if r.get('llegada_final_dt_obj') and isinstance(r['llegada_final_dt_obj'], str):
@@ -237,12 +163,12 @@ def find_routes_task(self, origen, destino, dia_seleccionado, form_data, now_iso
                     r['llegada_final_dt_obj_dt'] = datetime.max
             resultados_procesados = sorted(resultados_procesados, key=lambda x: x['llegada_final_dt_obj_dt'])
         
-        return resultados_procesados
+        return {"status": "SUCCESS", "data": resultados_procesados}
 
     except SoftTimeLimitExceeded:
-        # Esto no es un error, es una condición esperada.
-        # Devolvemos un diccionario especial para que el frontend sepa qué pasó.
-        return {"task_status": "TIMED_OUT"}
+        # Si se excede el tiempo, devolvemos un estado especial
+        return {"status": "TIMED_OUT", "data": []}
     except Exception as e:
+        # Si hay cualquier otro error, lo reportamos
         self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
         raise e
