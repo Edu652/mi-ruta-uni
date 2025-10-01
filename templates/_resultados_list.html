@@ -1,0 +1,14 @@
+{% if resultados %}
+    {% for resultado in resultados %}
+    <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors mb-6">
+        <div class="absolute top-3 left-3 w-7 h-7 bg-indigo-500 dark:bg-indigo-400 text-white dark:text-slate-900 rounded-full flex items-center justify-center font-bold text-sm z-10">{{ loop.index }}</div>
+        
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700">
+        <p class="text-4xl mb-4">😔</p>
+        <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
+        <p class="text-slate-500 dark:text-slate-400">No hemos podido encontrar una combinación para este trayecto con los filtros aplicados.</p>
+    </div>
+{% endif %}
