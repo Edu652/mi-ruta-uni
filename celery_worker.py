@@ -1,3 +1,4 @@
+# Fichero: celery_worker.py (Completo)
 import os
 from celery import Celery
 import pandas as pd
@@ -7,7 +8,7 @@ from collections import defaultdict
 import requests
 import io
 
-# Configuración de Celery para que use Redis
+# Configuración de Celery para que se conecte a Redis
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 celery = Celery(__name__, broker=redis_url, backend=redis_url)
 
@@ -76,7 +77,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": datetime.min, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
+            return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
         
@@ -128,11 +129,15 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             segmentos_formateados.append(seg_dict)
         segmentos_formateados[0]['Salida_dt'] = primera_salida_dt
 
+        # Convertir objetos datetime a string para que puedan ser serializados en JSON por Celery
+        llegada_final_dt_obj_iso = segmentos[-1]['Llegada_dt'].isoformat()
+        hora_llegada_final_iso = segmentos[-1]['Llegada_dt'].time().isoformat()
+
         return {
             "segmentos": segmentos_formateados,
             "precio_total": sum(s.get('Precio', 0) for s in ruta_series_list),
-            "llegada_final_dt_obj": segmentos[-1]['Llegada_dt'],
-            "hora_llegada_final": segmentos[-1]['Llegada_dt'].time(),
+            "llegada_final_dt_obj": llegada_final_dt_obj_iso,
+            "hora_llegada_final": hora_llegada_final_iso,
             "duracion_total_str": format_timedelta(segmentos[-1]['Llegada_dt'] - segmentos[0]['Salida_dt'])
         }
     except Exception as e:
@@ -142,9 +147,9 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
 # --- La Tarea Principal que se Ejecuta en Segundo Plano ---
 @celery.task
 def find_routes_task(origen, destino, dia_seleccionado, form_data, now_iso):
-    now = datetime.fromisoformat(now_iso)
+    now = datetime.fromisoformat(now_iso).replace(tzinfo=pytz.timezone('Europe/Madrid'))
     
-    # 1. Carga los datos (siempre los carga para asegurar que están frescos)
+    # 1. Carga los datos
     GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
     try:
         headers = {"User-Agent": "Mozilla/5.0", "Cache-Control": "no-cache"}
@@ -154,7 +159,6 @@ def find_routes_task(origen, destino, dia_seleccionado, form_data, now_iso):
         csv_content = response.text
         csv_data_io = io.StringIO(csv_content)
         rutas_df_global = pd.read_csv(csv_data_io)
-
         column_mapping = {'Parada': 'Parada_Origen', 'Parada.1': 'Parada_Destino'}
         rutas_df_global.rename(columns=column_mapping, inplace=True)
         rutas_df_global.columns = rutas_df_global.columns.str.strip()
@@ -166,10 +170,9 @@ def find_routes_task(origen, destino, dia_seleccionado, form_data, now_iso):
         if 'Precio' in rutas_df_global.columns:
             rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
     except Exception as e:
-        # Si la carga de datos falla, devolvemos un error
-        return {'error': f'No se pudieron cargar los datos de rutas: {e}'}
+        raise RuntimeError(f'No se pudieron cargar los datos de rutas: {e}')
 
-    # 2. Toda la lógica de búsqueda, filtrado y cálculo de `buscar()` va aquí
+    # 2. Lógica de búsqueda, filtrado y cálculo
     if dia_seleccionado != 'hoy':
         try: target_weekday = int(dia_seleccionado)
         except: target_weekday = now.weekday()
@@ -220,10 +223,15 @@ def find_routes_task(origen, destino, dia_seleccionado, form_data, now_iso):
         resultado = calculate_route_times(ruta, is_desde_ahora, now)
         if resultado: resultados_procesados.append(resultado)
 
-    # ... (resto de filtros igual que en app.py) ...
+    # Convertir objetos datetime a string para el ordenamiento final
+    for r in resultados_procesados:
+        if r.get('llegada_final_dt_obj') and isinstance(r['llegada_final_dt_obj'], str):
+            r['llegada_final_dt_obj_dt'] = datetime.fromisoformat(r['llegada_final_dt_obj'])
+        else:
+            r['llegada_final_dt_obj_dt'] = datetime.max
             
     if resultados_procesados:
-        resultados_unicos = {r['duracion_total_str'] + r['segmentos'][0]['Salida_str']: r for r in resultados_procesados}.values()
-        resultados_procesados = sorted(list(resultados_unicos), key=lambda x: x.get('llegada_final_dt_obj', datetime.max))
+        # La eliminación de duplicados se simplifica
+        resultados_procesados = sorted(resultados_procesados, key=lambda x: x['llegada_final_dt_obj_dt'])
     
     return resultados_procesados
