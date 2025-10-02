@@ -195,11 +195,14 @@
             brujulaInput.value = provinciaDestino;
             brujulaDisplay.textContent = provinciaDestino;
             
+            // LÓGICA DE FILTRADO CORREGIDA
             if (provinciaDestino === 'HUELVA') {
-                filtrarDesplegable(origenSelect, todasLasOpciones, provinciaSevilla, huelvaExclusiones);
+                // Viajando A Huelva: Origen puede ser CUALQUIERA, Destino solo Huelva
+                filtrarDesplegable(origenSelect, todasLasOpciones, [], huelvaExclusiones);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
             } else { // Viajando a SEVILLA
-                filtrarDesplegable(origenSelect, todasLasOpciones, provinciaHuelva, exclusionesOrigenSevilla);
+                // Viajando A Sevilla: Origen puede ser CUALQUIERA, Destino solo Sevilla
+                filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
             
