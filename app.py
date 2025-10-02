@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión corregida para producción)
+# Fichero: app.py (Versión corregida con todos los filtros)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -97,7 +97,22 @@ def buscar():
         origen = form_data.get("origen")
         destino = form_data.get("destino")
         
-        print(f"→ Búsqueda: {origen} → {destino}")
+        print(f"\n{'='*60}")
+        print(f"→ BÚSQUEDA: {origen} → {destino}")
+        print(f"  Filtros recibidos: {form_data}")
+        
+        # DEBUG: Verificar si existen en el DataFrame
+        origenes_disponibles = rutas_df_global['Origen'].unique()
+        destinos_disponibles = rutas_df_global['Destino'].unique()
+        print(f"  ¿'{origen}' existe como origen? {origen in origenes_disponibles}")
+        print(f"  ¿'{destino}' existe como destino? {destino in destinos_disponibles}")
+        
+        if origen not in origenes_disponibles:
+            print(f"  ⚠️ PROBLEMA: '{origen}' no encontrado en orígenes")
+            print(f"  Orígenes similares: {[o for o in origenes_disponibles if origen.lower() in o.lower() or o.lower() in origen.lower()]}")
+        if destino not in destinos_disponibles:
+            print(f"  ⚠️ PROBLEMA: '{destino}' no encontrado en destinos")
+            print(f"  Destinos similares: {[d for d in destinos_disponibles if destino.lower() in d.lower() or d.lower() in destino.lower()]}")
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
@@ -139,7 +154,7 @@ def buscar():
         candidatos_expandidos = []
         if candidatos_plantilla:
             for ruta_plantilla in candidatos_plantilla:
-                # CAMBIO: Asegurar que todos los segmentos son diccionarios
+                # Convertir todos los segmentos a diccionarios
                 ruta_plantilla = [seg if isinstance(seg, dict) else seg.to_dict() if hasattr(seg, 'to_dict') else dict(seg) for seg in ruta_plantilla]
                 
                 if all(s.get('Tipo_Horario') == 'Frecuencia' for s in ruta_plantilla):
@@ -171,9 +186,32 @@ def buscar():
         
         print(f"  Resultados procesados: {len(resultados_procesados)}")
         
+        # Aplicar filtro "desde ahora"
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
+        
+        # Aplicar filtro "salir después de"
+        if form_data.get('salir_despues_check'):
+            try:
+                hora_salida = int(form_data.get('salir_despues_hora', 7))
+                minuto_salida = int(form_data.get('salir_despues_minuto', 0))
+                hora_minima = time(hora_salida, minuto_salida)
+                print(f"  Filtro salir después de: {hora_minima}")
+                resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (isinstance(r.get('hora_llegada_final'), time) and r['segmentos'][0]['Salida_dt'].time() >= hora_minima)]
+            except Exception as e:
+                print(f"  Error aplicando filtro salir_despues: {e}")
+        
+        # Aplicar filtro "llegar antes de"
+        if form_data.get('llegar_antes_check'):
+            try:
+                hora_llegada = int(form_data.get('llegar_antes_hora', 9))
+                minuto_llegada = int(form_data.get('llegar_antes_minuto', 0))
+                hora_maxima = time(hora_llegada, minuto_llegada)
+                print(f"  Filtro llegar antes de: {hora_maxima}")
+                resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (isinstance(r.get('hora_llegada_final'), time) and r['hora_llegada_final'] <= hora_maxima)]
+            except Exception as e:
+                print(f"  Error aplicando filtro llegar_antes: {e}")
 
         if resultados_procesados:
             resultados_unicos = {}
@@ -200,8 +238,17 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row.to_dict())
     
+    print(f"\n  🔍 Iniciando búsqueda BFS:")
+    print(f"     Lugares disponibles desde '{origen}': {len(rutas_por_origen.get(origen, []))}")
+    if origen in rutas_por_origen:
+        print(f"     Destinos directos desde '{origen}': {[r['Destino'] for r in rutas_por_origen[origen]]}")
+    else:
+        print(f"     ⚠️ No hay rutas que salgan de '{origen}'")
+    
     rutas_encontradas = []
     cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
+    
+    print(f"     Cola inicial: {len(cola)} rutas")
     
     while cola:
         ruta_actual, lugares_visitados = cola.pop(0)
