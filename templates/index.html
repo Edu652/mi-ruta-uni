@@ -196,12 +196,22 @@
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Damas</p><div class="flex justify-between mt-1"><a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34959256900" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 69 00</a></div></div>
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Renfe</p><div class="flex justify-between mt-1"><a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a></div></div>
                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Emtusa Huelva</p><div class="flex justify-between mt-1"><a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a></div></div>
+                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                    <p class="font-semibold text-slate-800 dark:text-slate-200">Mapa de Paradas (Huelva)</p>
+                    <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="block mt-1 text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Google Maps</a>
+                </div>
+                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                    <p class="font-semibold text-slate-800 dark:text-slate-200">Campus del Carmen</p>
+                    <div class="flex justify-between items-center mt-1">
+                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Mapa</a>
+                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver Foto</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- JAVASCRIPT 100% COMPLETO Y CORREGIDO ---
         const brujulaSelector = document.getElementById('brujula-selector');
         const searchContainer = document.getElementById('search-container');
         const brujulaInput = document.getElementById('brujula-input');
@@ -238,7 +248,6 @@
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
             } else { // Viajando a SEVILLA
                 filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
-                // CORRECCIÓN: El destino solo debe mostrar pueblos de Sevilla
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
             
