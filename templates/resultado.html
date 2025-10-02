@@ -16,9 +16,11 @@
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
         .info-container { position: relative; display: inline-block; }
         .info-tooltip {
-            visibility: hidden; width: 220px; background-color: #2d3748; color: #fff; text-align: center;
-            border-radius: 6px; padding: 8px; position: absolute; z-index: 10; bottom: 125%;
-            left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s;
+            visibility: hidden; width: 220px; background-color: #2d3748; color: #fff;
+            text-align: center; border-radius: 6px; padding: 8px; position: absolute;
+            z-index: 10; bottom: 125%; left: 50%; margin-left: -110px;
+            opacity: 0; transition: opacity 0.3s; font-size: 0.875rem;
+            line-height: 1.25rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .dark .info-tooltip { background-color: #e2e8f0; color: #1a202c; }
         .info-tooltip a { color: #818cf8; text-decoration: underline; }
@@ -36,12 +38,23 @@
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
     <div class="w-full max-w-4xl mx-auto p-4 md:p-6">
+        
         <div class="sticky top-0 z-20 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur-md py-4 -mx-4 px-4 mb-4 border-b border-slate-200 dark:border-slate-700">
             <div class="text-center max-w-2xl mx-auto">
                 <a href="/" class="block text-indigo-600 dark:text-indigo-400 hover:underline transition-colors text-sm mb-2">← Nueva Búsqueda</a>
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Rutas Encontradas</h1>
                 <p class="text-slate-500 dark:text-slate-400">{{ origen }} → {{ destino }}</p>
-                {% if dia_semana %}<p class="text-sm text-slate-400 mt-1">Horarios para: <span class="font-semibold">{{ dia_semana }}</span></p>{% endif %}
+                {% if dia_semana %}
+                <p class="text-sm text-slate-400 mt-1">Horarios para: <span class="font-semibold">{{ dia_semana }}</span></p>
+                {% endif %}
+                
+                {% if filtros %}
+                <div class="flex flex-wrap gap-2 justify-center mt-4">
+                    {% if filtros.desde_ahora %}<span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">Desde ahora</span>{% endif %}
+                    {% if filtros.evitar_sj %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Sta. Justa</span>{% endif %}
+                    {% if filtros.evitar_pa %}<span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-amber-900 dark:text-amber-300">Evitando Plz. Armas</span>{% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -50,6 +63,7 @@
                 {% for resultado in resultados %}
                 <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors">
                     <div class="absolute top-3 left-3 w-7 h-7 bg-indigo-500 dark:bg-indigo-400 text-white dark:text-slate-900 rounded-full flex items-center justify-center font-bold text-sm z-10">{{ loop.index }}</div>
+
                     <div class="p-4 bg-slate-50 dark:bg-slate-700/50 grid grid-cols-3 gap-4 items-center text-center">
                         <div class="text-left pl-8">
                             <p class="text-sm text-slate-500 dark:text-slate-400">Hora de Salida</p>
@@ -67,6 +81,7 @@
                             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ "%.2f"|format(resultado.precio_total) }} €</p>
                         </div>
                     </div>
+
                     <div class="p-4 space-y-3">
                         {% for segmento in resultado.segmentos %}
                         <div class="flex items-start">
@@ -79,7 +94,7 @@
                                 <div class="flex justify-between items-center">
                                     <div class="flex items-center gap-2">
                                         <p class="font-semibold">{{ segmento.Compania | default('') }}</p>
-                                        {% if segmento.Observaciones and segmento.Observaciones|string|lower != 'nan' %}
+                                        {% if segmento.Observaciones and segmento.Observaciones != '' %}
                                         <div class="info-container">
                                             <span class="cursor-pointer text-blue-400">ℹ️</span>
                                             <span class="info-tooltip">
@@ -92,20 +107,25 @@
                                         </div>
                                         {% endif %}
                                     </div>
-                                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ "%.2f"|format(segmento.Precio) }} €</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ "%.2f"|format(segmento.Precio | float) }} €</p>
                                 </div>
+                                
                                 <p class="text-sm">
                                     {{ segmento.Origen }}
-                                    {% if segmento.Parada_Origen and segmento.Parada_Origen|string|lower != 'nan' %}<span class="text-slate-400">({{ segmento.Parada_Origen }})</span>{% endif %}
+                                    {% if segmento.Parada_Origen and segmento.Parada_Origen != '' %}<span class="text-slate-400"> ({{ segmento.Parada_Origen }})</span>{% endif %}
                                     → 
                                     {{ segmento.Destino }}
-                                    {% if segmento.Parada_Destino and segmento.Parada_Destino|string|lower != 'nan' %}<span class="text-slate-400">({{ segmento.Parada_Destino }})</span>{% endif %}
+                                    {% if segmento.Parada_Destino and segmento.Parada_Destino != '' %}<span class="text-slate-400"> ({{ segmento.Parada_Destino }})</span>{% endif %}
                                 </p>
+
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     <span class="font-medium">Salida:</span> {{ segmento.Salida_str }} 
                                     {% if segmento.Llegada_str %}| <span class="font-medium">Llegada:</span> {{ segmento.Llegada_str }}{% endif %}
                                     | <span class="font-medium">Duración:</span> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
-                                    {% if segmento.Linea and segmento.Linea|string|lower != 'nan' %}| <span class="font-medium">Línea:</span> {{ segmento.Linea }}{% endif %}
+                                    {% if segmento.Linea and segmento.Linea != '' %}| <span class="font-medium">Línea:</span> {{ segmento.Linea }}{% endif %}
+                                    {% if segmento.aviso_horario %}
+                                    <span class="ml-2 font-bold text-red-500">({{ segmento.aviso_horario }})</span>
+                                    {% endif %}
                                 </p>
                             </div>
                         </div>
@@ -123,17 +143,21 @@
                 <div class="text-center bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700">
                     <p class="text-4xl mb-4">😔</p>
                     <h2 class="text-xl font-semibold mb-2">¡Vaya! No encontramos rutas</h2>
-                    <p class="text-slate-500 dark:text-slate-400">No hemos podido encontrar una combinación para este trayecto. Prueba a ajustar los filtros.</p>
+                    <p class="text-slate-500 dark:text-slate-400">No hemos podido encontrar una combinación para este trayecto con los filtros aplicados.</p>
                 </div>
             {% endif %}
         </div>
     </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(registration => console.log('Service Worker registrado'))
+                    .catch(error => console.log('Fallo en el registro del SW:', error));
             });
         }
     </script>
 </body>
 </html>
+
