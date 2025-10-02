@@ -14,7 +14,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        #search-container { transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out; }
         .modal-overlay { transition: opacity 0.3s ease-in-out; }
         .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
         .card-container::before {
@@ -75,43 +74,28 @@
                     </button>
                 </div>
 
-                <div id="brujula-selector" class="space-y-4 text-center">
-                    <p class="font-semibold text-lg">¿A dónde vas?</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">HUELVA</button>
-                        <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">SEVILLA</button>
+                <form id="main-form" action="/buscar" method="post" class="space-y-4">
+                    <div>
+                        <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
+                        <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="" disabled selected>Selecciona</option>
+                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
+                        </select>
                     </div>
-                </div>
-
-                <div id="search-container" class="max-h-0 opacity-0 overflow-hidden">
-                    <div class="text-center mb-4">
-                         <p class="font-semibold text-slate-600 dark:text-slate-300">Viajando hacia: <span id="brujula-display" class="font-bold"></span></p>
-                         <button id="cambiar-brujula" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">← Cambiar destino</button>
+                    <div>
+                        <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
+                        <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="" disabled selected>Selecciona</option>
+                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
+                        </select>
                     </div>
-                    <form id="main-form" action="/buscar" method="post" class="space-y-4">
-                        <input type="hidden" name="brujula" id="brujula-input">
-                        <div>
-                            <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
-                            <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <option value="" disabled selected>Selecciona</option>
-                                {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
-                            <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                                <option value="" disabled selected>Selecciona</option>
-                                {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                            </select>
-                        </div>
-                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
-                            <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
-                                <span>+ Opciones de Búsqueda</span>
-                            </button>
-                        </div>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105">Buscar Ruta</button>
-                    </form>
-                </div>
+                    <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                        <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
+                            <span>+ Opciones de Búsqueda</span>
+                        </button>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105">Buscar Ruta</button>
+                </form>
                  <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
                      <div class="flip-card h-16" onclick="flipCard(this)">
                          <div class="flip-card-inner">
@@ -212,62 +196,7 @@
     </div>
 
     <script>
-        const brujulaSelector = document.getElementById('brujula-selector');
-        const searchContainer = document.getElementById('search-container');
-        const brujulaInput = document.getElementById('brujula-input');
-        const cambiarBrujulaBtn = document.getElementById('cambiar-brujula');
-        const brujulaDisplay = document.getElementById('brujula-display');
-        
-        const origenSelect = document.getElementById('origen');
-        const destinoSelect = document.getElementById('destino');
-        const todasLasOpciones = Array.from(origenSelect.options);
-
-        const provinciaHuelva = {{ provincia_huelva | tojson }};
-        const provinciaSevilla = {{ provincia_sevilla | tojson }};
-
-        const exclusionesOrigenHuelva = ["Bormujos", "Mairena"];
-        const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren"];
-        
-        function filtrarDesplegable(select, opciones, permitidos = [], exclusiones = []) {
-            select.innerHTML = '';
-            opciones.forEach(option => {
-                let esPermitido = permitidos.length === 0 || permitidos.includes(option.value);
-                let esExcluido = exclusiones.includes(option.value);
-                if ( (option.disabled || esPermitido) && !esExcluido ) {
-                    select.add(option.cloneNode(true));
-                }
-            });
-        }
-
-        function seleccionarBrujula(provinciaDestino) {
-            brujulaInput.value = provinciaDestino;
-            brujulaDisplay.textContent = provinciaDestino;
-            
-            if (provinciaDestino === 'HUELVA') {
-                filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenHuelva);
-                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
-            } else { // Viajando a SEVILLA
-                filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
-                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
-            }
-            
-            brujulaSelector.style.display = 'none';
-            searchContainer.classList.remove('max-h-0', 'opacity-0');
-            setTimeout(() => { searchContainer.style.maxHeight = searchContainer.scrollHeight + 'px'; }, 10);
-        }
-
-        cambiarBrujulaBtn.addEventListener('click', () => {
-            searchContainer.style.maxHeight = '0';
-            searchContainer.classList.add('opacity-0');
-            setTimeout(() => {
-                brujulaSelector.style.display = 'block';
-                origenSelect.innerHTML = '';
-                todasLasOpciones.forEach(option => origenSelect.add(option.cloneNode(true)));
-                destinoSelect.innerHTML = '';
-                todasLasOpciones.forEach(option => destinoSelect.add(option.cloneNode(true)));
-            }, 500);
-        });
-        
+        // --- JAVASCRIPT 100% COMPLETO Y CORREGIDO ---
         function setupModal(openBtnId, closeBtnId, modalId, applyBtnId = null) {
             const openBtn = document.getElementById(openBtnId);
             const closeBtn = document.getElementById(closeBtnId);
