@@ -24,6 +24,23 @@
             opacity: 0.15; filter: grayscale(100%) brightness(150%); z-index: 0;
         }
         .card-content { position: relative; z-index: 2; }
+        .time-picker-wrapper { position: relative; height: 160px; padding: 0 1rem; }
+        .selection-indicator {
+            position: absolute; top: 50%; left: 1rem; right: 1rem; transform: translateY(-50%);
+            height: 40px; pointer-events: none; border-top: 2px solid #a5b4fc; border-bottom: 2px solid #a5b4fc; z-index: 1;
+        }
+        .dark .selection-indicator { border-color: #4f46e5; }
+        .wheel-container {
+            height: 160px; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth;
+            -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .wheel-container::-webkit-scrollbar { display: none; }
+        .wheel-item {
+            height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; line-height: 2rem;
+            scroll-snap-align: center; opacity: 0.4; transform: scale(0.8); transition: opacity 0.3s, transform 0.3s;
+        }
+        .wheel-item.is-selected { opacity: 1; transform: scale(1.1); font-weight: 600; color: #4f46e5; }
+        .dark .wheel-item.is-selected { color: #818cf8; }
     </style>
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -50,12 +67,8 @@
                 <div id="brujula-selector" class="space-y-4 text-center">
                     <p class="font-semibold text-lg">¿A dónde vas?</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            HUELVA
-                        </button>
-                        <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            SEVILLA
-                        </button>
+                        <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">HUELVA</button>
+                        <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">SEVILLA</button>
                     </div>
                 </div>
 
@@ -85,9 +98,7 @@
                                 <span>+ Opciones de Búsqueda</span>
                             </button>
                         </div>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105">
-                            Buscar Ruta
-                        </button>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105">Buscar Ruta</button>
                     </form>
                 </div>
             </div>
@@ -104,13 +115,38 @@
                 </button>
             </div>
             <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="w-full bg-slate-200 dark:bg-slate-700 rounded-md py-2 px-3">
-                    <option value="hoy" selected>Hoy (Día actual)</option>
-                    <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
-                </select>
+                <div>
+                    <label for="dia_semana_selector" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Ver horarios para:</label>
+                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="w-full bg-slate-200 dark:bg-slate-700 rounded-md py-2 px-3">
+                        <option value="hoy" selected>Hoy (Día actual)</option>
+                        <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+                    </select>
+                </div>
                  <div class="flex items-center">
                      <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                      <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar desde la hora actual</label>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                        <label for="salir_despues_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Salir a partir de las...</label>
+                    </div>
+                    <div id="selectores_hora_salida" class="transition-all duration-300 hidden mt-2">
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-salida"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2">:</span><div class="wheel-container" id="minute-wheel-salida"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
+                        <input form="main-form" type="hidden" name="salir_despues_hora" id="salir_despues_hora" value="07" disabled>
+                        <input form="main-form" type="hidden" name="salir_despues_minuto" id="salir_despues_minuto" value="00" disabled>
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                        <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar antes de las...</label>
+                    </div>
+                    <div id="selectores_hora_llegada" class="transition-all duration-300 hidden mt-2">
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-llegada"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2">:</span><div class="wheel-container" id="minute-wheel-llegada"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
+                        <input form="main-form" type="hidden" name="llegar_antes_hora" id="llegar_antes_hora" value="09" disabled>
+                        <input form="main-form" type="hidden" name="llegar_antes_minuto" id="llegar_antes_minuto" value="00" disabled>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <div class="flex items-center">
@@ -160,12 +196,10 @@
             brujulaDisplay.textContent = provinciaDestino;
             
             if (provinciaDestino === 'HUELVA') {
-                // Viajando A HUELVA: Origen puede ser cualquier sitio (menos exclusiones), Destino solo Huelva.
-                filtrarDesplegable(origenSelect, todasLasOpciones, [], huelvaExclusiones);
+                filtrarDesplegable(origenSelect, todasLasOpciones, provinciaSevilla, huelvaExclusiones);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
-            } else { // Viajando A SEVILLA
-                // Viajando A SEVILLA: Origen puede ser cualquier sitio (menos exclusiones), Destino solo Sevilla.
-                filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
+            } else { // Viajando a SEVILLA
+                filtrarDesplegable(origenSelect, todasLasOpciones, provinciaHuelva, exclusionesOrigenSevilla);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
             
@@ -203,6 +237,60 @@
         }
         setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
 
+        function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
+            const check = document.getElementById(checkId);
+            const container = document.getElementById(containerId);
+            if(!check || !container) return;
+            const hourWheel = document.getElementById(hourWheelId);
+            const minuteWheel = document.getElementById(minuteWheelId);
+            const hourInput = document.getElementById(hourInputId);
+            const minuteInput = document.getElementById(minuteInputId);
+            const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
+            const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
+
+            function updateSelection(wheel, input, items) {
+                clearTimeout(wheel.scrollTimeout);
+                wheel.scrollTimeout = setTimeout(() => {
+                    const itemHeight = items.length > 0 ? items[0].offsetHeight : 40;
+                    const scrollPos = wheel.scrollTop;
+                    const selectedIndex = Math.round(scrollPos / itemHeight);
+                    if (items[selectedIndex]) {
+                        input.value = items[selectedIndex].textContent;
+                        items.forEach((item, index) => {
+                            item.classList.toggle('is-selected', index === selectedIndex);
+                        });
+                    }
+                }, 150);
+            }
+
+            hourWheel.addEventListener('scroll', () => updateSelection(hourWheel, hourInput, hourItems));
+            minuteWheel.addEventListener('scroll', () => updateSelection(minuteWheel, minuteInput, minuteItems));
+
+            check.addEventListener('change', function() {
+                if (this.checked) {
+                    container.classList.remove('hidden');
+                    hourInput.disabled = false;
+                    minuteInput.disabled = false;
+                    
+                    const hourIndex = defaultHour;
+                    const minuteIndex = defaultMinute / 5;
+                    hourWheel.scrollTop = 40 * hourIndex;
+                    minuteWheel.scrollTop = 40 * minuteIndex;
+
+                    setTimeout(() => {
+                        hourWheel.dispatchEvent(new Event('scroll'));
+                        minuteWheel.dispatchEvent(new Event('scroll'));
+                    }, 200);
+                } else {
+                    container.classList.add('hidden');
+                    hourInput.disabled = true;
+                    minuteInput.disabled = true;
+                }
+            });
+        }
+        setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
+        setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
+        
         const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="font-semibold text-indigo-500">Noa</span>`;
         const themeToggleBtn=document.getElementById('theme-toggle'),themeToggleDarkIcon=document.getElementById('theme-toggle-dark-icon'),themeToggleLightIcon=document.getElementById('theme-toggle-light-icon');if(localStorage.getItem('color-theme')==='dark'||(!('color-theme'in localStorage)&&window.matchMedia('(prefers-color-scheme: dark)').matches)){if(themeToggleLightIcon)themeToggleLightIcon.classList.remove('hidden')}else{if(themeToggleDarkIcon)themeToggleDarkIcon.classList.remove('hidden')}
         if(themeToggleBtn)themeToggleBtn.addEventListener('click',function(){themeToggleDarkIcon.classList.toggle('hidden');themeToggleLightIcon.classList.toggle('hidden');if(localStorage.getItem('color-theme')){if(localStorage.getItem('color-theme')==='light'){document.documentElement.classList.add('dark');localStorage.setItem('color-theme','dark')}else{document.documentElement.classList.remove('dark');localStorage.setItem('color-theme','light')}}else{if(document.documentElement.classList.contains('dark')){document.documentElement.classList.remove('dark');localStorage.setItem('color-theme','light')}else{document.documentElement.classList.add('dark');localStorage.setItem('color-theme','dark')}}});
