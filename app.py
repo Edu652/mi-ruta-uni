@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con Algoritmo Corregido)
+# Fichero: app.py (Versión con el Algoritmo de Búsqueda Lógico y Corregido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -171,7 +171,7 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA (BFS) =====
+# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA =====
 def find_all_routes_intelligently(origen, destino, df):
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
@@ -179,7 +179,6 @@ def find_all_routes_intelligently(origen, destino, df):
     
     rutas_encontradas = []
     
-    # Cola para la búsqueda: (ruta_actual, lugares_visitados)
     cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
     
     while cola:
@@ -201,11 +200,8 @@ def find_all_routes_intelligently(origen, destino, df):
             if proximo_destino in lugares_visitados:
                 continue
                 
-            parada_llegada = ultimo_tramo.get('Parada_Destino', '')
-            parada_salida = siguiente_tramo.get('Parada_Origen', '')
-            if parada_llegada and parada_salida and parada_llegada != parada_salida:
-                continue
-                
+            # LA REGLA ESTRICTA DE PARADAS HA SIDO ELIMINADA
+            
             nueva_ruta = ruta_actual + [siguiente_tramo]
             nuevos_visitados = lugares_visitados | {proximo_destino}
             cola.append((nueva_ruta, nuevos_visitados))
@@ -229,10 +225,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                     hora_actual = now.time()
-                    if h_primer > h_ultim:
+                    if h_primer > h_ultim: # Horario nocturno
                         if not (hora_actual >= h_primer or hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    else:
+                    else: # Horario diurno
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
@@ -316,3 +312,4 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
