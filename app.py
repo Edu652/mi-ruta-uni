@@ -241,14 +241,24 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     print(f"\n  🔍 Iniciando búsqueda BFS:")
     print(f"     Lugares disponibles desde '{origen}': {len(rutas_por_origen.get(origen, []))}")
     if origen in rutas_por_origen:
-        print(f"     Destinos directos desde '{origen}': {[r['Destino'] for r in rutas_por_origen[origen]]}")
+        destinos_unicos = list(set([r['Destino'] for r in rutas_por_origen[origen]]))
+        print(f"     Destinos únicos desde '{origen}': {destinos_unicos}")
     else:
         print(f"     ⚠️ No hay rutas que salgan de '{origen}'")
+    
+    # DEBUG: Mostrar qué lugares pueden llevar al destino
+    lugares_con_destino = [lugar for lugar, rutas in rutas_por_origen.items() 
+                          if any(r['Destino'] == destino for r in rutas)]
+    print(f"     Lugares desde donde se puede llegar a '{destino}': {lugares_con_destino}")
     
     rutas_encontradas = []
     cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
     
     print(f"     Cola inicial: {len(cola)} rutas")
+    
+    # DEBUG: Mostrar los primeros destinos que se exploran
+    primeros_destinos = list(set([r['Destino'] for r in rutas_por_origen.get(origen, [])]))[:5]
+    print(f"     Explorando desde: {primeros_destinos}...")
     
     while cola:
         ruta_actual, lugares_visitados = cola.pop(0)
