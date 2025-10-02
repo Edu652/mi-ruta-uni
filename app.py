@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con "La Brújula" y todas las correcciones)
+# Fichero: app.py (Versión Final con Geografía Corregida)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -14,8 +14,10 @@ app = Flask(__name__)
 # --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
-PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
-PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
+# ===== LISTAS DE PROVINCIAS CORREGIDAS =====
+PROVINCIA_HUELVA = ["Huelva", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
+PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Bollullos", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
+# =============================================
 
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
@@ -99,7 +101,7 @@ def buscar():
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
-        now = now_aware.replace(tzinfo=None) # Usamos versión "naive" para cálculos
+        now = now_aware.replace(tzinfo=None)
 
         dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
         if dia_seleccionado != 'hoy':
@@ -182,17 +184,17 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
         rutas_por_origen[row['Origen']].append(row)
 
     provincia_destino_brujula = PROVINCIA_HUELVA if brujula == 'HUELVA' else PROVINCIA_SEVILLA
-    provincia_origen_brujula = PROVINCIA_SEVILLA if brujula == 'HUELVA' else PROVINCIA_HUELVA
+    
+    is_intra_provincial = (origen in provincia_destino_brujula and destino in provincia_destino_brujula)
 
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
             continue
-        if origen in provincia_origen_brujula and r1['Destino'] in provincia_origen_brujula and destino in provincia_destino_brujula:
-            pass 
-        elif origen in provincia_destino_brujula and r1['Destino'] in provincia_origen_brujula:
+
+        if not is_intra_provincial and r1['Destino'] not in provincia_destino_brujula:
             continue
-            
+
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
             parada_llegada_r1 = r1.get('Parada_Destino', '')
@@ -205,7 +207,8 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
                 continue
             
             if r2['Destino'] == origen: continue
-            if origen_r2 in provincia_destino_brujula and r2['Destino'] in provincia_origen_brujula:
+            
+            if not is_intra_provincial and r2['Destino'] not in provincia_destino_brujula:
                 continue
 
             origen_r3 = r2['Destino']
