@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con Algoritmo Corregido)
+# Fichero: app.py (Versión Final con Transbordos Flexibles)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -153,6 +153,13 @@ def buscar():
             resultado = calculate_route_times(ruta, is_desde_ahora, now)
             if resultado: resultados_procesados.append(resultado)
         
+        # FILTROS FINALES
+        lugares_a_evitar = []
+        if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
+        if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
+        if lugares_a_evitar:
+            resultados_procesados = [r for r in resultados_procesados if not any(s.get('Destino') in lugares_a_evitar for s in r.get('segmentos', [])[:-1])]
+
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
@@ -171,32 +178,28 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA INTELIGENTE Y ROBUSTA (SIN BRÚJULA) =====
+# ===== FUNCIÓN DE BÚSQUEDA CON TRANSBORDOS FLEXIBLES =====
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
 
-    # 1. Rutas directas (1 tramo)
+    # 1. Rutas directas
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
 
-    # 2. Rutas con 1 transbordo (2 tramos)
+    # 2. Rutas con 1 transbordo
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino: continue
         
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
             if r2['Destino'] == destino:
-                parada_llegada_r1 = r1.get('Parada_Destino', '')
-                parada_salida_r2 = r2.get('Parada_Origen', '')
-                if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
-                    continue
                 rutas.append([r1, r2])
 
-    # 3. Rutas con 2 transbordos (3 tramos)
+    # 3. Rutas con 2 transbordos
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino: continue
 
@@ -204,18 +207,9 @@ def find_all_routes_intelligently(origen, destino, df):
         for r2 in rutas_por_origen.get(origen_r2, []):
             if r2['Destino'] == destino or r2['Destino'] == origen: continue
             
-            parada_llegada_r1 = r1.get('Parada_Destino', '')
-            parada_salida_r2 = r2.get('Parada_Origen', '')
-            if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
-                continue
-
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
                 if r3['Destino'] == destino:
-                    parada_llegada_r2 = r2.get('Parada_Destino', '')
-                    parada_salida_r3 = r3.get('Parada_Origen', '')
-                    if parada_llegada_r2 != '' and parada_salida_r3 != '' and parada_llegada_r2 != parada_salida_r3:
-                        continue
                     rutas.append([r1, r2, r3])
     return rutas
 # =========================================================
@@ -236,10 +230,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                     hora_actual = now.time()
-                    if h_primer > h_ultim:
+                    if h_primer > h_ultim: # Horario nocturno
                         if not (hora_actual >= h_primer or hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    else:
+                    else: # Horario diurno
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
