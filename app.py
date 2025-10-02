@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con "La Brújula" y Corrección de Fechas)
+# Fichero: app.py (Versión Final con todas las mejoras)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -11,10 +11,9 @@ from collections import defaultdict
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
+# --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
-# --- DEFINICIÓN DE PROVINCIAS PARA LA BRÚJULA (ACTUALIZADO) ---
 PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
 PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
@@ -158,7 +157,6 @@ def buscar():
             if resultado: resultados_procesados.append(resultado)
         
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
-            # CORRECCIÓN: Nos aseguramos de que ambas fechas son "naive" antes de comparar
             ahora_naive = now.replace(tzinfo=None)
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r['segmentos'] and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora_naive)]
 
@@ -189,28 +187,22 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
         if r1['Destino'] == destino:
             rutas.append([r1])
             continue
-
         if origen in provincia_origen_brujula and r1['Destino'] in provincia_origen_brujula and destino in provincia_destino_brujula:
             pass 
         elif origen in provincia_destino_brujula and r1['Destino'] in provincia_origen_brujula:
             continue
-
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
             if r2['Destino'] == destino:
                 rutas.append([r1, r2])
                 continue
-            
             if r2['Destino'] == origen: continue
-
             if origen_r2 in provincia_destino_brujula and r2['Destino'] in provincia_origen_brujula:
                 continue
-
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
                 if r3['Destino'] == destino:
                     rutas.append([r1, r2, r3])
-    
     return rutas
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
@@ -223,22 +215,30 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
+            # Lógica FUERA DE HORARIO para rutas de frecuencia de 1 tramo
+            h_primer_str = seg_dict.get('H_Primer', '')
+            h_ultim_str = seg_dict.get('H_Ultim', '')
+            if h_primer_str and h_ultim_str:
+                try:
+                    h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
+                    h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
+                    if not (h_primer <= now.time() <= h_ultim):
+                        seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                except: pass
+            return {"segmentos": [seg_dict], "precio_total": float(seg_dict.get('Precio', 0)), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
         
         if anchor_index != -1:
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
-                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0)
-                dur = timedelta(minutes=dur_min)
+                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
             llegada_anterior_dt = segmentos[anchor_index].get('Llegada_dt')
             for i in range(anchor_index + 1, len(segmentos)):
-                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0)
-                dur = timedelta(minutes=dur_min)
+                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
                 if pd.notna(llegada_anterior_dt):
                     segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
@@ -249,8 +249,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             llegada_anterior_dt = None
             start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7,0))
             for i, seg in enumerate(segmentos):
-                dur_min = seg.get('Duracion_Trayecto_Min', 0)
-                dur = timedelta(minutes=dur_min)
+                dur_min = seg.get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
                 if i == 0: seg['Salida_dt'] = start_time
                 elif pd.notna(llegada_anterior_dt): seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 else: seg['Salida_dt'] = pd.NaT
@@ -265,20 +264,33 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         segmentos_formateados = []
         for seg in segmentos:
             seg_dict = seg.to_dict()
+            salida_dt = seg['Salida_dt']
+            # Lógica FUERA DE HORARIO para transbordos
+            if seg.get('Tipo_Horario') == 'Frecuencia':
+                h_primer_str = seg.get('H_Primer', ''); h_ultim_str = seg.get('H_Ultim', '')
+                if h_primer_str and h_ultim_str:
+                    try:
+                        h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
+                        h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
+                        if not (h_primer <= salida_dt.time() <= h_ultim):
+                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                    except: pass
+            
             seg_dict.update({
                 'icono': get_icon_for_compania(seg_dict.get('Compania')), 
-                'Salida_str': seg['Salida_dt'].strftime('%H:%M'), 
+                'Salida_str': salida_dt.strftime('%H:%M'), 
                 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 
-                'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60,
-                'Salida_dt': seg['Salida_dt']
+                'Duracion_Tramo_Min': (seg['Llegada_dt'] - salida_dt).total_seconds() / 60,
+                'Salida_dt': salida_dt
             })
             segmentos_formateados.append(seg_dict)
         
         llegada_final_dt_obj = segmentos[-1]['Llegada_dt']
+        precio_total = sum(float(s.get('Precio', 0)) for s in ruta_series_list)
 
         return {
             "segmentos": segmentos_formateados,
-            "precio_total": sum(float(s.get('Precio', 0)) for s in ruta_series_list),
+            "precio_total": precio_total,
             "llegada_final_dt_obj": llegada_final_dt_obj,
             "hora_llegada_final": llegada_final_dt_obj.time(),
             "duracion_total_str": format_timedelta(llegada_final_dt_obj - primera_salida_dt)
