@@ -15,6 +15,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
         #search-container { transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out; }
+        .modal-overlay { transition: opacity 0.3s ease-in-out; }
+        .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        .card-container::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            opacity: 0.15; filter: grayscale(100%) brightness(150%); z-index: 0;
+        }
+        .card-content { position: relative; z-index: 2; }
     </style>
     <script>
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -27,59 +36,98 @@
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
 
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors">
-            
-            <div class="relative text-center mb-6">
-                <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta</h1>
-                <p id="saludo" class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
-            </div>
-
-            <!-- ===== SELECCIÓN DE BRÚJULA ===== -->
-            <div id="brujula-selector" class="space-y-4 text-center">
-                <p class="font-semibold text-lg">¿A qué provincia viajas principalmente?</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                        Viajar hacia HUELVA
-                    </button>
-                    <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                        Viajar hacia SEVILLA
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
+            <div class="card-content">
+                <div class="relative text-center mb-6">
+                    <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta</h1>
+                    <p id="saludo" class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
+                    <button id="theme-toggle" type="button" class="absolute -top-2 -right-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                     </button>
                 </div>
-            </div>
-            <!-- =============================== -->
 
-            <!-- ===== CONTENEDOR DEL FORMULARIO (OCULTO INICIALMENTE) ===== -->
-            <div id="search-container" class="max-h-0 opacity-0 overflow-hidden">
-                <div class="text-center mb-4">
-                     <button id="cambiar-brujula" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">← Cambiar provincia de destino</button>
-                </div>
-                <form id="main-form" action="/buscar" method="post" class="space-y-4">
-                    <input type="hidden" name="brujula" id="brujula-input">
-                    <div>
-                        <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
-                        <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
-                        <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
-                            {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
-                        </select>
-                    </div>
-                    <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
-                            <span>+ Opciones de Búsqueda</span>
+                <div id="brujula-selector" class="space-y-4 text-center">
+                    <p class="font-semibold text-lg">¿A qué provincia viajas principalmente?</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            Viajar hacia HUELVA
+                        </button>
+                        <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            Viajar hacia SEVILLA
                         </button>
                     </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 dark:focus:ring-offset-slate-900 focus:ring-indigo-500 !mt-6">
-                        Buscar Ruta
-                    </button>
-                </form>
+                </div>
+
+                <div id="search-container" class="max-h-0 opacity-0 overflow-hidden">
+                    <div class="text-center mb-4">
+                        <button id="cambiar-brujula" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">← Cambiar provincia de destino</button>
+                    </div>
+                    <form id="main-form" action="/buscar" method="post" class="space-y-4">
+                        <input type="hidden" name="brujula" id="brujula-input">
+                        <div>
+                            <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
+                            <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <option value="" disabled selected>Selecciona</option>
+                                {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
+                            <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <option value="" disabled selected>Selecciona</option>
+                                {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                            <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
+                                <span>+ Opciones de Búsqueda</span>
+                            </button>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 dark:focus:ring-offset-slate-900 focus:ring-indigo-500 !mt-6">
+                            Buscar Ruta
+                        </button>
+                    </form>
+                </div>
             </div>
-             <!-- (Aquí irían los MODALES de filtros e información, que no cambian) -->
+        </div>
+    </div>
+    
+    <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div id="filters-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
+        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Filtros Avanzados</h2>
+                <button type="button" id="close-filters-modal" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
+                    <label for="dia_semana_selector" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Ver horarios para:</label>
+                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3">
+                        <option value="hoy" selected>Hoy (Día actual)</option>
+                        <option value="0">Lunes</option>
+                        <option value="1">Martes</option>
+                        <option value="2">Miércoles</option>
+                        <option value="3">Jueves</option>
+                        <option value="4">Viernes</option>
+                        <option value="5">Sábado</option>
+                        <option value="6">Domingo</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div class="flex items-center">
+                        <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                        <label for="evitar_sj" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Sta. Justa</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                        <label for="evitar_pa" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Plz. Armas</label>
+                    </div>
+                </div>
+            </div>
+            <button type="button" id="apply-filters" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md">Aplicar Filtros</button>
         </div>
     </div>
 
@@ -88,22 +136,105 @@
         const searchContainer = document.getElementById('search-container');
         const brujulaInput = document.getElementById('brujula-input');
         const cambiarBrujulaBtn = document.getElementById('cambiar-brujula');
+        const destinoSelect = document.getElementById('destino');
+        const todasLasOpciones = Array.from(destinoSelect.options);
+
+        const provinciaHuelva = {{ provincia_huelva | tojson }};
+        const provinciaSevilla = {{ provincia_sevilla | tojson }};
 
         function seleccionarBrujula(provincia) {
             brujulaInput.value = provincia;
-            brujulaSelector.classList.add('hidden');
+            
+            let provinciaDestino = (provincia === 'HUELVA') ? provinciaHuelva : provinciaSevilla;
+            destinoSelect.innerHTML = ''; 
+            
+            todasLasOpciones.forEach(option => {
+                if (option.disabled || provinciaDestino.includes(option.value)) {
+                    destinoSelect.add(option.cloneNode(true));
+                }
+            });
+
+            brujulaSelector.style.display = 'none';
             searchContainer.classList.remove('max-h-0', 'opacity-0');
-            searchContainer.style.maxHeight = searchContainer.scrollHeight + 'px';
+            setTimeout(() => {
+                 searchContainer.style.maxHeight = searchContainer.scrollHeight + 'px';
+            }, 10);
         }
 
         cambiarBrujulaBtn.addEventListener('click', () => {
             searchContainer.style.maxHeight = '0';
             searchContainer.classList.add('opacity-0');
-            brujulaSelector.classList.remove('hidden');
+            setTimeout(() => {
+                brujulaSelector.style.display = 'block';
+                destinoSelect.innerHTML = '';
+                todasLasOpciones.forEach(option => destinoSelect.add(option.cloneNode(true)));
+            }, 500);
         });
         
-        // El resto del script de saludos, modales, etc. se mantiene igual
+        function setupModal(openBtnId, closeBtnId, modalId, applyBtnId = null) {
+            const openBtn = document.getElementById(openBtnId);
+            const closeBtn = document.getElementById(closeBtnId);
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            const overlay = modal.querySelector('.modal-overlay');
+            const container = modal.querySelector('.modal-container');
+            const applyBtn = applyBtnId ? document.getElementById(applyBtnId) : null;
+
+            function openModal() {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    container.classList.remove('opacity-0', 'scale-95');
+                }, 10);
+            }
+
+            function closeModal() {
+                overlay.classList.add('opacity-0');
+                container.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+
+            if(openBtn) openBtn.addEventListener('click', openModal);
+            if(closeBtn) closeBtn.addEventListener('click', closeModal);
+            if(applyBtn) applyBtn.addEventListener('click', closeModal);
+            if(overlay) overlay.addEventListener('click', closeModal);
+        }
+        
+        setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
+
         const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="font-semibold text-indigo-500">Noa</span>`;
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if(themeToggleLightIcon) themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            if(themeToggleDarkIcon) themeToggleDarkIcon.classList.remove('hidden');
+        }
+        if(themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function() {
+                themeToggleDarkIcon.classList.toggle('hidden');
+                themeToggleLightIcon.classList.toggle('hidden');
+                if (localStorage.getItem('color-theme')) {
+                    if (localStorage.getItem('color-theme') === 'light') {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('color-theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('color-theme', 'light');
+                    }
+                } else {
+                    if (document.documentElement.classList.contains('dark')) {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('color-theme', 'light');
+                    } else {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('color-theme', 'dark');
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
+
