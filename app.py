@@ -185,7 +185,7 @@ def find_all_routes_intelligently(origen, destino, df):
 
     # 2. Rutas con 1 transbordo (2 tramos)
     for r1 in rutas_por_origen.get(origen, []):
-        if r1['Destino'] == destino: continue # Ya es una ruta directa
+        if r1['Destino'] == destino: continue
         
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
@@ -193,7 +193,7 @@ def find_all_routes_intelligently(origen, destino, df):
                 parada_llegada_r1 = r1.get('Parada_Destino', '')
                 parada_salida_r2 = r2.get('Parada_Origen', '')
                 if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
-                    continue # Transbordo no viable
+                    continue
                 rutas.append([r1, r2])
 
     # 3. Rutas con 2 transbordos (3 tramos)
