@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con "La Brújula" y Corrección de Fechas)
+# Fichero: app.py (Versión Final con "La Brújula" y todas las correcciones)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -11,10 +11,9 @@ from collections import defaultdict
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
+# --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
-# --- DEFINICIÓN DE PROVINCIAS PARA LA BRÚJULA (ACTUALIZADO) ---
 PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
 PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
@@ -100,7 +99,7 @@ def buscar():
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
-        now = now_aware.replace(tzinfo=None)
+        now = now_aware.replace(tzinfo=None) # Usamos versión "naive" para cálculos
 
         dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
         if dia_seleccionado != 'hoy':
