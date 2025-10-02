@@ -178,7 +178,7 @@
         const provinciaSevilla = {{ provincia_sevilla | tojson }};
 
         const exclusionesOrigenHuelva = ["Bormujos", "Mairena"];
-        const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren", "Benacazón", "Sanlúcar la Mayor"];
+        const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren"];
         
         function filtrarDesplegable(select, opciones, permitidos = [], exclusiones = []) {
             select.innerHTML = '';
@@ -195,13 +195,10 @@
             brujulaInput.value = provinciaDestino;
             brujulaDisplay.textContent = provinciaDestino;
             
-            // LÓGICA DE FILTRADO CORREGIDA
             if (provinciaDestino === 'HUELVA') {
-                // Viajando A Huelva: Origen puede ser CUALQUIERA, Destino solo Huelva
                 filtrarDesplegable(origenSelect, todasLasOpciones, [], huelvaExclusiones);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
             } else { // Viajando a SEVILLA
-                // Viajando A Sevilla: Origen puede ser CUALQUIERA, Destino solo Sevilla
                 filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
