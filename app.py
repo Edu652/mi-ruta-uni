@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión con Algoritmo de Búsqueda Profesional - BFS)
+# Fichero: app.py (Versión corregida para producción)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -8,6 +8,7 @@ import pytz
 import requests
 import io
 from collections import defaultdict
+import os
 
 app = Flask(__name__)
 
@@ -66,6 +67,7 @@ try:
         if col in rutas_df_global.columns:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
+    print(f"✓ Datos cargados correctamente: {len(rutas_df_global)} rutas")
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
@@ -74,7 +76,9 @@ except Exception as e:
 try:
     with open("frases_motivadoras.json", "r", encoding="utf-8") as f:
         frases = json.load(f)
-except Exception:
+    print(f"✓ Frases motivadoras cargadas: {len(frases)} frases")
+except Exception as e:
+    print(f"⚠ No se pudieron cargar frases motivadoras: {e}")
     frases = ["El esfuerzo de hoy es el éxito de mañana."]
 
 # --- Rutas de la Aplicación ---
@@ -92,6 +96,8 @@ def buscar():
         form_data = request.form.to_dict()
         origen = form_data.get("origen")
         destino = form_data.get("destino")
+        
+        print(f"→ Búsqueda: {origen} → {destino}")
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
@@ -119,6 +125,7 @@ def buscar():
         if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
 
         candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df, lugares_a_evitar)
+        print(f"  Candidatos encontrados: {len(candidatos_plantilla)}")
         
         rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
         if not rutas_fijas_df.empty:
@@ -132,6 +139,9 @@ def buscar():
         candidatos_expandidos = []
         if candidatos_plantilla:
             for ruta_plantilla in candidatos_plantilla:
+                # CAMBIO: Asegurar que todos los segmentos son diccionarios
+                ruta_plantilla = [seg if isinstance(seg, dict) else seg.to_dict() if hasattr(seg, 'to_dict') else dict(seg) for seg in ruta_plantilla]
+                
                 if all(s.get('Tipo_Horario') == 'Frecuencia' for s in ruta_plantilla):
                     candidatos_expandidos.append(ruta_plantilla)
                     continue
@@ -148,14 +158,18 @@ def buscar():
                 posibles_anclas = rutas_fijas_df[mask]
                 for _, ancla_real in posibles_anclas.iterrows():
                     nueva_ruta = list(ruta_plantilla)
-                    nueva_ruta[idx_ancla] = ancla_real
+                    nueva_ruta[idx_ancla] = ancla_real.to_dict()
                     candidatos_expandidos.append(nueva_ruta)
+        
+        print(f"  Candidatos expandidos: {len(candidatos_expandidos)}")
         
         resultados_procesados = []
         for ruta in candidatos_expandidos:
             is_desde_ahora = form_data.get('desde_ahora') and dia_seleccionado == 'hoy'
             resultado = calculate_route_times(ruta, is_desde_ahora, now)
             if resultado: resultados_procesados.append(resultado)
+        
+        print(f"  Resultados procesados: {len(resultados_procesados)}")
         
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
@@ -169,17 +183,22 @@ def buscar():
                     resultados_unicos[clave] = r
             resultados_procesados = sorted(list(resultados_unicos.values()), key=lambda x: x.get('llegada_final_dt_obj', datetime.max))
         
+        print(f"  ✓ Resultados finales: {len(resultados_procesados)}")
+        
         return render_template("resultado.html", origen=origen, destino=destino, resultados=resultados_procesados, filtros=form_data, dia_semana=nombre_dia)
 
     except Exception as e:
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
+        import traceback
+        traceback.print_exc()
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA PROFESIONAL (BFS) =====
+# ===== FUNCIÓN DE BÚSQUEDA PROFESIONAL (BFS) - CORREGIDA =====
 def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     rutas_por_origen = defaultdict(list)
+    # CAMBIO CRÍTICO: Convertir a diccionario inmediatamente
     for _, row in df.iterrows():
-        rutas_por_origen[row['Origen']].append(row)
+        rutas_por_origen[row['Origen']].append(row.to_dict())
     
     rutas_encontradas = []
     cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
@@ -220,13 +239,22 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
-        segmentos = [s.copy() for s in ruta_series_list]
+        # CAMBIO CRÍTICO: Asegurar que trabajamos con diccionarios limpios
+        segmentos = []
+        for s in ruta_series_list:
+            if isinstance(s, dict):
+                segmentos.append(s.copy())
+            elif hasattr(s, 'to_dict'):
+                segmentos.append(s.to_dict())
+            else:
+                segmentos.append(dict(s))
+        
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0].get('Tipo_Horario') == 'Frecuencia':
             dur_min = float(segmentos[0].get('Duracion_Trayecto_Min', 0))
             duracion = timedelta(minutes=dur_min)
-            seg_dict = segmentos[0].to_dict()
+            seg_dict = segmentos[0].copy()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
             h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
@@ -243,7 +271,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                 except: pass
             return {"segmentos": [seg_dict], "precio_total": float(seg_dict.get('Precio', 0)), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
-        anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
+        anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s.get('Salida_dt'))), -1)
         
         if anchor_index != -1:
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
@@ -279,7 +307,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         primera_salida_dt = segmentos[0]['Salida_dt']
         segmentos_formateados = []
         for seg in segmentos:
-            seg_dict = seg.to_dict()
+            seg_dict = seg.copy()
             salida_dt = seg['Salida_dt']
             if seg.get('Tipo_Horario') == 'Frecuencia':
                 h_primer_str = seg.get('H_Primer', ''); h_ultim_str = seg.get('H_Ultim', '')
@@ -306,7 +334,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             segmentos_formateados.append(seg_dict)
         
         llegada_final_dt_obj = segmentos[-1]['Llegada_dt']
-        precio_total = sum(float(s.get('Precio', 0)) for s in ruta_series_list)
+        precio_total = sum(float(s.get('Precio', 0)) for s in segmentos)
 
         return {
             "segmentos": segmentos_formateados,
@@ -317,8 +345,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         }
     except Exception as e:
         print(f"ERROR en calculate_route_times: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 if __name__ == "__main__":
-    app.run(debug=True)
-
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
