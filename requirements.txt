@@ -4,5 +4,3 @@ openpyxl
 pytz
 gunicorn
 requests
-celery
-redis
