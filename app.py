@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con "La Brújula" y Corrección de Fechas)
+# Fichero: app.py (Versión Final con todas las correcciones de lógica)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -14,8 +14,8 @@ app = Flask(__name__)
 # --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
-PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
-PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
+PROVINCIA_HUELVA = ["Huelva", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
+PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Bollullos", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
@@ -99,7 +99,7 @@ def buscar():
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
-        now = now_aware.replace(tzinfo=None) # Usamos versión "naive" para cálculos
+        now = now_aware.replace(tzinfo=None)
 
         dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
         if dia_seleccionado != 'hoy':
@@ -159,7 +159,7 @@ def buscar():
         
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
-            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r['segmentos'] and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
 
         if resultados_procesados:
             resultados_unicos = {}
@@ -190,7 +190,7 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
             rutas.append([r1])
             continue
 
-        if not is_intra_provincial and r1['Destino'] not in provincia_destino_brujula and r1['Destino'] not in PROVINCIA_SEVILLA: # Permite transbordos en Sevilla
+        if not is_intra_provincial and r1['Destino'] not in provincia_destino_brujula and r1['Destino'] not in PROVINCIA_SEVILLA:
             continue
 
         origen_r2 = r1['Destino']
@@ -230,14 +230,19 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            h_primer_str = seg_dict.get('H_Primer', '')
-            h_ultim_str = seg_dict.get('H_Ultim', '')
+            
+            h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
                 try:
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
-                    if not (h_primer <= now.time() <= h_ultim):
-                        seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                    hora_actual = now.time()
+                    if h_primer > h_ultim: # Horario nocturno (pasa de medianoche)
+                        if not (hora_actual >= h_primer or hora_actual <= h_ultim):
+                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                    else: # Horario diurno
+                        if not (h_primer <= hora_actual <= h_ultim):
+                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
             return {"segmentos": [seg_dict], "precio_total": float(seg_dict.get('Precio', 0)), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
@@ -285,8 +290,13 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     try:
                         h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                         h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
-                        if not (h_primer <= salida_dt.time() <= h_ultim):
-                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                        hora_salida = salida_dt.time()
+                        if h_primer > h_ultim: # Horario nocturno
+                            if not (hora_salida >= h_primer or hora_salida <= h_ultim):
+                                seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                        else: # Horario diurno
+                            if not (h_primer <= hora_salida <= h_ultim):
+                                seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                     except: pass
             
             seg_dict.update({
