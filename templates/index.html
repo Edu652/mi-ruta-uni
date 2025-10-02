@@ -212,7 +212,6 @@
     </div>
 
     <script>
-        // --- JAVASCRIPT 100% COMPLETO Y CORREGIDO ---
         const brujulaSelector = document.getElementById('brujula-selector');
         const searchContainer = document.getElementById('search-container');
         const brujulaInput = document.getElementById('brujula-input');
@@ -230,7 +229,6 @@
         const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren"];
         
         function filtrarDesplegable(select, opciones, permitidos = [], exclusiones = []) {
-            console.log("Filtrando desplegable:", { selectId: select.id, permitidos: permitidos, exclusiones: exclusiones });
             select.innerHTML = '';
             opciones.forEach(option => {
                 let esPermitido = permitidos.length === 0 || permitidos.includes(option.value);
@@ -242,28 +240,23 @@
         }
 
         function seleccionarBrujula(provinciaDestino) {
-            console.log("Botón pulsado. Provincia destino:", provinciaDestino);
             brujulaInput.value = provinciaDestino;
             brujulaDisplay.textContent = provinciaDestino;
             
             if (provinciaDestino === 'HUELVA') {
-                console.log("Viajando a HUELVA. Filtrando origen y destino.");
                 filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenHuelva);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
             } else { // Viajando a SEVILLA
-                console.log("Viajando a SEVILLA. Filtrando origen y destino.");
                 filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
                 filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
             
-            console.log("Mostrando formulario de búsqueda.");
             brujulaSelector.style.display = 'none';
             searchContainer.classList.remove('max-h-0', 'opacity-0');
             setTimeout(() => { searchContainer.style.maxHeight = searchContainer.scrollHeight + 'px'; }, 10);
         }
 
         cambiarBrujulaBtn.addEventListener('click', () => {
-            console.log("Cambiando brújula. Ocultando formulario y restaurando desplegables.");
             searchContainer.style.maxHeight = '0';
             searchContainer.classList.add('opacity-0');
             setTimeout(() => {
