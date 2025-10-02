@@ -107,14 +107,12 @@
                     <label for="dia_semana_selector" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Ver horarios para:</label>
                     <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3">
                         <option value="hoy" selected>Hoy (Día actual)</option>
-                        <option value="0">Lunes</option>
-                        <option value="1">Martes</option>
-                        <option value="2">Miércoles</option>
-                        <option value="3">Jueves</option>
-                        <option value="4">Viernes</option>
-                        <option value="5">Sábado</option>
-                        <option value="6">Domingo</option>
+                        <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
                     </select>
+                </div>
+                <div class="flex items-center">
+                     <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
+                     <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar desde la hora actual</label>
                 </div>
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <div class="flex items-center">
@@ -136,24 +134,38 @@
         const searchContainer = document.getElementById('search-container');
         const brujulaInput = document.getElementById('brujula-input');
         const cambiarBrujulaBtn = document.getElementById('cambiar-brujula');
+        
+        const origenSelect = document.getElementById('origen');
         const destinoSelect = document.getElementById('destino');
-        const todasLasOpciones = Array.from(destinoSelect.options);
+        const todasLasOpcionesOrigen = Array.from(origenSelect.options);
+        const todasLasOpcionesDestino = Array.from(destinoSelect.options);
 
         const provinciaHuelva = {{ provincia_huelva | tojson }};
         const provinciaSevilla = {{ provincia_sevilla | tojson }};
 
-        function seleccionarBrujula(provincia) {
-            brujulaInput.value = provincia;
-            
-            let provinciaDestino = (provincia === 'HUELVA') ? provinciaHuelva : provinciaSevilla;
-            destinoSelect.innerHTML = ''; 
-            
-            todasLasOpciones.forEach(option => {
-                if (option.disabled || provinciaDestino.includes(option.value)) {
-                    destinoSelect.add(option.cloneNode(true));
+        function filtrarDesplegable(selectElement, opcionesCompletas, provinciaPermitida) {
+            selectElement.innerHTML = '';
+            opcionesCompletas.forEach(option => {
+                if (option.disabled || provinciaPermitida.includes(option.value)) {
+                    selectElement.add(option.cloneNode(true));
                 }
             });
+        }
 
+        function seleccionarBrujula(provinciaDestino) {
+            brujulaInput.value = provinciaDestino;
+            
+            // EL ORIGEN SIEMPRE MUESTRA TODO
+            origenSelect.innerHTML = '';
+            todasLasOpcionesOrigen.forEach(option => origenSelect.add(option.cloneNode(true)));
+
+            // EL DESTINO SE FILTRA POR LA BRÚJULA
+            if (provinciaDestino === 'HUELVA') {
+                filtrarDesplegable(destinoSelect, todasLasOpcionesDestino, provinciaHuelva);
+            } else { // Viajando a SEVILLA
+                filtrarDesplegable(destinoSelect, todasLasOpcionesDestino, provinciaSevilla);
+            }
+            
             brujulaSelector.style.display = 'none';
             searchContainer.classList.remove('max-h-0', 'opacity-0');
             setTimeout(() => {
@@ -166,8 +178,11 @@
             searchContainer.classList.add('opacity-0');
             setTimeout(() => {
                 brujulaSelector.style.display = 'block';
+                // Restaurar todas las opciones en ambos desplegables
+                origenSelect.innerHTML = '';
+                todasLasOpcionesOrigen.forEach(option => origenSelect.add(option.cloneNode(true)));
                 destinoSelect.innerHTML = '';
-                todasLasOpciones.forEach(option => destinoSelect.add(option.cloneNode(true)));
+                todasLasOpcionesDestino.forEach(option => destinoSelect.add(option.cloneNode(true)));
             }, 500);
         });
         
