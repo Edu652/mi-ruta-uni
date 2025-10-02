@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión con el Algoritmo de Búsqueda Lógico y Corregido)
+# Fichero: app.py (Versión con Algoritmo de Búsqueda Profesional - BFS)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -114,6 +114,12 @@ def buscar():
             mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
             rutas_hoy_df = rutas_hoy_df[mask]
         
+        lugares_a_evitar = []
+        if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
+        if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
+
+        candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df, lugares_a_evitar)
+        
         rutas_fijas_df = rutas_hoy_df[rutas_hoy_df['Tipo_Horario'] == 'Fijo'].copy()
         if not rutas_fijas_df.empty:
             today_date = now.date()
@@ -122,8 +128,6 @@ def buscar():
             rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
             rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
             rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
-
-        candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
         
         candidatos_expandidos = []
         if candidatos_plantilla:
@@ -171,19 +175,17 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA =====
-def find_all_routes_intelligently(origen, destino, df):
+# ===== FUNCIÓN DE BÚSQUEDA PROFESIONAL (BFS) =====
+def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
     
     rutas_encontradas = []
-    
     cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
     
     while cola:
         ruta_actual, lugares_visitados = cola.pop(0)
-        
         ultimo_tramo = ruta_actual[-1]
         lugar_actual = ultimo_tramo['Destino']
         
@@ -194,20 +196,27 @@ def find_all_routes_intelligently(origen, destino, df):
         if len(ruta_actual) >= 3:
             continue
             
+        # El lugar de transbordo no puede ser un lugar a evitar
+        if lugar_actual in lugares_a_evitar:
+            continue
+
         for siguiente_tramo in rutas_por_origen.get(lugar_actual, []):
             proximo_destino = siguiente_tramo['Destino']
             
             if proximo_destino in lugares_visitados:
                 continue
                 
-            # LA REGLA ESTRICTA DE PARADAS HA SIDO ELIMINADA
-            
+            parada_llegada = ultimo_tramo.get('Parada_Destino', '')
+            parada_salida = siguiente_tramo.get('Parada_Origen', '')
+            if parada_llegada and parada_salida and parada_llegada != parada_salida:
+                continue
+                
             nueva_ruta = ruta_actual + [siguiente_tramo]
             nuevos_visitados = lugares_visitados | {proximo_destino}
             cola.append((nueva_ruta, nuevos_visitados))
             
     return rutas_encontradas
-# ==============================================================================
+# =========================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -225,10 +234,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                     hora_actual = now.time()
-                    if h_primer > h_ultim: # Horario nocturno
+                    if h_primer > h_ultim:
                         if not (hora_actual >= h_primer or hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    else: # Horario diurno
+                    else:
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
