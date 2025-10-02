@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con todas las mejoras)
+# Fichero: app.py (Versión Final con Transbordos Viables)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -174,6 +174,7 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
+# ===== FUNCIÓN DE BÚSQUEDA CON TRANSBORDO VIABLE =====
 def find_all_routes_intelligently(origen, destino, df, brujula):
     rutas = []
     rutas_por_origen = defaultdict(list)
@@ -187,23 +188,40 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
         if r1['Destino'] == destino:
             rutas.append([r1])
             continue
+        
         if origen in provincia_origen_brujula and r1['Destino'] in provincia_origen_brujula and destino in provincia_destino_brujula:
             pass 
         elif origen in provincia_destino_brujula and r1['Destino'] in provincia_origen_brujula:
             continue
+            
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
+            # REGLA DE TRANSBORDO VIABLE:
+            parada_llegada_r1 = r1.get('Parada_Destino', '')
+            parada_salida_r2 = r2.get('Parada_Origen', '')
+            if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
+                continue
+
             if r2['Destino'] == destino:
                 rutas.append([r1, r2])
                 continue
+            
             if r2['Destino'] == origen: continue
             if origen_r2 in provincia_destino_brujula and r2['Destino'] in provincia_origen_brujula:
                 continue
+
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
+                # REGLA DE TRANSBORDO VIABLE 2:
+                parada_llegada_r2 = r2.get('Parada_Destino', '')
+                parada_salida_r3 = r3.get('Parada_Origen', '')
+                if parada_llegada_r2 != '' and parada_salida_r3 != '' and parada_llegada_r2 != parada_salida_r3:
+                    continue
+
                 if r3['Destino'] == destino:
                     rutas.append([r1, r2, r3])
     return rutas
+# =================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -211,13 +229,11 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         if len(segmentos) == 1 and segmentos[0].get('Tipo_Horario') == 'Frecuencia':
-            dur_min = segmentos[0].get('Duracion_Trayecto_Min', 0)
+            dur_min = float(segmentos[0].get('Duracion_Trayecto_Min', 0))
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            # Lógica FUERA DE HORARIO para rutas de frecuencia de 1 tramo
-            h_primer_str = seg_dict.get('H_Primer', '')
-            h_ultim_str = seg_dict.get('H_Ultim', '')
+            h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
                 try:
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
@@ -232,13 +248,13 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         if anchor_index != -1:
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
-                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
             llegada_anterior_dt = segmentos[anchor_index].get('Llegada_dt')
             for i in range(anchor_index + 1, len(segmentos)):
-                dur_min = segmentos[i].get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
                 if pd.notna(llegada_anterior_dt):
                     segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
@@ -249,7 +265,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             llegada_anterior_dt = None
             start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7,0))
             for i, seg in enumerate(segmentos):
-                dur_min = seg.get('Duracion_Trayecto_Min', 0); dur = timedelta(minutes=dur_min)
+                dur_min = float(seg.get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
                 if i == 0: seg['Salida_dt'] = start_time
                 elif pd.notna(llegada_anterior_dt): seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                 else: seg['Salida_dt'] = pd.NaT
@@ -265,7 +281,6 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         for seg in segmentos:
             seg_dict = seg.to_dict()
             salida_dt = seg['Salida_dt']
-            # Lógica FUERA DE HORARIO para transbordos
             if seg.get('Tipo_Horario') == 'Frecuencia':
                 h_primer_str = seg.get('H_Primer', ''); h_ultim_str = seg.get('H_Ultim', '')
                 if h_primer_str and h_ultim_str:
@@ -296,6 +311,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             "duracion_total_str": format_timedelta(llegada_final_dt_obj - primera_salida_dt)
         }
     except Exception as e:
+        print(f"ERROR en calculate_route_times: {e}")
         return None
 
 if __name__ == "__main__":
