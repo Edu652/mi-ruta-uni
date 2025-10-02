@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con Transbordos Viables)
+hora el codigo de index.html# Fichero: app.py (Versión Final con Transbordos Viables)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
