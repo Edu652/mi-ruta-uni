@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con "La Brújula" Corregida)
+# Fichero: app.py (Versión Final con "La Brújula" y Corrección de Fechas)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -14,9 +14,9 @@ app = Flask(__name__)
 # --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
-# --- DEFINICIÓN DE PROVINCIAS PARA LA BRÚJULA ---
-PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren"]
-PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas"]
+# --- DEFINICIÓN DE PROVINCIAS PARA LA BRÚJULA (ACTUALIZADO) ---
+PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
+PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
@@ -60,23 +60,15 @@ try:
     response.encoding = 'utf-8'
     csv_content = response.text
     csv_data_io = io.StringIO(csv_content)
-    rutas_df_global = pd.read_csv(csv_data_io, dtype=str).fillna('') # Leemos todo como texto para evitar errores
-
+    rutas_df_global = pd.read_csv(csv_data_io, dtype=str).fillna('')
     column_mapping = {'Parada': 'Parada_Origen', 'Parada.1': 'Parada_Destino'}
     rutas_df_global.rename(columns=column_mapping, inplace=True)
-    
     rutas_df_global.columns = rutas_df_global.columns.str.strip()
     if 'Compañía' in rutas_df_global.columns:
         rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
-    
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
         rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
-
-    if 'Precio' in rutas_df_global.columns:
-        rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
-    else:
-        rutas_df_global['Precio'] = 0.0
-
+    rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
     rutas_df_global = pd.DataFrame()
@@ -95,7 +87,6 @@ def index():
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
-    # Pasamos las listas de provincias a la plantilla
     return render_template("index.html", lugares=lugares, frase=frase, frases=frases, provincia_huelva=PROVINCIA_HUELVA, provincia_sevilla=PROVINCIA_SEVILLA)
 
 @app.route("/buscar", methods=["POST"])
@@ -107,9 +98,10 @@ def buscar():
         brujula = form_data.get("brujula")
         
         tz = pytz.timezone('Europe/Madrid')
-        now = datetime.now(tz)
-        dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
+        now_aware = datetime.now(tz)
+        now = now_aware.replace(tzinfo=None)
 
+        dia_seleccionado = form_data.get('dia_semana_selector', 'hoy')
         if dia_seleccionado != 'hoy':
             try: target_weekday = int(dia_seleccionado)
             except: target_weekday = now.weekday()
@@ -122,9 +114,7 @@ def buscar():
         rutas_hoy_df = rutas_df_global.copy()
         if 'Dias' in rutas_hoy_df.columns:
             rutas_hoy_df['Dias'] = rutas_hoy_df['Dias'].fillna('L-D').str.strip()
-            is_weekday = target_weekday < 5
-            is_saturday = target_weekday == 5
-            is_sunday = target_weekday == 6
+            is_weekday = target_weekday < 5; is_saturday = target_weekday == 5; is_sunday = target_weekday == 6
             mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
             rutas_hoy_df = rutas_hoy_df[mask]
         
@@ -152,8 +142,8 @@ def buscar():
                 ancla_plantilla = ruta_plantilla[idx_ancla]
                 
                 mask = (rutas_fijas_df['Origen'] == ancla_plantilla.get('Origen')) & (rutas_fijas_df['Destino'] == ancla_plantilla.get('Destino'))
-                if pd.notna(ancla_plantilla.get('Compania')): mask &= (rutas_fijas_df['Compania'] == ancla_plantilla.get('Compania'))
-                if pd.notna(ancla_plantilla.get('Transporte')): mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla.get('Transporte'))
+                if pd.notna(ancla_plantilla.get('Compania')) and ancla_plantilla.get('Compania') != '': mask &= (rutas_fijas_df['Compania'] == ancla_plantilla.get('Compania'))
+                if pd.notna(ancla_plantilla.get('Transporte')) and ancla_plantilla.get('Transporte') != '': mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla.get('Transporte'))
                 
                 posibles_anclas = rutas_fijas_df[mask]
                 for _, ancla_real in posibles_anclas.iterrows():
@@ -167,12 +157,14 @@ def buscar():
             resultado = calculate_route_times(ruta, is_desde_ahora, now)
             if resultado: resultados_procesados.append(resultado)
         
-        # ... (Resto de filtros y ordenación sin cambios) ...
+        if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
+            # CORRECCIÓN: Nos aseguramos de que ambas fechas son "naive" antes de comparar
+            ahora_naive = now.replace(tzinfo=None)
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r['segmentos'] and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora_naive)]
 
         if resultados_procesados:
             resultados_unicos = {}
             for r in resultados_procesados:
-                # Clave única para evitar duplicados exactos
                 clave = f"{r['segmentos'][0]['Salida_str']}-{r['duracion_total_str']}"
                 if clave not in resultados_unicos:
                     resultados_unicos[clave] = r
@@ -182,30 +174,26 @@ def buscar():
 
     except Exception as e:
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
-        # En caso de cualquier error, redirigimos a una página de error simple
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA CORREGIDA CON "LA BRÚJULA" =====
 def find_all_routes_intelligently(origen, destino, df, brujula):
     rutas = []
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
 
-    provincia_destino = PROVINCIA_HUELVA if brujula == 'HUELVA' else PROVINCIA_SEVILLA
-    provincia_origen = PROVINCIA_SEVILLA if brujula == 'HUELVA' else PROVINCIA_HUELVA
+    provincia_destino_brujula = PROVINCIA_HUELVA if brujula == 'HUELVA' else PROVINCIA_SEVILLA
+    provincia_origen_brujula = PROVINCIA_SEVILLA if brujula == 'HUELVA' else PROVINCIA_HUELVA
 
-    # Búsqueda de 1, 2 y 3 tramos
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
             continue
 
-        # PODA INTELIGENTE: No te alejes del destino
-        if origen in provincia_origen and r1['Destino'] in provincia_origen and destino in provincia_destino:
-            pass # Permitido: movimiento dentro de la provincia de origen
-        elif origen in provincia_destino and r1['Destino'] in provincia_origen:
-            continue # Prohibido: alejarse de la provincia de destino
+        if origen in provincia_origen_brujula and r1['Destino'] in provincia_origen_brujula and destino in provincia_destino_brujula:
+            pass 
+        elif origen in provincia_destino_brujula and r1['Destino'] in provincia_origen_brujula:
+            continue
 
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
@@ -213,10 +201,9 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
                 rutas.append([r1, r2])
                 continue
             
-            if r2['Destino'] == origen: continue # Evitar bucles A->B->A
+            if r2['Destino'] == origen: continue
 
-            # PODA INTELIGENTE: No vuelvas a la provincia de origen si ya estás fuera
-            if origen_r2 in provincia_destino and r2['Destino'] in provincia_origen:
+            if origen_r2 in provincia_destino_brujula and r2['Destino'] in provincia_origen_brujula:
                 continue
 
             origen_r3 = r2['Destino']
@@ -225,7 +212,6 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
                     rutas.append([r1, r2, r3])
     
     return rutas
-# =================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -236,7 +222,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             dur_min = segmentos[0].get('Duracion_Trayecto_Min', 0)
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
-            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min})
+            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
             return {"segmentos": [seg_dict], "precio_total": seg_dict.get('Precio', 0), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
 
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s['Salida_dt'])), -1)
@@ -259,7 +245,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     llegada_anterior_dt = segmentos[i].get('Llegada_dt')
                 else:
                     segmentos[i]['Salida_dt'] = pd.NaT; segmentos[i]['Llegada_dt'] = pd.NaT; llegada_anterior_dt = pd.NaT
-        else: # Ruta solo de frecuencia
+        else: 
             llegada_anterior_dt = None
             start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7,0))
             for i, seg in enumerate(segmentos):
@@ -283,7 +269,8 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                 'icono': get_icon_for_compania(seg_dict.get('Compania')), 
                 'Salida_str': seg['Salida_dt'].strftime('%H:%M'), 
                 'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 
-                'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60
+                'Duracion_Tramo_Min': (seg['Llegada_dt'] - seg['Salida_dt']).total_seconds() / 60,
+                'Salida_dt': seg['Salida_dt']
             })
             segmentos_formateados.append(seg_dict)
         
