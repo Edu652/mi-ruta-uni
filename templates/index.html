@@ -51,10 +51,10 @@
                     <p class="font-semibold text-lg">¿A dónde vas?</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <button onclick="seleccionarBrujula('HUELVA')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            hacia HUELVA
+                            HUELVA
                         </button>
                         <button onclick="seleccionarBrujula('SEVILLA')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            hacia SEVILLA
+                            SEVILLA
                         </button>
                     </div>
                 </div>
@@ -108,7 +108,7 @@
                     <option value="hoy" selected>Hoy (Día actual)</option>
                     <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
                 </select>
-                <div class="flex items-center">
+                 <div class="flex items-center">
                      <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
                      <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar desde la hora actual</label>
                 </div>
@@ -141,35 +141,32 @@
         const provinciaHuelva = {{ provincia_huelva | tojson }};
         const provinciaSevilla = {{ provincia_sevilla | tojson }};
 
-        // CORRECCIÓN: Listas de exclusión específicas
-        const exclusionesOrigenHuelva = ["Bormujos", "Mairena"]; // Si viajas A Huelva, no puedes salir de estos sitios de Sevilla
-        const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren"]; // Si viajas A Sevilla, no puedes salir de estos sitios de Huelva
-
-        function filtrarDesplegable(select, opciones, exclusiones = []) {
+        const exclusionesOrigenHuelva = ["Bormujos", "Mairena"];
+        const exclusionesOrigenSevilla = ["Casa Ana", "Facultad", "Huelva Bus", "Huelva Tren", "Benacazón", "Sanlúcar la Mayor"];
+        
+        function filtrarDesplegable(select, opciones, permitidos = [], exclusiones = []) {
             select.innerHTML = '';
             opciones.forEach(option => {
-                if (!exclusiones.includes(option.value)) {
+                let esPermitido = permitidos.length === 0 || permitidos.includes(option.value);
+                let esExcluido = exclusiones.includes(option.value);
+                if ( (option.disabled || esPermitido) && !esExcluido ) {
                     select.add(option.cloneNode(true));
                 }
             });
         }
-        
+
         function seleccionarBrujula(provinciaDestino) {
             brujulaInput.value = provinciaDestino;
             brujulaDisplay.textContent = provinciaDestino;
             
-            // Restauramos todas las opciones antes de filtrar
-            origenSelect.innerHTML = '';
-            todasLasOpciones.forEach(option => origenSelect.add(option.cloneNode(true)));
-            destinoSelect.innerHTML = '';
-            todasLasOpciones.forEach(option => destinoSelect.add(option.cloneNode(true)));
-
             if (provinciaDestino === 'HUELVA') {
-                filtrarDesplegable(origenSelect, todasLasOpciones, huelvaExclusiones);
-                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla); // El destino solo puede ser Huelva
-            } else { // Viajando a SEVILLA
-                filtrarDesplegable(origenSelect, todasLasOpciones, sevillaExclusiones);
-                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla);
+                // Viajando A HUELVA: Origen puede ser cualquier sitio (menos exclusiones), Destino solo Huelva.
+                filtrarDesplegable(origenSelect, todasLasOpciones, [], huelvaExclusiones);
+                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaHuelva, []);
+            } else { // Viajando A SEVILLA
+                // Viajando A SEVILLA: Origen puede ser cualquier sitio (menos exclusiones), Destino solo Sevilla.
+                filtrarDesplegable(origenSelect, todasLasOpciones, [], exclusionesOrigenSevilla);
+                filtrarDesplegable(destinoSelect, todasLasOpciones, provinciaSevilla, []);
             }
             
             brujulaSelector.style.display = 'none';
