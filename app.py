@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión con Algoritmo de Búsqueda Lógico y Corregido)
+# Fichero: app.py (Versión Final con Algoritmo Corregido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -171,41 +171,47 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA =====
+# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA (BFS) =====
 def find_all_routes_intelligently(origen, destino, df):
-    rutas = []
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
-
-    # Nivel 1 (Rutas directas)
-    for r1 in rutas_por_origen.get(origen, []):
-        if r1['Destino'] == destino:
-            rutas.append([r1])
     
-    # Nivel 2 (1 transbordo)
-    for r1 in rutas_por_origen.get(origen, []):
-        if r1['Destino'] == destino: continue
+    rutas_encontradas = []
+    
+    # Cola para la búsqueda: (ruta_actual, lugares_visitados)
+    cola = [([r], {origen, r['Destino']}) for r in rutas_por_origen.get(origen, [])]
+    
+    while cola:
+        ruta_actual, lugares_visitados = cola.pop(0)
         
-        origen_r2 = r1['Destino']
-        for r2 in rutas_por_origen.get(origen_r2, []):
-            if r2['Destino'] == destino:
-                rutas.append([r1, r2])
-
-    # Nivel 3 (2 transbordos)
-    for r1 in rutas_por_origen.get(origen, []):
-        if r1['Destino'] == destino: continue
-
-        origen_r2 = r1['Destino']
-        for r2 in rutas_por_origen.get(origen_r2, []):
-            if r2['Destino'] == destino or r2['Destino'] == origen: continue
+        ultimo_tramo = ruta_actual[-1]
+        lugar_actual = ultimo_tramo['Destino']
+        
+        if lugar_actual == destino:
+            rutas_encontradas.append(ruta_actual)
+            continue
             
-            origen_r3 = r2['Destino']
-            for r3 in rutas_por_origen.get(origen_r3, []):
-                if r3['Destino'] == destino:
-                    rutas.append([r1, r2, r3])
-    return rutas
-# =========================================================
+        if len(ruta_actual) >= 3:
+            continue
+            
+        for siguiente_tramo in rutas_por_origen.get(lugar_actual, []):
+            proximo_destino = siguiente_tramo['Destino']
+            
+            if proximo_destino in lugares_visitados:
+                continue
+                
+            parada_llegada = ultimo_tramo.get('Parada_Destino', '')
+            parada_salida = siguiente_tramo.get('Parada_Origen', '')
+            if parada_llegada and parada_salida and parada_llegada != parada_salida:
+                continue
+                
+            nueva_ruta = ruta_actual + [siguiente_tramo]
+            nuevos_visitados = lugares_visitados | {proximo_destino}
+            cola.append((nueva_ruta, nuevos_visitados))
+            
+    return rutas_encontradas
+# ==============================================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -310,4 +316,3 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
