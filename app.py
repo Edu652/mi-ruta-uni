@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con todas las correcciones de lógica)
+# Fichero: app.py (Versión Final con Algoritmo Corregido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -13,9 +13,6 @@ app = Flask(__name__)
 
 # --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
-
-PROVINCIA_HUELVA = ["Huelva", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
-PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Bollullos", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
 # --- Funciones de Ayuda ---
 def get_icon_for_compania(compania, transporte=None):
@@ -87,7 +84,7 @@ def index():
     if not rutas_df_global.empty:
         lugares = sorted(pd.concat([rutas_df_global["Origen"], rutas_df_global["Destino"]]).dropna().unique())
     frase = random.choice(frases)
-    return render_template("index.html", lugares=lugares, frase=frase, frases=frases, provincia_huelva=PROVINCIA_HUELVA, provincia_sevilla=PROVINCIA_SEVILLA)
+    return render_template("index.html", lugares=lugares, frase=frase, frases=frases)
 
 @app.route("/buscar", methods=["POST"])
 def buscar():
@@ -95,7 +92,6 @@ def buscar():
         form_data = request.form.to_dict()
         origen = form_data.get("origen")
         destino = form_data.get("destino")
-        brujula = form_data.get("brujula")
         
         tz = pytz.timezone('Europe/Madrid')
         now_aware = datetime.now(tz)
@@ -127,7 +123,7 @@ def buscar():
             rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
             rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
 
-        candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df, brujula)
+        candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df)
         
         candidatos_expandidos = []
         if candidatos_plantilla:
@@ -175,50 +171,54 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-def find_all_routes_intelligently(origen, destino, df, brujula):
+# ===== FUNCIÓN DE BÚSQUEDA INTELIGENTE Y ROBUSTA (SIN BRÚJULA) =====
+def find_all_routes_intelligently(origen, destino, df):
     rutas = []
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
 
-    provincia_destino_brujula = PROVINCIA_HUELVA if brujula == 'HUELVA' else PROVINCIA_SEVILLA
-    
-    is_intra_provincial = (origen in provincia_destino_brujula and destino in provincia_destino_brujula)
-
+    # 1. Rutas directas (1 tramo)
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
-            continue
 
-        if not is_intra_provincial and r1['Destino'] not in provincia_destino_brujula and r1['Destino'] not in PROVINCIA_SEVILLA:
-            continue
+    # 2. Rutas con 1 transbordo (2 tramos)
+    for r1 in rutas_por_origen.get(origen, []):
+        if r1['Destino'] == destino: continue # Ya es una ruta directa
+        
+        origen_r2 = r1['Destino']
+        for r2 in rutas_por_origen.get(origen_r2, []):
+            if r2['Destino'] == destino:
+                parada_llegada_r1 = r1.get('Parada_Destino', '')
+                parada_salida_r2 = r2.get('Parada_Origen', '')
+                if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
+                    continue # Transbordo no viable
+                rutas.append([r1, r2])
+
+    # 3. Rutas con 2 transbordos (3 tramos)
+    for r1 in rutas_por_origen.get(origen, []):
+        if r1['Destino'] == destino: continue
 
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
+            if r2['Destino'] == destino or r2['Destino'] == origen: continue
+            
             parada_llegada_r1 = r1.get('Parada_Destino', '')
             parada_salida_r2 = r2.get('Parada_Origen', '')
             if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
                 continue
 
-            if r2['Destino'] == destino:
-                rutas.append([r1, r2])
-                continue
-            
-            if r2['Destino'] == origen: continue
-            
-            if not is_intra_provincial and r2['Destino'] not in provincia_destino_brujula:
-                continue
-
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
-                parada_llegada_r2 = r2.get('Parada_Destino', '')
-                parada_salida_r3 = r3.get('Parada_Origen', '')
-                if parada_llegada_r2 != '' and parada_salida_r3 != '' and parada_llegada_r2 != parada_salida_r3:
-                    continue
-
                 if r3['Destino'] == destino:
+                    parada_llegada_r2 = r2.get('Parada_Destino', '')
+                    parada_salida_r3 = r3.get('Parada_Origen', '')
+                    if parada_llegada_r2 != '' and parada_salida_r3 != '' and parada_llegada_r2 != parada_salida_r3:
+                        continue
                     rutas.append([r1, r2, r3])
     return rutas
+# =========================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -230,17 +230,16 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            
             h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
                 try:
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                     hora_actual = now.time()
-                    if h_primer > h_ultim: # Horario nocturno (pasa de medianoche)
+                    if h_primer > h_ultim:
                         if not (hora_actual >= h_primer or hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    else: # Horario diurno
+                    else:
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
@@ -291,10 +290,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                         h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                         h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                         hora_salida = salida_dt.time()
-                        if h_primer > h_ultim: # Horario nocturno
+                        if h_primer > h_ultim:
                             if not (hora_salida >= h_primer or hora_salida <= h_ultim):
                                 seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                        else: # Horario diurno
+                        else:
                             if not (h_primer <= hora_salida <= h_ultim):
                                 seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                     except: pass
