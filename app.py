@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión Final con Transbordos Flexibles)
+# Fichero: app.py (Versión con Algoritmo de Búsqueda Lógico y Corregido)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -153,13 +153,6 @@ def buscar():
             resultado = calculate_route_times(ruta, is_desde_ahora, now)
             if resultado: resultados_procesados.append(resultado)
         
-        # FILTROS FINALES
-        lugares_a_evitar = []
-        if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
-        if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
-        if lugares_a_evitar:
-            resultados_procesados = [r for r in resultados_procesados if not any(s.get('Destino') in lugares_a_evitar for s in r.get('segmentos', [])[:-1])]
-
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
@@ -178,19 +171,19 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA CON TRANSBORDOS FLEXIBLES =====
+# ===== FUNCIÓN DE BÚSQUEDA LÓGICA Y DEFINITIVA =====
 def find_all_routes_intelligently(origen, destino, df):
     rutas = []
     rutas_por_origen = defaultdict(list)
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row)
 
-    # 1. Rutas directas
+    # Nivel 1 (Rutas directas)
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino:
             rutas.append([r1])
-
-    # 2. Rutas con 1 transbordo
+    
+    # Nivel 2 (1 transbordo)
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino: continue
         
@@ -199,7 +192,7 @@ def find_all_routes_intelligently(origen, destino, df):
             if r2['Destino'] == destino:
                 rutas.append([r1, r2])
 
-    # 3. Rutas con 2 transbordos
+    # Nivel 3 (2 transbordos)
     for r1 in rutas_por_origen.get(origen, []):
         if r1['Destino'] == destino: continue
 
@@ -230,10 +223,10 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
                     h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
                     hora_actual = now.time()
-                    if h_primer > h_ultim: # Horario nocturno
+                    if h_primer > h_ultim:
                         if not (hora_actual >= h_primer or hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    else: # Horario diurno
+                    else:
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
                 except: pass
