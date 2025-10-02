@@ -1,4 +1,4 @@
-hora el codigo de index.html# Fichero: app.py (Versión Final con Transbordos Viables)
+# Fichero: app.py (Versión Final con "La Brújula" y Corrección de Fechas)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -11,9 +11,10 @@ from collections import defaultdict
 
 app = Flask(__name__)
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN DE LA FUENTE DE DATOS ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
 
+# --- DEFINICIÓN DE PROVINCIAS PARA LA BRÚJULA (ACTUALIZADO) ---
 PROVINCIA_HUELVA = ["Huelva", "Bollullos", "Almonte", "La Palma", "Villalba", "Manzanilla", "Chucena", "Hinojos", "Rociana", "Niebla", "El Rocio", "Matalascañas", "Mazagón", "Casa Ana", "Facultad", "Huelva Tren", "Huelva Bus"]
 PROVINCIA_SEVILLA = ["Sevilla", "Benacazón", "Umbrete", "Sanlúcar la Mayor", "Aznalcázar", "Pilas", "Villamanrique", "Huévar", "Carrión", "Castilleja", "Bormujos", "Tomares", "Gines", "Valencina", "Salteras", "Olivares", "Albaida", "Sta. Justa", "Plz. Armas", "Mairena"]
 
@@ -66,7 +67,8 @@ try:
     if 'Compañía' in rutas_df_global.columns:
         rutas_df_global.rename(columns={'Compañía': 'Compania'}, inplace=True)
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
-        rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
+        if col in rutas_df_global.columns:
+            rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
     rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
 except Exception as e:
     print(f"--- ERROR CRÍTICO EN CARGA DE DATOS: {e} ---")
@@ -158,7 +160,7 @@ def buscar():
         
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
-            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r['segmentos'] and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'].replace(tzinfo=None) >= ahora_naive)]
+            resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r['segmentos'] and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
 
         if resultados_procesados:
             resultados_unicos = {}
@@ -174,7 +176,6 @@ def buscar():
         print(f"ERROR INESPERADO EN LA RUTA /buscar: {e}")
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA CON TRANSBORDO VIABLE =====
 def find_all_routes_intelligently(origen, destino, df, brujula):
     rutas = []
     rutas_por_origen = defaultdict(list)
@@ -188,7 +189,6 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
         if r1['Destino'] == destino:
             rutas.append([r1])
             continue
-        
         if origen in provincia_origen_brujula and r1['Destino'] in provincia_origen_brujula and destino in provincia_destino_brujula:
             pass 
         elif origen in provincia_destino_brujula and r1['Destino'] in provincia_origen_brujula:
@@ -196,7 +196,6 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
             
         origen_r2 = r1['Destino']
         for r2 in rutas_por_origen.get(origen_r2, []):
-            # REGLA DE TRANSBORDO VIABLE:
             parada_llegada_r1 = r1.get('Parada_Destino', '')
             parada_salida_r2 = r2.get('Parada_Origen', '')
             if parada_llegada_r1 != '' and parada_salida_r2 != '' and parada_llegada_r1 != parada_salida_r2:
@@ -212,7 +211,6 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
 
             origen_r3 = r2['Destino']
             for r3 in rutas_por_origen.get(origen_r3, []):
-                # REGLA DE TRANSBORDO VIABLE 2:
                 parada_llegada_r2 = r2.get('Parada_Destino', '')
                 parada_salida_r3 = r3.get('Parada_Origen', '')
                 if parada_llegada_r2 != '' and parada_salida_r3 != '' and parada_llegada_r2 != parada_salida_r3:
@@ -221,7 +219,6 @@ def find_all_routes_intelligently(origen, destino, df, brujula):
                 if r3['Destino'] == destino:
                     rutas.append([r1, r2, r3])
     return rutas
-# =================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
@@ -233,7 +230,8 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].to_dict()
             seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
+            h_primer_str = seg_dict.get('H_Primer', '')
+            h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
                 try:
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
