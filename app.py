@@ -66,6 +66,9 @@ try:
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
         if col in rutas_df_global.columns:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
+    # Convertir precios: reemplazar comas por puntos y eliminar símbolos de euro
+    if 'Precio' in rutas_df_global.columns:
+        rutas_df_global['Precio'] = rutas_df_global['Precio'].astype(str).str.replace(',', '.').str.replace('€', '').str.strip()
     rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
     print(f"✓ Datos cargados correctamente: {len(rutas_df_global)} rutas")
 except Exception as e:
