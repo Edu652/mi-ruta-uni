@@ -1,4 +1,4 @@
-# Fichero: app.py (Versión corregida con todos los filtros)
+# Fichero: app.py (Versión corregida con logs de debug)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -101,7 +101,6 @@ def buscar():
         print(f"→ BÚSQUEDA: {origen} → {destino}")
         print(f"  Filtros recibidos: {form_data}")
         
-        # DEBUG: Verificar si existen en el DataFrame
         origenes_disponibles = rutas_df_global['Origen'].unique()
         destinos_disponibles = rutas_df_global['Destino'].unique()
         print(f"  ¿'{origen}' existe como origen? {origen in origenes_disponibles}")
@@ -155,7 +154,6 @@ def buscar():
         candidatos_expandidos = []
         if candidatos_plantilla:
             for ruta_plantilla in candidatos_plantilla:
-                # Convertir todos los segmentos a diccionarios
                 ruta_plantilla = [seg if isinstance(seg, dict) else seg.to_dict() if hasattr(seg, 'to_dict') else dict(seg) for seg in ruta_plantilla]
                 
                 if all(s.get('Tipo_Horario') == 'Frecuencia' for s in ruta_plantilla):
@@ -187,12 +185,20 @@ def buscar():
         
         print(f"  Resultados procesados: {len(resultados_procesados)}")
         
-        # Aplicar filtro "desde ahora"
+        # DEBUG: Ver qué rutas tenemos antes de filtrar
+        if len(resultados_procesados) > 10:
+            companias_encontradas = set()
+            for r in resultados_procesados:
+                ruta_companias = " → ".join([seg.get('Compania', 'N/A') for seg in r['segmentos']])
+                companias_encontradas.add(ruta_companias)
+            print(f"  Combinaciones de compañías encontradas: {len(companias_encontradas)}")
+            for combo in list(companias_encontradas)[:5]:
+                print(f"    - {combo}")
+        
         if form_data.get('desde_ahora') and dia_seleccionado == 'hoy':
             ahora_naive = now.replace(tzinfo=None)
             resultados_procesados = [r for r in resultados_procesados if r['hora_llegada_final'] == 'Flexible' or (r.get('segmentos') and 'Salida_dt' in r['segmentos'][0] and r['segmentos'][0]['Salida_dt'] >= ahora_naive)]
         
-        # Aplicar filtro "salir después de"
         if form_data.get('salir_despues_check'):
             try:
                 hora_salida = int(form_data.get('salir_despues_hora', 7))
@@ -203,7 +209,6 @@ def buscar():
             except Exception as e:
                 print(f"  Error aplicando filtro salir_despues: {e}")
         
-        # Aplicar filtro "llegar antes de"
         if form_data.get('llegar_antes_check'):
             try:
                 hora_llegada = int(form_data.get('llegar_antes_hora', 9))
@@ -217,11 +222,11 @@ def buscar():
         if resultados_procesados:
             resultados_unicos = {}
             for r in resultados_procesados:
-                # Incluir información de las compañías/transportes usados en la clave
                 companias = "-".join([seg.get('Compania', '') for seg in r['segmentos']])
                 clave = f"{r['segmentos'][0]['Salida_str']}-{r['duracion_total_str']}-{companias}"
                 if clave not in resultados_unicos:
                     resultados_unicos[clave] = r
+            print(f"  Antes de deduplicar: {len(resultados_procesados)}, después: {len(resultados_unicos)}")
             resultados_procesados = sorted(list(resultados_unicos.values()), key=lambda x: x.get('llegada_final_dt_obj', datetime.max))
         
         print(f"  ✓ Resultados finales: {len(resultados_procesados)}")
@@ -234,10 +239,8 @@ def buscar():
         traceback.print_exc()
         return f"Ha ocurrido un error interno en el servidor: {e}", 500
 
-# ===== FUNCIÓN DE BÚSQUEDA PROFESIONAL (BFS) - CORREGIDA =====
 def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     rutas_por_origen = defaultdict(list)
-    # CAMBIO CRÍTICO: Convertir a diccionario inmediatamente
     for _, row in df.iterrows():
         rutas_por_origen[row['Origen']].append(row.to_dict())
     
@@ -249,7 +252,6 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     else:
         print(f"     ⚠️ No hay rutas que salgan de '{origen}'")
     
-    # DEBUG: Mostrar qué lugares pueden llevar al destino
     lugares_con_destino = [lugar for lugar, rutas in rutas_por_origen.items() 
                           if any(r['Destino'] == destino for r in rutas)]
     print(f"     Lugares desde donde se puede llegar a '{destino}': {lugares_con_destino}")
@@ -259,11 +261,14 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
     
     print(f"     Cola inicial: {len(cola)} rutas")
     
-    # DEBUG: Mostrar los primeros destinos que se exploran
     primeros_destinos = list(set([r['Destino'] for r in rutas_por_origen.get(origen, [])]))[:5]
     print(f"     Explorando desde: {primeros_destinos}...")
     
-    while cola:
+    iteraciones = 0
+    max_iteraciones = 1000
+    
+    while cola and iteraciones < max_iteraciones:
+        iteraciones += 1
         ruta_actual, lugares_visitados = cola.pop(0)
         ultimo_tramo = ruta_actual[-1]
         lugar_actual = ultimo_tramo['Destino']
@@ -275,7 +280,6 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
         if len(ruta_actual) >= 3:
             continue
             
-        # El lugar de transbordo no puede ser un lugar a evitar
         if lugar_actual in lugares_a_evitar:
             continue
 
@@ -284,22 +288,17 @@ def find_all_routes_intelligently(origen, destino, df, lugares_a_evitar):
             
             if proximo_destino in lugares_visitados:
                 continue
-                
-            parada_llegada = ultimo_tramo.get('Parada_Destino', '')
-            parada_salida = siguiente_tramo.get('Parada_Origen', '')
-            if parada_llegada and parada_salida and parada_llegada != parada_salida:
-                continue
-                
+            
             nueva_ruta = ruta_actual + [siguiente_tramo]
             nuevos_visitados = lugares_visitados | {proximo_destino}
             cola.append((nueva_ruta, nuevos_visitados))
-            
+    
+    print(f"     🎯 Total de rutas encontradas: {len(rutas_encontradas)}")
+    print(f"{'='*60}\n")
     return rutas_encontradas
-# =========================================================
 
 def calculate_route_times(ruta_series_list, desde_ahora_check, now):
     try:
-        # CAMBIO CRÍTICO: Asegurar que trabajamos con diccionarios limpios
         segmentos = []
         for s in ruta_series_list:
             if isinstance(s, dict):
