@@ -138,6 +138,7 @@ def buscar():
         lugares_a_evitar = []
         if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
         if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
+        print(f"  Lugares a evitar: {lugares_a_evitar}")
 
         candidatos_plantilla = find_all_routes_intelligently(origen, destino, rutas_hoy_df, lugares_a_evitar)
         print(f"  Candidatos encontrados: {len(candidatos_plantilla)}")
