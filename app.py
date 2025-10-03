@@ -369,19 +369,36 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             seg_dict = seg.copy()
             salida_dt = seg['Salida_dt']
             if seg.get('Tipo_Horario') == 'Frecuencia':
-                h_primer_str = seg.get('H_Primer', ''); h_ultim_str = seg.get('H_Ultim', '')
-                if h_primer_str and h_ultim_str:
-                    try:
-                        h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
-                        h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
-                        hora_salida = salida_dt.time()
-                        if h_primer > h_ultim:
-                            if not (hora_salida >= h_primer or hora_salida <= h_ultim):
-                                seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                        else:
-                            if not (h_primer <= hora_salida <= h_ultim):
-                                seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                    except: pass
+                hora_salida = salida_dt.time()
+                # Buscar TODAS las filas que coincidan con este segmento en el día actual
+                rutas_coincidentes = rutas_df_global[
+                    (rutas_df_global['Origen'] == seg.get('Origen')) &
+                    (rutas_df_global['Destino'] == seg.get('Destino')) &
+                    (rutas_df_global['Tipo_Horario'] == 'Frecuencia')
+                ]
+                
+                # Validar contra todos los rangos horarios posibles
+                dentro_de_horario = False
+                for _, ruta in rutas_coincidentes.iterrows():
+                    h_primer_str = ruta.get('H_Primer', '')
+                    h_ultim_str = ruta.get('H_Ultim', '')
+                    if h_primer_str and h_ultim_str:
+                        try:
+                            h_primer = datetime.strptime(str(h_primer_str), '%H:%M').time()
+                            h_ultim = datetime.strptime(str(h_ultim_str), '%H:%M').time()
+                            
+                            if h_primer > h_ultim:  # Cruza medianoche
+                                if hora_salida >= h_primer or hora_salida <= h_ultim:
+                                    dentro_de_horario = True
+                                    break
+                            else:  # Rango normal
+                                if h_primer <= hora_salida <= h_ultim:
+                                    dentro_de_horario = True
+                                    break
+                        except: pass
+                
+                if not dentro_de_horario and rutas_coincidentes.shape[0] > 0:
+                    seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
             
             seg_dict.update({
                 'icono': get_icon_for_compania(seg_dict.get('Compania')), 
