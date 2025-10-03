@@ -217,7 +217,9 @@ def buscar():
         if resultados_procesados:
             resultados_unicos = {}
             for r in resultados_procesados:
-                clave = f"{r['segmentos'][0]['Salida_str']}-{r['duracion_total_str']}"
+                # Incluir información de las compañías/transportes usados en la clave
+                companias = "-".join([seg.get('Compania', '') for seg in r['segmentos']])
+                clave = f"{r['segmentos'][0]['Salida_str']}-{r['duracion_total_str']}-{companias}"
                 if clave not in resultados_unicos:
                     resultados_unicos[clave] = r
             resultados_procesados = sorted(list(resultados_unicos.values()), key=lambda x: x.get('llegada_final_dt_obj', datetime.max))
