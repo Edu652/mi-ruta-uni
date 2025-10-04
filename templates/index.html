@@ -1,202 +1,448 @@
 <!DOCTYPE html>
-<html lang="es" class="">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Ruta</title>
+    <title>Mi Ruta 🚀</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#4f46e5">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Space Grotesk', sans-serif; 
+            overflow-x: hidden;
+            margin: 0;
+        }
+        
+        /* Fondo animado con estrellas */
+        .stars-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8), 0 0 60px rgba(147, 51, 234, 0.4); }
+        }
+        
+        .card-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .btn-spectacular {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-spectacular::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-spectacular:hover::before {
+            left: 100%;
+        }
+        
+        .btn-spectacular:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        
+        .input-glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+        
+        .rocket-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Modal styles */
         .modal-overlay { transition: opacity 0.3s ease-in-out; }
         .modal-container { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
-        .card-container::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("{{ url_for('static', filename='logo_psicología.png') }}");
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-            opacity: 0.15; filter: grayscale(100%) brightness(150%); z-index: 0;
+        
+        /* Phrase card */
+        .phrase-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.5s ease;
+            cursor: pointer;
         }
-        .card-content { position: relative; z-index: 2; }
-        .flip-card { perspective: 1000px; cursor: pointer; }
-        .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-        .flip-card.is-flipped .flip-card-inner { transform: rotateY(180deg); }
-        .flip-card-front, .flip-card-back {
-            position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden;
-            display: flex; align-items: center; justify-content: center; padding: 1rem; border-radius: 0.5rem;
+        
+        .phrase-card:hover {
+            transform: scale(1.02);
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.1) 100%);
         }
-        .flip-card-back { transform: rotateY(180deg); }
+        
+        /* Title animation */
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 4s ease infinite;
+        }
+        
+        /* Time picker styles */
         .time-picker-wrapper { position: relative; height: 160px; padding: 0 1rem; }
         .selection-indicator {
             position: absolute; top: 50%; left: 1rem; right: 1rem; transform: translateY(-50%);
-            height: 40px; pointer-events: none; border-top: 2px solid #a5b4fc; border-bottom: 2px solid #a5b4fc; z-index: 1;
+            height: 40px; pointer-events: none; border-top: 2px solid rgba(255,255,255,0.6); 
+            border-bottom: 2px solid rgba(255,255,255,0.6); z-index: 1;
         }
-        .dark .selection-indicator { border-color: #4f46e5; }
         .wheel-container {
             height: 160px; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth;
             -ms-overflow-style: none; scrollbar-width: none;
         }
         .wheel-container::-webkit-scrollbar { display: none; }
         .wheel-item {
-            height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; line-height: 2rem;
-            scroll-snap-align: center; opacity: 0.4; transform: scale(0.8); transition: opacity 0.3s, transform 0.3s;
+            height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            scroll-snap-align: center; opacity: 0.4; transform: scale(0.8); transition: all 0.3s;
         }
-        .wheel-item.is-selected { opacity: 1; transform: scale(1.1); font-weight: 600; color: #4f46e5; }
-        .dark .wheel-item.is-selected { color: #818cf8; }
+        .wheel-item.is-selected { opacity: 1; transform: scale(1.1); font-weight: 600; color: #667eea; }
+        
+        /* Shooting stars */
+        @keyframes shoot {
+            0% { transform: translateX(0) translateY(0); opacity: 1; }
+            100% { transform: translateX(-300px) translateY(300px); opacity: 0; }
+        }
+        
+        .shooting-star {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #fff, transparent);
+            animation: shoot 3s linear infinite;
+        }
+        
+        /* Utility classes */
+        .hidden { display: none; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .fixed { position: fixed; }
+        .z-10 { z-index: 10; }
+        .z-50 { z-index: 50; }
+        .inset-0 { top: 0; left: 0; right: 0; bottom: 0; }
+        .w-full { width: 100%; }
+        .max-w-md { max-width: 28rem; }
+        .min-h-screen { min-height: 100vh; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-5 > * + * { margin-top: 1.25rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .p-3 { padding: 0.75rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .pt-6 { padding-top: 1.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .ml-3 { margin-left: 0.75rem; }
+        .mx-2 { margin-left: 0.5rem; margin-right: 0.5rem; }
+        .text-center { text-align: center; }
+        .text-left { text-left: left; }
+        .text-white { color: white; }
+        .text-gray-800 { color: #1f2937; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-5xl { font-size: 3rem; }
+        .text-6xl { font-size: 3.75rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-3xl { border-radius: 1.5rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border-width: 1px; }
+        .border-t { border-top-width: 1px; }
+        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        .overflow-hidden { overflow: hidden; }
+        .overflow-y-auto { overflow-y: auto; }
+        .pointer-events-none { pointer-events: none; }
+        .cursor-pointer { cursor: pointer; }
+        .block { display: block; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .gap-3 { gap: 0.75rem; }
+        .leading-relaxed { line-height: 1.625; }
+        select, input[type="checkbox"] {
+            cursor: pointer;
+        }
+        select:focus, input:focus {
+            outline: none;
+        }
+        .border-white\/20 { border-color: rgba(255, 255, 255, 0.2); }
+        .border-white\/30 { border-color: rgba(255, 255, 255, 0.3); }
+        .bg-white\/10 { background-color: rgba(255, 255, 255, 0.1); }
+        .text-white\/60 { color: rgba(255, 255, 255, 0.6); }
+        .text-white\/80 { color: rgba(255, 255, 255, 0.8); }
+        .hover\:text-white:hover { color: white; }
+        .hover\:bg-white\/10:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .transition { transition: all 0.3s; }
+        .transform { transform: translateZ(0); }
+        .scale-95 { transform: scale(0.95); }
+        .opacity-0 { opacity: 0; }
+        input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            appearance: none;
+            background-color: transparent;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #9333ea;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        }
+        
+        @media (min-width: 768px) {
+            .p-8 { padding: 2rem; }
+            .md\:p-10 { padding: 2.5rem; }
+        }
     </style>
-    <script>
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white antialiased transition-colors duration-300">
+<body class="antialiased">
+    <!-- Fondo de estrellas -->
+    <div class="stars-bg">
+        <div class="stars" id="stars-container"></div>
+    </div>
 
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 transition-colors card-container">
-            <div class="card-content">
-                <div class="relative text-center mb-6">
-                    <button id="open-info-modal" type="button" class="absolute -top-2 -left-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm p-2.5">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-                    </button>
-                    <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Mi Ruta</h1>
-                    <p id="saludo" class="text-slate-500 dark:text-slate-400 mt-1">Planifica tu viaje</p>
-                    <button id="theme-toggle" type="button" class="absolute -top-2 -right-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm p-2.5">
-                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
-                    </button>
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
+        <div class="card-glass w-full max-w-md rounded-3xl shadow-2xl p-8 md:p-10 relative overflow-hidden">
+            <!-- Glow effect -->
+            <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 pointer-events-none"></div>
+            
+            <div class="relative z-10">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4 rocket-icon">🚀</div>
+                    <h1 class="text-5xl font-bold gradient-text mb-2">Mi Ruta</h1>
+                    <p id="saludo" class="text-white/80 text-lg"></p>
                 </div>
 
-                <form id="main-form" action="/buscar" method="post" class="space-y-4">
+                <!-- Form -->
+                <form id="main-form" action="/buscar" method="post" class="space-y-6">
                     <div>
-                        <label for="origen" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Origen</label>
-                        <select id="origen" name="origen" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
+                        <label class="block text-white font-semibold mb-3 text-lg">🌍 Origen</label>
+                        <select id="origen" name="origen" required class="input-glass w-full rounded-xl py-3 px-4 text-gray-800 font-medium focus:outline-none">
+                            <option value="" disabled selected>Selecciona tu punto de partida</option>
                             {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                         </select>
                     </div>
+                    
                     <div>
-                        <label for="destino" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destino</label>
-                        <select id="destino" name="destino" required class="w-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                            <option value="" disabled selected>Selecciona</option>
+                        <label class="block text-white font-semibold mb-3 text-lg">🎯 Destino</label>
+                        <select id="destino" name="destino" required class="input-glass w-full rounded-xl py-3 px-4 text-gray-800 font-medium focus:outline-none">
+                            <option value="" disabled selected>¿A dónde vamos?</option>
                             {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <button type="button" id="open-filters-modal" class="w-full flex justify-between items-center text-left font-semibold text-indigo-600 dark:text-indigo-400">
-                            <span>+ Opciones de Búsqueda</span>
+
+                    <div class="border-t border-white/20 pt-6">
+                        <button type="button" id="open-filters-modal" class="w-full text-white font-semibold text-left flex items-center justify-between hover:text-purple-200 transition">
+                            <span>⚙️ Opciones Avanzadas</span>
+                            <span class="text-2xl">→</span>
                         </button>
                     </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md transition-transform transform hover:scale-105">Buscar Ruta</button>
+
+                    <button type="submit" class="btn-spectacular w-full text-white font-bold py-4 px-6 rounded-xl text-lg shadow-xl">
+                        🚀 ¡Despegar!
+                    </button>
                 </form>
-                 <div class="mt-8 text-center border-t border-slate-200 dark:border-slate-700 pt-4">
-                     <div class="flip-card h-16" onclick="flipCard(this)">
-                         <div class="flip-card-inner">
-                             <div class="flip-card-front bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center p-4"><p>"{{ frase }}"</p></div>
-                             <div class="flip-card-back bg-indigo-200 dark:bg-indigo-900 rounded-lg flex items-center justify-center p-4"><p></p></div>
-                         </div>
-                     </div>
-                 </div>
+
+                <!-- Frase motivadora -->
+                <div class="mt-8">
+                    <div class="phrase-card rounded-2xl p-6 text-center" onclick="flipPhrase()">
+                        <p class="text-white text-sm font-medium leading-relaxed" id="phrase-text">"{{ frase }}"</p>
+                        <p class="text-white/60 text-xs mt-2">✨ Toca para más inspiración</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
+
+    <!-- Modal de filtros -->
     <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div id="filters-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
-        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Filtros Avanzados</h2>
-                <button type="button" id="close-filters-modal" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full p-2">
+        <div id="filters-modal-overlay" class="absolute inset-0 bg-black/70 modal-overlay opacity-0 backdrop-blur-sm"></div>
+        <div class="relative card-glass rounded-3xl w-full max-w-md p-6 border border-white/30 modal-container transform scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">⚙️ Filtros</h2>
+                <button type="button" id="close-filters-modal" class="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+            
+            <div class="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
-                    <label for="dia_semana_selector" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Ver horarios para:</label>
-                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="w-full bg-slate-200 dark:bg-slate-700 rounded-md py-2 px-3">
-                        <option value="hoy" selected>Hoy (Día actual)</option>
-                        <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+                    <label class="block text-white font-medium mb-2">📅 Ver horarios para:</label>
+                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="input-glass w-full rounded-xl py-2 px-4 text-gray-800">
+                        <option value="hoy" selected>Hoy</option>
+                        <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
+                        <option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
                     </select>
                 </div>
-                 <div class="flex items-center">
-                     <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500">
-                     <label for="desde_ahora" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Buscar desde la hora actual</label>
+                
+                <div class="flex items-center bg-white/10 rounded-xl p-3">
+                    <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="h-5 w-5 rounded border-white/30 text-purple-600 focus:ring-purple-500">
+                    <label for="desde_ahora" class="ml-3 text-white font-medium">⏰ Desde ahora</label>
                 </div>
-                <div class="pt-2">
-                    <div class="flex items-center">
-                        <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                        <label for="salir_despues_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Salir a partir de las...</label>
+
+                <div class="bg-white/10 rounded-xl p-4">
+                    <div class="flex items-center mb-3">
+                        <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="h-5 w-5 rounded border-white/30 text-purple-600">
+                        <label for="salir_despues_check" class="ml-3 text-white font-medium">🕐 Salir después de...</label>
                     </div>
-                    <div id="selectores_hora_salida" class="transition-all duration-300 hidden mt-2">
-                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-salida"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2">:</span><div class="wheel-container" id="minute-wheel-salida"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
+                    <div id="selectores_hora_salida" class="hidden mt-3">
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-salida"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item text-white">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2 text-white">:</span><div class="wheel-container" id="minute-wheel-salida"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item text-white">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
                         <input form="main-form" type="hidden" name="salir_despues_hora" id="salir_despues_hora" value="07" disabled>
                         <input form="main-form" type="hidden" name="salir_despues_minuto" id="salir_despues_minuto" value="00" disabled>
                     </div>
                 </div>
-                <div class="pt-2">
-                    <div class="flex items-center">
-                        <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                        <label for="llegar_antes_check" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Llegar antes de las...</label>
+
+                <div class="bg-white/10 rounded-xl p-4">
+                    <div class="flex items-center mb-3">
+                        <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="h-5 w-5 rounded border-white/30 text-purple-600">
+                        <label for="llegar_antes_check" class="ml-3 text-white font-medium">🕘 Llegar antes de...</label>
                     </div>
-                    <div id="selectores_hora_llegada" class="transition-all duration-300 hidden mt-2">
-                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-llegada"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2">:</span><div class="wheel-container" id="minute-wheel-llegada"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
+                    <div id="selectores_hora_llegada" class="hidden mt-3">
+                        <div class="time-picker-wrapper"><div class="selection-indicator"></div><div class="flex justify-center items-center h-full"><div class="wheel-container" id="hour-wheel-llegada"><div class="h-[60px]"></div>{% for h in range(24) %}<div class="wheel-item text-white">{{ '%02d'|format(h) }}</div>{% endfor %}<div class="h-[60px]"></div></div><span class="text-3xl font-bold mx-2 text-white">:</span><div class="wheel-container" id="minute-wheel-llegada"><div class="h-[60px]"></div>{% for m in range(0, 60, 5) %}<div class="wheel-item text-white">{{ '%02d'|format(m) }}</div>{% endfor %}<div class="h-[60px]"></div></div></div></div>
                         <input form="main-form" type="hidden" name="llegar_antes_hora" id="llegar_antes_hora" value="09" disabled>
                         <input form="main-form" type="hidden" name="llegar_antes_minuto" id="llegar_antes_minuto" value="00" disabled>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4 pt-2">
-                    <div class="flex items-center">
-                        <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                        <label for="evitar_sj" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Sta. Justa</label>
-                    </div>
-                    <div class="flex items-center">
-                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="h-4 w-4 rounded border-slate-400 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
-                        <label for="evitar_pa" class="ml-2 block text-sm text-slate-700 dark:text-slate-300">Evitar Plz. Armas</label>
-                    </div>
-                </div>
-            </div>
-            <button type="button" id="apply-filters" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md">Aplicar Filtros</button>
-        </div>
-    </div>
 
-    <!-- MODAL DE INFORMACIÓN RESTAURADO -->
-    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div id="info-modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
-        <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 modal-container transform scale-95 opacity-0">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Información Útil</h2>
-                <button type="button" id="close-info-modal" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full p-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="space-y-4 text-sm max-h-[70vh] overflow-y-auto pr-2">
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Damas</p><div class="flex justify-between mt-1"><a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34959256900" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 69 00</a></div></div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Renfe</p><div class="flex justify-between mt-1"><a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34912320320" class="text-indigo-600 dark:text-indigo-400 hover:underline">912 320 320</a></div></div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg"><p class="font-semibold">Emtusa Huelva</p><div class="flex justify-between mt-1"><a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Sitio Web</a><a href="tel:+34959258121" class="text-indigo-600 dark:text-indigo-400 hover:underline">959 25 81 21</a></div></div>
-                 <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Mapa de Paradas (Huelva)</p>
-                    <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="block mt-1 text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Google Maps</a>
-                </div>
-                <div class="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">Campus del Carmen</p>
-                    <div class="flex justify-between items-center mt-1">
-                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver en Mapa</a>
-                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline">Ver Foto</a>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex items-center bg-white/10 rounded-xl p-3">
+                        <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="h-4 w-4 rounded border-white/30 text-purple-600">
+                        <label for="evitar_sj" class="ml-2 text-white text-sm">🚫 Evitar Sta. Justa</label>
+                    </div>
+                    <div class="flex items-center bg-white/10 rounded-xl p-3">
+                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="h-4 w-4 rounded border-white/30 text-purple-600">
+                        <label for="evitar_pa" class="ml-2 text-white text-sm">🚫 Evitar Plz. Armas</label>
                     </div>
                 </div>
             </div>
+
+            <button type="button" id="apply-filters" class="btn-spectacular mt-6 w-full text-white font-bold py-3 px-4 rounded-xl">
+                ✅ Aplicar Filtros
+            </button>
         </div>
     </div>
 
     <script>
-        // --- JAVASCRIPT 100% COMPLETO Y CORREGIDO ---
+        // Crear estrellas
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                container.appendChild(star);
+            }
+            
+            // Estrellas fugaces
+            for (let i = 0; i < 3; i++) {
+                const shootingStar = document.createElement('div');
+                shootingStar.className = 'shooting-star';
+                shootingStar.style.width = Math.random() * 100 + 50 + 'px';
+                shootingStar.style.left = Math.random() * 100 + '%';
+                shootingStar.style.top = Math.random() * 50 + '%';
+                shootingStar.style.animationDelay = Math.random() * 5 + 's';
+                shootingStar.style.animationDuration = Math.random() * 2 + 2 + 's';
+                container.appendChild(shootingStar);
+            }
+        }
+        createStars();
+
+        // Modales
         function setupModal(openBtnId, closeBtnId, modalId, applyBtnId = null) {
             const openBtn = document.getElementById(openBtnId);
             const closeBtn = document.getElementById(closeBtnId);
@@ -205,16 +451,28 @@
             const overlay = modal.querySelector('.modal-overlay');
             const container = modal.querySelector('.modal-container');
             const applyBtn = applyBtnId ? document.getElementById(applyBtnId) : null;
-            function openModal() { modal.classList.remove('hidden'); setTimeout(() => { overlay.classList.remove('opacity-0'); container.classList.remove('opacity-0', 'scale-95'); }, 10); }
-            function closeModal() { overlay.classList.add('opacity-0'); container.classList.add('opacity-0', 'scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+            
+            function openModal() { 
+                modal.classList.remove('hidden'); 
+                setTimeout(() => { 
+                    overlay.classList.remove('opacity-0'); 
+                    container.classList.remove('opacity-0', 'scale-95'); 
+                }, 10); 
+            }
+            function closeModal() { 
+                overlay.classList.add('opacity-0'); 
+                container.classList.add('opacity-0', 'scale-95'); 
+                setTimeout(() => modal.classList.add('hidden'), 300); 
+            }
+            
             if(openBtn) openBtn.addEventListener('click', openModal);
             if(closeBtn) closeBtn.addEventListener('click', closeModal);
             if(applyBtn) applyBtn.addEventListener('click', closeModal);
             if(overlay) overlay.addEventListener('click', closeModal);
         }
         setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
-        setupModal('open-info-modal', 'close-info-modal', 'info-modal');
 
+        // Time pickers
         function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
             const check = document.getElementById(checkId);
             const container = document.getElementById(containerId);
@@ -266,28 +524,34 @@
         }
         setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
         setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
-        
-        const frases = {{ frases|tojson|safe if frases else '["El esfuerzo de hoy es el éxito de mañana."]' }};
+
+        // Frases
+        const frases = {{ frases|tojson|safe }};
         let fraseActualIndex = frases.indexOf("{{ frase }}");
-        function flipCard(card) {
-            const backText = card.querySelector('.flip-card-back p');
+        if (fraseActualIndex === -1) fraseActualIndex = 0;
+        
+        function flipPhrase() {
+            const phraseText = document.getElementById('phrase-text');
             let newIndex;
             do {
                 newIndex = Math.floor(Math.random() * frases.length);
             } while (newIndex === fraseActualIndex && frases.length > 1);
             fraseActualIndex = newIndex;
-            backText.textContent = `"${frases[fraseActualIndex]}"`;
-            card.classList.add('is-flipped');
+            
+            phraseText.style.opacity = '0';
+            phraseText.style.transform = 'scale(0.9)';
             setTimeout(() => {
-                card.querySelector('.flip-card-front p').textContent = `"${frases[fraseActualIndex]}"`;
-                card.classList.remove('is-flipped');
-            }, 800);
+                phraseText.textContent = `"${frases[fraseActualIndex]}"`;
+                phraseText.style.opacity = '1';
+                phraseText.style.transform = 'scale(1)';
+            }, 200);
         }
 
-        const saludoEl=document.getElementById("saludo"),horaActual=(new Date).getHours();let saludoTexto="";saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches",saludoEl.innerHTML=`${saludoTexto}, <span class="font-semibold text-indigo-500">Noa</span>`;
-        const themeToggleBtn=document.getElementById('theme-toggle'),themeToggleDarkIcon=document.getElementById('theme-toggle-dark-icon'),themeToggleLightIcon=document.getElementById('theme-toggle-light-icon');if(localStorage.getItem('color-theme')==='dark'||(!('color-theme'in localStorage)&&window.matchMedia('(prefers-color-scheme: dark)').matches)){if(themeToggleLightIcon)themeToggleLightIcon.classList.remove('hidden')}else{if(themeToggleDarkIcon)themeToggleDarkIcon.classList.remove('hidden')}
-        if(themeToggleBtn)themeToggleBtn.addEventListener('click',function(){themeToggleDarkIcon.classList.toggle('hidden');themeToggleLightIcon.classList.toggle('hidden');if(localStorage.getItem('color-theme')){if(localStorage.getItem('color-theme')==='light'){document.documentElement.classList.add('dark');localStorage.setItem('color-theme','dark')}else{document.documentElement.classList.remove('dark');localStorage.setItem('color-theme','light')}}else{if(document.documentElement.classList.contains('dark')){document.documentElement.classList.remove('dark');localStorage.setItem('color-theme','light')}else{document.documentElement.classList.add('dark');localStorage.setItem('color-theme','dark')}}});
+        // Saludo
+        const saludoEl = document.getElementById("saludo");
+        const horaActual = (new Date).getHours();
+        let saludoTexto = horaActual < 12 ? "Buenos días" : horaActual < 21 ? "Buenas tardes" : "Buenas noches";
+        saludoEl.innerHTML = `${saludoTexto}, <span class="font-bold">Noa</span> ✨`;
     </script>
 </body>
 </html>
-
