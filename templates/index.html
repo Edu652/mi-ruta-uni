@@ -11,20 +11,15 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: 'Poppins', sans-serif;
             background: #e0e5ec;
-            transition: background 0.3s ease;
         }
         
-        /* Efectos Neomórficos ACENTUADOS */
         .neo-card {
             background: #e0e5ec;
             box-shadow: 25px 25px 50px #a3a7ae, -25px -25px 50px #ffffff;
             border-radius: 40px;
-            transition: all 0.3s ease;
         }
         
         .neo-input {
@@ -35,13 +30,10 @@
             padding: 16px 20px;
             font-weight: 500;
             color: #4a5568;
-            transition: all 0.3s ease;
-            width: 100%;
         }
         
         .neo-input:focus {
             outline: none;
-            box-shadow: inset 15px 15px 30px #b8bcc3, inset -15px -15px 30px #ffffff;
         }
         
         .neo-button {
@@ -53,12 +45,9 @@
             font-weight: 700;
             color: #4a5568;
             cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
         }
         
         .neo-button:hover {
-            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
             transform: scale(0.98);
         }
         
@@ -92,11 +81,6 @@
             border-radius: 25px;
             padding: 24px;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .neo-phrase:hover {
-            transform: translateY(-2px);
         }
         
         .neo-checkbox {
@@ -108,12 +92,10 @@
             appearance: none;
             cursor: pointer;
             position: relative;
-            transition: all 0.3s ease;
         }
         
         .neo-checkbox:checked {
             background: linear-gradient(145deg, #667eea, #5a6fd8);
-            box-shadow: 4px 4px 8px #b8bcc3, -4px -4px 8px #ffffff;
         }
         
         .neo-checkbox:checked::after {
@@ -125,36 +107,6 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-        }
-        
-        .neo-icon-button {
-            width: 44px;
-            height: 44px;
-            background: #e0e5ec;
-            box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .neo-icon-button:hover {
-            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
-        }
-        
-        .neo-modal {
-            background: #e0e5ec;
-            box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff;
-            border-radius: 40px;
-        }
-        
-        .neo-time-picker {
-            background: #e0e5ec;
-            box-shadow: inset 10px 10px 20px #b8bcc3, inset -10px -10px 20px #ffffff;
-            border-radius: 20px;
         }
         
         .wheel-container {
@@ -175,8 +127,6 @@
             font-size: 1.5rem;
             scroll-snap-align: center;
             opacity: 0.3;
-            transform: scale(0.8);
-            transition: all 0.3s;
             color: #4a5568;
             font-weight: 600;
         }
@@ -194,339 +144,211 @@
             right: 1rem;
             transform: translateY(-50%);
             height: 40px;
-            pointer-events: none;
             border-top: 3px solid #667eea;
             border-bottom: 3px solid #667eea;
-            z-index: 1;
             opacity: 0.3;
-        }
-        
-        .modal-overlay { transition: opacity 0.3s ease; }
-        .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; }
-        
-        .info-item {
-            background: #e0e5ec;
-            box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;
-            border-radius: 15px;
-            padding: 16px;
-        }
-        
-        /* Weather widget */
-        .weather-widget {
-            background: linear-gradient(145deg, #f0f4f8, #d1d9e0);
-            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-        
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(224, 229, 236, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-        
-        .loading-rocket {
-            font-size: 80px;
-            animation: rocket-fly 2s ease-in-out infinite;
-        }
-        
-        @keyframes rocket-fly {
-            0%, 100% { transform: translateY(0) rotate(-45deg); }
-            50% { transform: translateY(-30px) rotate(-45deg); }
-        }
-        
-        /* Dark mode */
-        body.dark-mode {
-            background: #2d3748;
-        }
-        
-        body.dark-mode .neo-card {
-            background: #2d3748;
-            box-shadow: 25px 25px 50px #1a202c, -25px -25px 50px #3f4b5f;
-        }
-        
-        body.dark-mode .neo-input {
-            background: #2d3748;
-            box-shadow: inset 12px 12px 24px #1a202c, inset -12px -12px 24px #3f4b5f;
-            color: #e2e8f0;
-        }
-        
-        body.dark-mode .neo-button {
-            background: linear-gradient(145deg, #374151, #2d3748);
-            box-shadow: 15px 15px 30px #1a202c, -15px -15px 30px #3f4b5f;
-            color: #e2e8f0;
-        }
-        
-        body.dark-mode .neo-icon-button {
-            background: #2d3748;
-            box-shadow: 8px 8px 16px #1a202c, -8px -8px 16px #3f4b5f;
-        }
-        
-        body.dark-mode .neo-icon {
-            background: #2d3748;
-            box-shadow: 12px 12px 24px #1a202c, -12px -12px 24px #3f4b5f;
-        }
-        
-        body.dark-mode .neo-phrase {
-            background: #2d3748;
-            box-shadow: 10px 10px 20px #1a202c, -10px -10px 20px #3f4b5f;
-        }
-        
-        body.dark-mode .neo-title {
-            color: #e2e8f0;
-            text-shadow: 3px 3px 6px #1a202c, -3px -3px 6px #3f4b5f;
-        }
-        
-        body.dark-mode .neo-modal {
-            background: #2d3748;
-            box-shadow: 30px 30px 60px #1a202c, -30px -30px 60px #3f4b5f;
-        }
-        
-        body.dark-mode .info-item {
-            background: #2d3748;
-            box-shadow: 8px 8px 16px #1a202c, -8px -8px 16px #3f4b5f;
-        }
-        
-        body.dark-mode .weather-widget {
-            background: linear-gradient(145deg, #374151, #2d3748);
-            box-shadow: 10px 10px 20px #1a202c, -10px -10px 20px #3f4b5f;
-        }
-        
-        body.dark-mode .loading-overlay {
-            background: rgba(45, 55, 72, 0.95);
-        }
-        
-        body.dark-mode label,
-        body.dark-mode .text-gray-700,
-        body.dark-mode .text-gray-600 {
-            color: #e2e8f0 !important;
-        }
-        
-        body.dark-mode .text-gray-500,
-        body.dark-mode .text-gray-400 {
-            color: #9ca3af !important;
         }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <div class="neo-card p-10">
-            <!-- Header -->
-            <div class="text-center mb-8 relative">
-                <button id="open-info-modal" type="button" class="neo-icon-button absolute -top-2 -left-2">
-                    <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
-                
-                <button id="theme-toggle" type="button" class="neo-icon-button absolute -top-2 -right-2">
-                    <svg id="theme-toggle-dark-icon" class="w-5 h-5 text-gray-600 hidden" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                    </svg>
-                    <svg id="theme-toggle-light-icon" class="w-5 h-5 text-gray-600 hidden" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
-                
+            <div class="text-center mb-8">
                 <div class="neo-icon">🚀</div>
                 <h1 class="text-5xl font-extrabold neo-title mb-2">Mi Ruta</h1>
                 <p id="saludo" class="text-gray-600 font-medium"></p>
             </div>
 
-            <!-- Weather widget -->
-            <div id="weather-widget" class="weather-widget hidden">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div style="font-size: 2.5rem;" id="weather-icon">🌤️</div>
-                        <div>
-                            <p class="text-sm font-semibold text-gray-700" id="weather-temp">--°C</p>
-                            <p class="text-xs text-gray-500" id="weather-desc">Cargando...</p>
-                        </div>
-                    </div>
-                    <div id="rain-alert" class="hidden">
-                        <div class="flex items-center gap-2 bg-blue-100 px-3 py-2 rounded-lg">
-                            <span class="text-2xl">☔</span>
-                            <span class="text-xs font-bold text-blue-800">¡Lleva paraguas!</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Form -->
             <form id="main-form" action="/buscar" method="post" class="space-y-6">
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm uppercase tracking-wide">Origen</label>
-                    <select id="origen" name="origen" required class="neo-input">
-                        <option value="" disabled selected>Selecciona tu origen</option>
+                    <label class="block text-gray-700 font-semibold mb-3 text-sm">ORIGEN</label>
+                    <select id="origen" name="origen" required class="neo-input w-full">
+                        <option value="" disabled selected>Selecciona origen</option>
                         {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm uppercase tracking-wide">Destino</label>
-                    <select id="destino" name="destino" required class="neo-input">
-                        <option value="" disabled selected>Selecciona tu destino</option>
+                    <label class="block text-gray-700 font-semibold mb-3 text-sm">DESTINO</label>
+                    <select id="destino" name="destino" required class="neo-input w-full">
+                        <option value="" disabled selected>Selecciona destino</option>
                         {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
                     </select>
                 </div>
 
                 <div class="pt-4">
-                    <button type="button" id="open-filters-modal" class="neo-button text-left flex items-center justify-between">
-                        <span>⚙️ Opciones Avanzadas</span>
-                        <span class="text-xl">→</span>
+                    <button type="button" id="open-filters-modal" class="neo-button w-full text-left flex items-center justify-between">
+                        <span>⚙️ Opciones</span>
+                        <span>→</span>
                     </button>
                 </div>
 
-                <button type="submit" class="neo-button-primary text-lg">
+                <button type="submit" class="neo-button-primary w-full text-lg">
                     🚀 Buscar Ruta
                 </button>
             </form>
 
-            <!-- Frase -->
             <div class="mt-8">
                 <div class="neo-phrase" id="phrase-card">
-                    <p class="text-gray-700 font-medium leading-relaxed text-center" id="phrase-text">"{{ frase }}"</p>
-                    <p class="text-gray-400 text-xs text-center mt-3">✨ Toca para cambiar</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading overlay -->
-    <div id="loading-overlay" class="loading-overlay hidden">
-        <div class="loading-rocket">🚀</div>
-        <p style="margin-top: 20px; font-size: 1.5rem; font-weight: 700; color: #4a5568;">Buscando rutas...</p>
-    </div>
-
-    <!-- Modal Info -->
-    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div id="info-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
-        <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Información Útil</h2>
-                <button type="button" id="close-info-modal" class="neo-button p-3 rounded-full" style="width: auto;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <div class="space-y-4" style="max-height: 70vh; overflow-y: auto;">
-                <div class="info-item">
-                    <p class="font-bold text-gray-800 mb-2">Damas</p>
-                    <div class="flex justify-between text-sm">
-                        <a href="https://damas-sa.es/" target="_blank" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
-                        <a href="tel:+34959256900" class="text-indigo-600 hover:underline font-medium">959 25 69 00</a>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <p class="font-bold text-gray-800 mb-2">Renfe</p>
-                    <div class="flex justify-between text-sm">
-                        <a href="https://www.renfe.com/" target="_blank" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
-                        <a href="tel:+34912320320" class="text-indigo-600 hover:underline font-medium">912 320 320</a>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <p class="font-bold text-gray-800 mb-2">Emtusa Huelva</p>
-                    <div class="flex justify-between text-sm">
-                        <a href="https://emtusahuelva.es/" target="_blank" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
-                        <a href="tel:+34959258121" class="text-indigo-600 hover:underline font-medium">959 25 81 21</a>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <p class="font-bold text-gray-800 mb-2">Mapa de Paradas</p>
-                    <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" class="block text-indigo-600 hover:underline text-sm font-medium">Ver en Google Maps</a>
-                </div>
-                
-                <div class="info-item">
-                    <p class="font-bold text-gray-800 mb-2">Campus del Carmen</p>
-                    <div class="flex justify-between items-center text-sm">
-                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" class="text-indigo-600 hover:underline font-medium">Ver Mapa</a>
-                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" class="text-indigo-600 hover:underline font-medium">Ver Foto</a>
-                    </div>
+                    <p class="text-gray-700 font-medium text-center" id="phrase-text">"{{ frase }}"</p>
+                    <p class="text-gray-400 text-xs text-center mt-3">✨ Click para cambiar</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Modal Filtros -->
-    <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div id="filters-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
-        <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
+    <div id="filters-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black opacity-40" id="filters-overlay"></div>
+        <div class="relative bg-gray-100 rounded-3xl w-full max-w-md p-8 z-10" style="background: #e0e5ec; box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff; max-height: 90vh; overflow-y: auto;">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Filtros Avanzados</h2>
-                <button type="button" id="close-filters-modal" class="neo-button p-3 rounded-full" style="width: auto;">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <h2 class="text-2xl font-bold">Filtros Avanzados</h2>
+                <button type="button" id="close-filters-modal" class="text-4xl leading-none">&times;</button>
             </div>
             
-            <div class="space-y-5" style="max-height: 65vh; overflow-y: auto;">
+            <div class="space-y-5">
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm">Ver horarios para:</label>
-                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="neo-input">
+                    <label class="block font-semibold mb-2 text-sm">Día de la semana:</label>
+                    <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="neo-input w-full">
                         <option value="hoy" selected>Hoy</option>
-                        <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
-                        <option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>
+                        <option value="0">Lunes</option>
+                        <option value="1">Martes</option>
+                        <option value="2">Miércoles</option>
+                        <option value="3">Jueves</option>
+                        <option value="4">Viernes</option>
+                        <option value="5">Sábado</option>
+                        <option value="6">Domingo</option>
                     </select>
                 </div>
                 
-                <div class="flex items-center p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
+                <div class="flex items-center gap-3 p-3 rounded-xl" style="background: #e0e5ec; box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;">
                     <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="neo-checkbox">
-                    <label for="desde_ahora" class="ml-4 text-gray-700 font-medium">Buscar desde ahora</label>
+                    <label for="desde_ahora" class="font-medium">Buscar desde la hora actual</label>
                 </div>
 
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <div class="flex items-center mb-3">
+                <div>
+                    <div class="flex items-center gap-3 mb-3">
                         <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="neo-checkbox">
-                        <label for="salir_despues_check" class="ml-4 text-gray-700 font-medium">Salir después de...</label>
+                        <label for="salir_despues_check" class="font-medium">Salir después de las...</label>
                     </div>
-                    <div id="selectores_hora_salida" class="hidden mt-4">
-                        <div class="relative neo-time-picker p-4">
-                            <div class="selection-indicator"></div>
-                            <div class="flex justify-center items-center h-full">
-                                <div class="wheel-container" id="hour-wheel-salida">
-                                    <div style="height: 60px;"></div>
-                                    {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
-                                    <div style="height: 60px;"></div>
-                                </div>
-                                <span class="text-3xl font-bold mx-4 text-gray-600">:</span>
-                                <div class="wheel-container" id="minute-wheel-salida">
-                                    <div style="height: 60px;"></div>
-                                    {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
-                                    <div style="height: 60px;"></div>
-                                </div>
-                            </div>
+                    <div id="selectores_hora_salida" class="hidden">
+                        <div class="flex gap-3 items-center justify-center">
+                            <input form="main-form" type="number" name="salir_despues_hora" id="salir_despues_hora_input" value="07" min="0" max="23" class="neo-input w-20 text-center" disabled>
+                            <span class="text-2xl font-bold">:</span>
+                            <input form="main-form" type="number" name="salir_despues_minuto" id="salir_despues_minuto_input" value="00" min="0" max="59" step="5" class="neo-input w-20 text-center" disabled>
                         </div>
-                        <input form="main-form" type="hidden" name="salir_despues_hora" id="salir_despues_hora" value="07" disabled>
-                        <input form="main-form" type="hidden" name="salir_despues_minuto" id="salir_despues_minuto" value="00" disabled>
                     </div>
                 </div>
 
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <div class="flex items-center mb-3">
+                <div>
+                    <div class="flex items-center gap-3 mb-3">
                         <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="neo-checkbox">
-                        <label for="llegar_antes_check" class="ml-4 text-gray-700 font-medium">Llegar antes de...</label>
+                        <label for="llegar_antes_check" class="font-medium">Llegar antes de las...</label>
                     </div>
-                    <div id="selectores_hora_llegada" class="hidden mt-4">
-                        <div class="relative neo-time-picker p-4">
-                            <div class="selection-indicator"></div>
-                            <div class="flex justify-center items-center h-full">
-                                <div class="wheel-container" id="hour-wheel-llegada">
-                                    <div style="height: 60px;"></div>
-                                    {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
-                                    <div style="height: 60px;"></div>
-                                </div>
-                                <span class="text-3xl font-bold mx-4 text-gray-600">:</span>
-                                <div class="wheel-container" id="minute-wheel-llegada">
-                                    <div style="height: 60px;"></div>
-                                    {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
-                                    <div style="height: 60px;"></div>
+                    <div id="selectores_hora_llegada" class="hidden">
+                        <div class="flex gap-3 items-center justify-center">
+                            <input form="main-form" type="number" name="llegar_antes_hora" id="llegar_antes_hora_input" value="09" min="0" max="23" class="neo-input w-20 text-center" disabled>
+                            <span class="text-2xl font-bold">:</span>
+                            <input form="main-form" type="number" name="llegar_antes_minuto" id="llegar_antes_minuto_input" value="00" min="0" max="59" step="5" class="neo-input w-20 text-center" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex items-center gap-2 p-3 rounded-xl" style="background: #e0e5ec; box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;">
+                        <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="neo-checkbox">
+                        <label for="evitar_sj" class="text-sm font-medium">Evitar Sta. Justa</label>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 p-3 rounded-xl" style="background: #e0e5ec; box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;">
+                        <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="neo-checkbox">
+                        <label for="evitar_pa" class="text-sm font-medium">Evitar Plz. Armas</label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="apply-filters" class="neo-button-primary w-full mt-6">
+                ✓ Aplicar Filtros
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Saludo
+        var horaActual = new Date().getHours();
+        var saludoTexto = horaActual < 12 ? "Buenos días" : horaActual < 21 ? "Buenas tardes" : "Buenas noches";
+        document.getElementById("saludo").innerHTML = saludoTexto + ', <span class="font-bold text-indigo-600">Noa</span>';
+        
+        // Modal
+        var openFiltersBtn = document.getElementById('open-filters-modal');
+        var closeFiltersBtn = document.getElementById('close-filters-modal');
+        var applyFiltersBtn = document.getElementById('apply-filters');
+        var filtersModal = document.getElementById('filters-modal');
+        var filtersOverlay = document.getElementById('filters-overlay');
+        
+        openFiltersBtn.addEventListener('click', function() {
+            filtersModal.classList.remove('hidden');
+        });
+        
+        function closeModal() {
+            filtersModal.classList.add('hidden');
+        }
+        
+        closeFiltersBtn.addEventListener('click', closeModal);
+        applyFiltersBtn.addEventListener('click', closeModal);
+        filtersOverlay.addEventListener('click', closeModal);
+        
+        // Time pickers simplificados
+        var salirCheck = document.getElementById('salir_despues_check');
+        var salirContainer = document.getElementById('selectores_hora_salida');
+        var salirHora = document.getElementById('salir_despues_hora_input');
+        var salirMin = document.getElementById('salir_despues_minuto_input');
+        
+        salirCheck.addEventListener('change', function() {
+            if (this.checked) {
+                salirContainer.classList.remove('hidden');
+                salirHora.disabled = false;
+                salirMin.disabled = false;
+            } else {
+                salirContainer.classList.add('hidden');
+                salirHora.disabled = true;
+                salirMin.disabled = true;
+            }
+        });
+        
+        var llegarCheck = document.getElementById('llegar_antes_check');
+        var llegarContainer = document.getElementById('selectores_hora_llegada');
+        var llegarHora = document.getElementById('llegar_antes_hora_input');
+        var llegarMin = document.getElementById('llegar_antes_minuto_input');
+        
+        llegarCheck.addEventListener('change', function() {
+            if (this.checked) {
+                llegarContainer.classList.remove('hidden');
+                llegarHora.disabled = false;
+                llegarMin.disabled = false;
+            } else {
+                llegarContainer.classList.add('hidden');
+                llegarHora.disabled = true;
+                llegarMin.disabled = true;
+            }
+        });
+        
+        // Frases
+        var frasesData = {{ frases|tojson|safe }};
+        var fraseActual = "{{ frase }}";
+        var frases = frasesData;
+        var fraseActualIndex = frases.indexOf(fraseActual);
+        if (fraseActualIndex === -1) fraseActualIndex = 0;
+        
+        document.getElementById('phrase-card').addEventListener('click', function() {
+            var phraseText = document.getElementById('phrase-text');
+            var newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * frases.length);
+            } while (newIndex === fraseActualIndex && frases.length > 1);
+            fraseActualIndex = newIndex;
+            phraseText.textContent = '"' + frases[fraseActualIndex] + '"';
+        });
+    </script>
+</body>
+</html>
