@@ -136,6 +136,23 @@ def buscar():
             mask = (rutas_hoy_df['Dias'] == 'L-D') | (is_weekday & (rutas_hoy_df['Dias'] == 'L-V')) | ((is_saturday or is_sunday) & (rutas_hoy_df['Dias'] == 'S-D')) | (is_saturday & (rutas_hoy_df['Dias'] == 'S')) | (is_sunday & (rutas_hoy_df['Dias'] == 'D'))
             rutas_hoy_df = rutas_hoy_df[mask]
         
+        # CRÍTICO: Calcular duraciones para rutas fijas ANTES de buscar rutas
+        today_date = now.date()
+        mask_fijas = rutas_hoy_df['Tipo_Horario'] == 'Fijo'
+        if mask_fijas.any():
+            salida_times = pd.to_datetime(rutas_hoy_df.loc[mask_fijas, 'Salida'], format='%H:%M', errors='coerce').dt.time
+            llegada_times = pd.to_datetime(rutas_hoy_df.loc[mask_fijas, 'Llegada'], format='%H:%M', errors='coerce').dt.time
+            
+            salida_dt_temp = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
+            llegada_dt_temp = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
+            
+            # Calcular duración solo donde ambos tiempos existen
+            mask_validos = salida_dt_temp.notna() & llegada_dt_temp.notna()
+            duraciones_calculadas = (llegada_dt_temp[mask_validos] - salida_dt_temp[mask_validos]).dt.total_seconds() / 60
+            
+            rutas_hoy_df.loc[mask_fijas & mask_validos, 'Duracion_Trayecto_Min'] = duraciones_calculadas
+            print(f"  ✓ Duraciones calculadas para {mask_validos.sum()} rutas fijas en rutas_hoy_df")
+        
         lugares_a_evitar = []
         if form_data.get('evitar_sj'): lugares_a_evitar.append('Sta. Justa')
         if form_data.get('evitar_pa'): lugares_a_evitar.append('Plz. Armas')
