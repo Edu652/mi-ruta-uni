@@ -152,6 +152,12 @@ def buscar():
             rutas_fijas_df['Salida_dt'] = salida_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
             rutas_fijas_df['Llegada_dt'] = llegada_times.apply(lambda t: datetime.combine(today_date, t) if pd.notna(t) else pd.NaT)
             rutas_fijas_df.dropna(subset=['Salida_dt', 'Llegada_dt'], inplace=True)
+            
+            # CORRECCIÓN CRÍTICA: Calcular Duracion_Trayecto_Min desde Salida_dt y Llegada_dt
+            rutas_fijas_df['Duracion_Trayecto_Min'] = (
+                (rutas_fijas_df['Llegada_dt'] - rutas_fijas_df['Salida_dt']).dt.total_seconds() / 60
+            )
+            print(f"  ✓ Duraciones calculadas para {len(rutas_fijas_df)} rutas fijas")
         
         candidatos_expandidos = []
         if candidatos_plantilla:
