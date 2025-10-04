@@ -173,12 +173,20 @@ def buscar():
                 idx_ancla = indices_fijos[0]
                 ancla_plantilla = ruta_plantilla[idx_ancla]
                 
+                print(f"\n  🔍 Buscando ancla: {ancla_plantilla.get('Compania')} | {ancla_plantilla.get('Origen')} → {ancla_plantilla.get('Destino')}")
+                
                 mask = (rutas_fijas_df['Origen'] == ancla_plantilla.get('Origen')) & (rutas_fijas_df['Destino'] == ancla_plantilla.get('Destino'))
-                if pd.notna(ancla_plantilla.get('Compania')) and ancla_plantilla.get('Compania') != '': mask &= (rutas_fijas_df['Compania'] == ancla_plantilla.get('Compania'))
-                if pd.notna(ancla_plantilla.get('Transporte')) and ancla_plantilla.get('Transporte') != '': mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla.get('Transporte'))
+                if pd.notna(ancla_plantilla.get('Compania')) and ancla_plantilla.get('Compania') != '': 
+                    mask &= (rutas_fijas_df['Compania'] == ancla_plantilla.get('Compania'))
+                    print(f"     Filtrando por compañía: {ancla_plantilla.get('Compania')}")
+                if pd.notna(ancla_plantilla.get('Transporte')) and ancla_plantilla.get('Transporte') != '': 
+                    mask &= (rutas_fijas_df['Transporte'] == ancla_plantilla.get('Transporte'))
                 
                 posibles_anclas = rutas_fijas_df[mask]
-                for _, ancla_real in posibles_anclas.iterrows():
+                print(f"     Encontradas {len(posibles_anclas)} posibles anclas")
+                
+                for idx_ancla_real, ancla_real in posibles_anclas.iterrows():
+                    print(f"       Ancla: {ancla_real.get('Compania')} | Salida: {ancla_real.get('Salida')} | Llegada: {ancla_real.get('Llegada')} | Duración: {ancla_real.get('Duracion_Trayecto_Min')} min")
                     nueva_ruta = list(ruta_plantilla)
                     nueva_ruta[idx_ancla] = ancla_real.to_dict()
                     candidatos_expandidos.append(nueva_ruta)
