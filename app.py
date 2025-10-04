@@ -1,4 +1,193 @@
-# Fichero: app.py (Versión corregida con logs de debug)
+def calculate_route_times(ruta_series_list, desde_ahora_check, now):
+    try:
+        segmentos = []
+        for s in ruta_series_list:
+            if isinstance(s, dict):
+                segmentos.append(s.copy())
+            elif hasattr(s, 'to_dict'):
+                segmentos.append(s.to_dict())
+            else:
+                segmentos.append(dict(s))
+        
+        TIEMPO_TRANSBORDO = timedelta(minutes=10)
+        
+        # Caso especial: ruta de un solo segmento con frecuencia
+        if len(segmentos) == 1 and segmentos[0].get('Tipo_Horario') == 'Frecuencia':
+            dur_min = float(segmentos[0].get('Duracion_Trayecto_Min', 0))
+            duracion = timedelta(minutes=dur_min)
+            seg_dict = segmentos[0].copy()
+            seg_dict.update({
+                'icono': get_icon_for_compania(seg_dict.get('Compania')), 
+                'Salida_str': "A tu aire", 
+                'Llegada_str': "", 
+                'Duracion_Tramo_Min': dur_min, 
+                'Salida_dt': now
+            })
+            h_primer_str = seg_dict.get('H_Primer', '')
+            h_ultim_str = seg_dict.get('H_Ultim', '')
+            if h_primer_str and h_ultim_str:
+                try:
+                    h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
+                    h_ultim = datetime.strptime(h_ultim_str, '%H:%M').time()
+                    hora_actual = now.time()
+                    if h_primer > h_ultim:
+                        if not (hora_actual >= h_primer or hora_actual <= h_ultim):
+                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                    else:
+                        if not (h_primer <= hora_actual <= h_ultim):
+                            seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+                except: 
+                    pass
+            return {
+                "segmentos": [seg_dict], 
+                "precio_total": float(seg_dict.get('Precio', 0)), 
+                "llegada_final_dt_obj": now, 
+                "hora_llegada_final": "Flexible", 
+                "duracion_total_str": format_timedelta(duracion)
+            }
+
+        # Encontrar índice ancla (primer segmento con horario fijo)
+        anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s.get('Salida_dt'))), -1)
+        
+        if anchor_index != -1:
+            # CORREGIDO: Calcular hacia atrás desde el ancla
+            llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
+            for i in range(anchor_index - 1, -1, -1):
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
+                segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
+                llegada_siguiente_dt = segmentos[i]['Salida_dt']
+            
+            # CORREGIDO: Calcular hacia adelante desde el ancla
+            # Asegurarse de que el ancla tenga Llegada_dt calculada
+            if 'Llegada_dt' not in segmentos[anchor_index] or pd.isna(segmentos[anchor_index].get('Llegada_dt')):
+                dur_min = float(segmentos[anchor_index].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                segmentos[anchor_index]['Llegada_dt'] = segmentos[anchor_index]['Salida_dt'] + dur
+            
+            llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
+            
+            for i in range(anchor_index + 1, len(segmentos)):
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                
+                if pd.notna(llegada_anterior_dt):
+                    segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                    segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
+                    llegada_anterior_dt = segmentos[i]['Llegada_dt']
+                else:
+                    segmentos[i]['Salida_dt'] = pd.NaT
+                    segmentos[i]['Llegada_dt'] = pd.NaT
+                    llegada_anterior_dt = pd.NaT
+        else: 
+            # Sin ancla: calcular desde el inicio
+            llegada_anterior_dt = None
+            start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7, 0))
+            
+            for i, seg in enumerate(segmentos):
+                dur_min = float(seg.get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                
+                if i == 0:
+                    seg['Salida_dt'] = start_time
+                elif pd.notna(llegada_anterior_dt):
+                    seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                else:
+                    seg['Salida_dt'] = pd.NaT
+                
+                if pd.notna(seg.get('Salida_dt')):
+                    seg['Llegada_dt'] = seg['Salida_dt'] + dur
+                else:
+                    seg['Llegada_dt'] = pd.NaT
+                
+                llegada_anterior_dt = seg.get('Llegada_dt')
+        
+        # Validar que todos los segmentos tienen tiempos
+        if any(pd.isna(s.get('Salida_dt')) or pd.isna(s.get('Llegada_dt')) for s in segmentos):
+            return None
+
+        primera_salida_dt = segmentos[0]['Salida_dt']
+        segmentos_formateados = []
+        
+        for seg in segmentos:
+            seg_dict = seg.copy()
+            salida_dt = seg['Salida_dt']
+            
+            # Validar horarios de frecuencia MEJORADO
+            if seg.get('Tipo_Horario') == 'Frecuencia':
+                hora_salida = salida_dt.time()
+                
+                # Buscar filas coincidentes en la BD original
+                rutas_coincidentes = rutas_df_global[
+                    (rutas_df_global['Origen'] == seg.get('Origen')) &
+                    (rutas_df_global['Destino'] == seg.get('Destino')) &
+                    (rutas_df_global['Tipo_Horario'] == 'Frecuencia')
+                ]
+                
+                # Si hay compañía específica, filtrar también
+                if pd.notna(seg.get('Compania')) and str(seg.get('Compania')).strip() != '':
+                    rutas_coincidentes = rutas_coincidentes[
+                        rutas_df_global['Compania'] == seg.get('Compania')
+                    ]
+                
+                dentro_de_horario = False
+                
+                # Validar contra todos los rangos encontrados
+                for _, ruta in rutas_coincidentes.iterrows():
+                    h_primer_str = ruta.get('H_Primer', '')
+                    h_ultim_str = ruta.get('H_Ultim', '')
+                    
+                    if h_primer_str and h_ultim_str:
+                        try:
+                            h_primer = datetime.strptime(str(h_primer_str), '%H:%M').time()
+                            h_ultim = datetime.strptime(str(h_ultim_str), '%H:%M').time()
+                            
+                            # Rango que cruza medianoche
+                            if h_primer > h_ultim:
+                                if hora_salida >= h_primer or hora_salida <= h_ultim:
+                                    dentro_de_horario = True
+                                    break
+                            # Rango normal
+                            else:
+                                if h_primer <= hora_salida <= h_ultim:
+                                    dentro_de_horario = True
+                                    break
+                        except:
+                            pass
+                
+                # Solo marcar si encontramos rutas coincidentes pero ninguna cubre la hora
+                if not dentro_de_horario and rutas_coincidentes.shape[0] > 0:
+                    seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
+            
+            seg_dict.update({
+                'icono': get_icon_for_compania(seg_dict.get('Compania')), 
+                'Salida_str': salida_dt.strftime('%H:%M'), 
+                'Llegada_str': seg['Llegada_dt'].strftime('%H:%M'), 
+                'Duracion_Tramo_Min': (seg['Llegada_dt'] - salida_dt).total_seconds() / 60,
+                'Salida_dt': salida_dt
+            })
+            segmentos_formateados.append(seg_dict)
+        
+        llegada_final_dt_obj = segmentos[-1]['Llegada_dt']
+        precio_total = sum(float(s.get('Precio', 0)) for s in segmentos)
+
+        return {
+            "segmentos": segmentos_formateados,
+            "precio_total": precio_total,
+            "llegada_final_dt_obj": llegada_final_dt_obj,
+            "hora_llegada_final": llegada_final_dt_obj.time(),
+            "duracion_total_str": format_timedelta(llegada_final_dt_obj - primera_salida_dt)
+        }
+    except Exception as e:
+        print(f"ERROR en calculate_route_times: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)# Fichero: app.py (Versión corregida completa)
 from flask import Flask, render_template, request
 import pandas as pd
 import json
@@ -66,7 +255,6 @@ try:
     for col in ['Duracion_Trayecto_Min', 'Frecuencia_Min']:
         if col in rutas_df_global.columns:
             rutas_df_global[col] = clean_minutes_column(rutas_df_global[col])
-    # Convertir precios: reemplazar comas por puntos y eliminar símbolos de euro
     if 'Precio' in rutas_df_global.columns:
         rutas_df_global['Precio'] = rutas_df_global['Precio'].astype(str).str.replace(',', '.').str.replace('€', '').str.strip()
     rutas_df_global['Precio'] = pd.to_numeric(rutas_df_global['Precio'], errors='coerce').fillna(0)
@@ -188,7 +376,6 @@ def buscar():
         
         print(f"  Resultados procesados: {len(resultados_procesados)}")
         
-        # DEBUG: Ver qué rutas tenemos antes de filtrar
         if len(resultados_procesados) > 10:
             companias_encontradas = set()
             for r in resultados_procesados:
@@ -313,12 +500,20 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
+        # Caso especial: ruta de un solo segmento con frecuencia
         if len(segmentos) == 1 and segmentos[0].get('Tipo_Horario') == 'Frecuencia':
             dur_min = float(segmentos[0].get('Duracion_Trayecto_Min', 0))
             duracion = timedelta(minutes=dur_min)
             seg_dict = segmentos[0].copy()
-            seg_dict.update({'icono': get_icon_for_compania(seg_dict.get('Compania')), 'Salida_str': "A tu aire", 'Llegada_str': "", 'Duracion_Tramo_Min': dur_min, 'Salida_dt': now})
-            h_primer_str = seg_dict.get('H_Primer', ''); h_ultim_str = seg_dict.get('H_Ultim', '')
+            seg_dict.update({
+                'icono': get_icon_for_compania(seg_dict.get('Compania')), 
+                'Salida_str': "A tu aire", 
+                'Llegada_str': "", 
+                'Duracion_Tramo_Min': dur_min, 
+                'Salida_dt': now
+            })
+            h_primer_str = seg_dict.get('H_Primer', '')
+            h_ultim_str = seg_dict.get('H_Ultim', '')
             if h_primer_str and h_ultim_str:
                 try:
                     h_primer = datetime.strptime(h_primer_str, '%H:%M').time()
@@ -330,76 +525,127 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                     else:
                         if not (h_primer <= hora_actual <= h_ultim):
                             seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
-                except: pass
-            return {"segmentos": [seg_dict], "precio_total": float(seg_dict.get('Precio', 0)), "llegada_final_dt_obj": now, "hora_llegada_final": "Flexible", "duracion_total_str": format_timedelta(duracion)}
+                except: 
+                    pass
+            return {
+                "segmentos": [seg_dict], 
+                "precio_total": float(seg_dict.get('Precio', 0)), 
+                "llegada_final_dt_obj": now, 
+                "hora_llegada_final": "Flexible", 
+                "duracion_total_str": format_timedelta(duracion)
+            }
 
+        # Encontrar índice ancla (primer segmento con horario fijo)
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s.get('Salida_dt'))), -1)
         
         if anchor_index != -1:
+            # CORREGIDO: Calcular hacia atrás desde el ancla
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
             for i in range(anchor_index - 1, -1, -1):
-                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
-            llegada_anterior_dt = segmentos[anchor_index].get('Llegada_dt')
+            
+            # CORREGIDO: Calcular hacia adelante desde el ancla
+            # Asegurarse de que el ancla tenga Llegada_dt calculada
+            if 'Llegada_dt' not in segmentos[anchor_index] or pd.isna(segmentos[anchor_index].get('Llegada_dt')):
+                dur_min = float(segmentos[anchor_index].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                segmentos[anchor_index]['Llegada_dt'] = segmentos[anchor_index]['Salida_dt'] + dur
+            
+            llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
+            
             for i in range(anchor_index + 1, len(segmentos)):
-                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
+                dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                
                 if pd.notna(llegada_anterior_dt):
                     segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
-                    llegada_anterior_dt = segmentos[i].get('Llegada_dt')
+                    llegada_anterior_dt = segmentos[i]['Llegada_dt']
                 else:
-                    segmentos[i]['Salida_dt'] = pd.NaT; segmentos[i]['Llegada_dt'] = pd.NaT; llegada_anterior_dt = pd.NaT
+                    segmentos[i]['Salida_dt'] = pd.NaT
+                    segmentos[i]['Llegada_dt'] = pd.NaT
+                    llegada_anterior_dt = pd.NaT
         else: 
+            # Sin ancla: calcular desde el inicio
             llegada_anterior_dt = None
-            start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7,0))
+            start_time = now if desde_ahora_check else datetime.combine(now.date(), time(7, 0))
+            
             for i, seg in enumerate(segmentos):
-                dur_min = float(seg.get('Duracion_Trayecto_Min', 0)); dur = timedelta(minutes=dur_min)
-                if i == 0: seg['Salida_dt'] = start_time
-                elif pd.notna(llegada_anterior_dt): seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
-                else: seg['Salida_dt'] = pd.NaT
-                if pd.notna(seg.get('Salida_dt')): seg['Llegada_dt'] = seg.get('Salida_dt') + dur
-                else: seg['Llegada_dt'] = pd.NaT
+                dur_min = float(seg.get('Duracion_Trayecto_Min', 0))
+                dur = timedelta(minutes=dur_min)
+                
+                if i == 0:
+                    seg['Salida_dt'] = start_time
+                elif pd.notna(llegada_anterior_dt):
+                    seg['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
+                else:
+                    seg['Salida_dt'] = pd.NaT
+                
+                if pd.notna(seg.get('Salida_dt')):
+                    seg['Llegada_dt'] = seg['Salida_dt'] + dur
+                else:
+                    seg['Llegada_dt'] = pd.NaT
+                
                 llegada_anterior_dt = seg.get('Llegada_dt')
         
+        # Validar que todos los segmentos tienen tiempos
         if any(pd.isna(s.get('Salida_dt')) or pd.isna(s.get('Llegada_dt')) for s in segmentos):
             return None
 
         primera_salida_dt = segmentos[0]['Salida_dt']
         segmentos_formateados = []
+        
         for seg in segmentos:
             seg_dict = seg.copy()
             salida_dt = seg['Salida_dt']
+            
+            # Validar horarios de frecuencia MEJORADO
             if seg.get('Tipo_Horario') == 'Frecuencia':
                 hora_salida = salida_dt.time()
-                # Buscar TODAS las filas que coincidan con este segmento en el día actual
+                
+                # Buscar filas coincidentes en la BD original
                 rutas_coincidentes = rutas_df_global[
                     (rutas_df_global['Origen'] == seg.get('Origen')) &
                     (rutas_df_global['Destino'] == seg.get('Destino')) &
                     (rutas_df_global['Tipo_Horario'] == 'Frecuencia')
                 ]
                 
-                # Validar contra todos los rangos horarios posibles
+                # Si hay compañía específica, filtrar también
+                if pd.notna(seg.get('Compania')) and str(seg.get('Compania')).strip() != '':
+                    rutas_coincidentes = rutas_coincidentes[
+                        rutas_df_global['Compania'] == seg.get('Compania')
+                    ]
+                
                 dentro_de_horario = False
+                
+                # Validar contra todos los rangos encontrados
                 for _, ruta in rutas_coincidentes.iterrows():
                     h_primer_str = ruta.get('H_Primer', '')
                     h_ultim_str = ruta.get('H_Ultim', '')
+                    
                     if h_primer_str and h_ultim_str:
                         try:
                             h_primer = datetime.strptime(str(h_primer_str), '%H:%M').time()
                             h_ultim = datetime.strptime(str(h_ultim_str), '%H:%M').time()
                             
-                            if h_primer > h_ultim:  # Cruza medianoche
+                            # Rango que cruza medianoche
+                            if h_primer > h_ultim:
                                 if hora_salida >= h_primer or hora_salida <= h_ultim:
                                     dentro_de_horario = True
                                     break
-                            else:  # Rango normal
+                            # Rango normal
+                            else:
                                 if h_primer <= hora_salida <= h_ultim:
                                     dentro_de_horario = True
                                     break
-                        except: pass
+                        except:
+                            pass
                 
+                # Solo marcar si encontramos rutas coincidentes pero ninguna cubre la hora
                 if not dentro_de_horario and rutas_coincidentes.shape[0] > 0:
                     seg_dict['aviso_horario'] = 'FUERA DE HORARIO'
             
@@ -427,7 +673,3 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         import traceback
         traceback.print_exc()
         return None
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
