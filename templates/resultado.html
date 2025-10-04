@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados - Mi Ruta</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#e0e5ec">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -16,39 +14,10 @@
             background: #e0e5ec;
         }
         
-        /* Efectos Neomórficos ACENTUADOS */
-        .neo-header {
-            background: #e0e5ec;
-            box-shadow: 0 8px 16px #b8bcc3, 0 -2px 4px #ffffff;
-            backdrop-filter: blur(10px);
-        }
-        
         .neo-card {
             background: #e0e5ec;
             box-shadow: 20px 20px 40px #b8bcc3, -20px -20px 40px #ffffff;
             border-radius: 30px;
-            transition: all 0.3s ease;
-        }
-        
-        .neo-card:hover {
-            box-shadow: 25px 25px 50px #b8bcc3, -25px -25px 50px #ffffff;
-            transform: translateY(-2px);
-        }
-        
-        .neo-badge {
-            background: linear-gradient(145deg, #f0f4f8, #d1d9e0);
-            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        
-        .neo-badge-primary {
-            background: linear-gradient(145deg, #667eea, #5a6fd8);
-            color: white;
-            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
         }
         
         .neo-number {
@@ -62,270 +31,147 @@
             justify-content: center;
             color: white;
             font-weight: 800;
-            font-size: 1.1rem;
         }
         
-        .neo-icon-box {
-            width: 48px;
-            height: 48px;
-            background: #e0e5ec;
-            box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        
-        .neo-divider {
-            height: 30px;
-            width: 3px;
-            background: linear-gradient(180deg, transparent, #b8bcc3, transparent);
-            margin: 0 auto;
-        }
-        
-        .neo-link {
-            background: linear-gradient(145deg, #f0f4f8, #d1d9e0);
-            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
-            border-radius: 15px;
-            padding: 12px 24px;
-            color: #667eea;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-        
-        .neo-link:hover {
-            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
-            transform: scale(0.98);
-        }
-        
-        .neo-empty {
-            background: #e0e5ec;
-            box-shadow: inset 15px 15px 30px #b8bcc3, inset -15px -15px 30px #ffffff;
-            border-radius: 30px;
-            padding: 60px 40px;
-        }
-        
-        .info-container {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .info-tooltip {
-            visibility: hidden;
-            width: 220px;
-            background: #e0e5ec;
-            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
-            color: #4a5568;
-            text-align: center;
-            border-radius: 15px;
-            padding: 12px;
-            position: absolute;
-            z-index: 10;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -110px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.875rem;
-        }
-        
-        .info-tooltip a {
-            color: #667eea;
-            text-decoration: underline;
-            font-weight: 600;
-        }
-        
-        .info-container:hover .info-tooltip {
-            visibility: visible;
-            opacity: 1;
-        }
-        
-        .warning-badge {
-            background: linear-gradient(145deg, #fc8181, #f56565);
-            color: white;
-            box-shadow: 4px 4px 8px #b8bcc3, -4px -4px 8px #ffffff;
-            border-radius: 10px;
-            padding: 4px 12px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-        
-        /* Botón compartir */
         .share-button {
             background: linear-gradient(145deg, #48bb78, #38a169);
-            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
+            box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;
             border-radius: 15px;
-            padding: 10px 20px;
+            padding: 8px 16px;
             color: white;
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .share-button:hover {
-            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
-            transform: scale(0.98);
+            font-size: 0.875rem;
         }
         
         .share-button:active {
-            box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
-        }
-        
-        /* Confetti */
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        
-        @keyframes confetti-fall {
-            to {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
+            transform: scale(0.95);
         }
     </style>
 </head>
 <body class="min-h-screen p-4">
-    <!-- Header fijo -->
-    <div class="sticky top-0 z-20 neo-header py-4 mb-6 -mx-4 px-4">
-        <div class="max-w-4xl mx-auto">
-            <a href="/" class="neo-link text-sm mb-3 inline-block">← Nueva Búsqueda</a>
-            <h1 class="text-3xl font-extrabold text-gray-800 text-center mb-2">Rutas Encontradas</h1>
-            <p class="text-center text-gray-600 font-medium">{{ origen }} → {{ destino }}</p>
-            {% if dia_semana %}
-            <p class="text-center text-gray-500 text-sm mt-1">Horarios para: <span class="font-semibold">{{ dia_semana }}</span></p>
-            {% endif %}
-            
-            {% if filtros %}
-            <div class="flex flex-wrap gap-2 justify-center mt-3">
-                {% if filtros.desde_ahora %}<span class="neo-badge-primary">Desde ahora</span>{% endif %}
-                {% if filtros.evitar_sj %}<span class="neo-badge">Evitando Sta. Justa</span>{% endif %}
-                {% if filtros.evitar_pa %}<span class="neo-badge">Evitando Plz. Armas</span>{% endif %}
-            </div>
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-6 text-center">
+            <a href="/" class="text-indigo-600 hover:underline font-semibold">← Nueva Búsqueda</a>
+            <h1 class="text-3xl font-bold mt-2">Rutas Encontradas</h1>
+            <p class="text-gray-600">{{ origen }} → {{ destino }}</p>
+        </div>
+
+        <div class="space-y-6">
+            {% if resultados %}
+                {% for resultado in resultados %}
+                <div class="neo-card p-6 relative">
+                    <div class="absolute -top-4 -left-4 neo-number">{{ loop.index }}</div>
+                    
+                    <button onclick="compartirRuta({{ loop.index }}, '{{ resultado.segmentos[0].Salida_str }}', '{% if resultado.hora_llegada_final == 'Flexible' %}Flexible{% else %}{{ resultado.hora_llegada_final.strftime('%H:%M') }}{% endif %}', '{{ resultado.duracion_total_str }}', '{{ origen }}', '{{ destino }}')" class="share-button absolute -top-4 -right-4">
+                        📤 Compartir
+                    </button>
+
+                    <div class="grid grid-cols-3 gap-4 mb-6 text-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Salida</p>
+                            <p class="text-2xl font-bold text-indigo-600">{{ resultado.segmentos[0].Salida_str }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Llegada</p>
+                            <p class="text-2xl font-bold text-indigo-600">
+                                {% if resultado.hora_llegada_final == 'Flexible' %}Flexible{% else %}{{ resultado.hora_llegada_final.strftime('%H:%M') }}{% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Duración</p>
+                            <p class="text-lg font-bold">{{ resultado.duracion_total_str }}</p>
+                            <p class="text-sm text-gray-500">{{ "%.2f"|format(resultado.precio_total) }} €</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        {% for segmento in resultado.segmentos %}
+                        <div class="flex items-start gap-4">
+                            <div class="text-3xl">
+                                {% if segmento.icono == 'LOGO_CONSORCIO' %}
+                                    <img src="{{ url_for('static', filename='logo_junta.jpg') }}" alt="Logo" class="w-10 h-10">
+                                {% else %}
+                                    {{ segmento.icono }}
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-grow">
+                                <p class="font-bold">{{ segmento.Compania | default('') }}</p>
+                                <p class="text-sm text-gray-700">
+                                    {{ segmento.Origen }} → {{ segmento.Destino }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    Salida: {{ segmento.Salida_str }} 
+                                    {% if segmento.Llegada_str %}| Llegada: {{ segmento.Llegada_str }}{% endif %}
+                                    | {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min
+                                </p>
+                            </div>
+                            
+                            <p class="text-sm font-semibold">{{ "%.2f"|format(segmento.Precio | float) }} €</p>
+                        </div>
+                        
+                        {% if not loop.last %}
+                        <p class="text-xs text-gray-400 ml-14">↓ Transbordo (10 min)</p>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="neo-card p-12 text-center">
+                    <div class="text-6xl mb-4">😔</div>
+                    <h2 class="text-2xl font-bold mb-2">No hay rutas</h2>
+                    <p class="text-gray-600 mb-6">Intenta con otros filtros</p>
+                    <a href="/" class="text-indigo-600 hover:underline font-semibold">← Volver</a>
+                </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto space-y-6 pb-8">
+    <script>
+        function compartirRuta(numero, salida, llegada, duracion, origen, destino) {
+            var texto = '🚀 Mi Ruta #' + numero + '\n\n' +
+                       '📍 ' + origen + ' → ' + destino + '\n\n' +
+                       '⏰ Salida: ' + salida + '\n' +
+                       '🎯 Llegada: ' + llegada + '\n' +
+                       '⌛ Duración: ' + duracion + '\n\n' +
+                       'Generado con Mi Ruta 💜';
+            
+            var url = 'https://wa.me/?text=' + encodeURIComponent(texto);
+            window.open(url, '_blank');
+        }
+        
+        // Confetti
         {% if resultados %}
-            {% for resultado in resultados %}
-            <div class="neo-card p-6 relative">
-                <!-- Número de ruta -->
-                <div class="absolute -top-4 -left-4 neo-number z-10">{{ loop.index }}</div>
-
-                <!-- Header de la ruta -->
-                <div class="grid grid-cols-3 gap-4 mb-6 text-center">
-                    <div>
-                        <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Salida</p>
-                        <p class="text-2xl font-bold text-indigo-600">{{ resultado.segmentos[0].Salida_str }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Llegada Aprox.</p>
-                        <p class="text-2xl font-bold text-indigo-600">
-                            {% if resultado.hora_llegada_final == 'Flexible' %}Flexible{% else %}{{ resultado.hora_llegada_final.strftime('%H:%M') }}{% endif %}
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Duración</p>
-                        <p class="text-lg font-bold text-gray-700">{{ resultado.duracion_total_str }}</p>
-                        <p class="text-sm text-gray-500 font-semibold mt-1">{{ "%.2f"|format(resultado.precio_total) }} €</p>
-                    </div>
-                </div>
-
-                <!-- Segmentos -->
-                <div class="space-y-4">
-                    {% for segmento in resultado.segmentos %}
-                    <div class="flex items-start gap-4">
-                        <!-- Icono -->
-                        <div class="neo-icon-box flex-shrink-0">
-                            {% if segmento.icono == 'LOGO_CONSORCIO' %}
-                                <img src="{{ url_for('static', filename='logo_junta.jpg') }}" alt="Logo" class="w-8 h-8 object-contain">
-                            {% else %}
-                                {{ segmento.icono }}
-                            {% endif %}
-                        </div>
-
-                        <!-- Detalles -->
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start mb-1">
-                                <div class="flex items-center gap-2">
-                                    <p class="font-bold text-gray-800">{{ segmento.Compania | default('') }}</p>
-                                    {% if segmento.Observaciones and segmento.Observaciones != '' %}
-                                    <div class="info-container">
-                                        <span class="cursor-pointer text-lg">ℹ️</span>
-                                        <span class="info-tooltip">
-                                            {% if 'http' in segmento.Observaciones %}
-                                                <a href="{{ segmento.Observaciones }}" target="_blank" rel="noopener noreferrer">Ver más información</a>
-                                            {% else %}
-                                                {{ segmento.Observaciones }}
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <p class="text-sm font-semibold text-gray-600">{{ "%.2f"|format(segmento.Precio | float) }} €</p>
-                            </div>
-                            
-                            <p class="text-sm text-gray-700 mb-2">
-                                <span class="font-medium">{{ segmento.Origen }}</span>
-                                {% if segmento.Parada_Origen and segmento.Parada_Origen != '' %}
-                                    <span class="text-gray-400 text-xs">({{ segmento.Parada_Origen }})</span>
-                                {% endif %}
-                                <span class="mx-2">→</span>
-                                <span class="font-medium">{{ segmento.Destino }}</span>
-                                {% if segmento.Parada_Destino and segmento.Parada_Destino != '' %}
-                                    <span class="text-gray-400 text-xs">({{ segmento.Parada_Destino }})</span>
-                                {% endif %}
-                            </p>
-
-                            <div class="flex flex-wrap gap-3 text-xs text-gray-600">
-                                <span><strong>Salida:</strong> {{ segmento.Salida_str }}</span>
-                                {% if segmento.Llegada_str %}
-                                    <span><strong>Llegada:</strong> {{ segmento.Llegada_str }}</span>
-                                {% endif %}
-                                <span><strong>Duración:</strong> {{ "%.0f"|format(segmento.Duracion_Tramo_Min | default(0)) }} min</span>
-                                {% if segmento.Linea and segmento.Linea != '' %}
-                                    <span><strong>Línea:</strong> {{ segmento.Linea }}</span>
-                                {% endif %}
-                            </div>
-
-                            {% if segmento.aviso_horario %}
-                            <div class="mt-2">
-                                <span class="warning-badge">⚠️ {{ segmento.aviso_horario }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    {% if not loop.last %}
-                    <div class="flex items-center gap-3 ml-6">
-                        <div class="neo-divider"></div>
-                        <p class="text-xs text-gray-500 font-semibold">Transbordo (10 min)</p>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <!-- No hay resultados -->
-            <div class="neo-empty text-center">
-                <div class="text-6xl mb-4">😔</div>
-                <h2 class="text-2xl font-bold text-gray-700 mb-3">No encontramos rutas</h2>
-                <p class="text-gray-600 mb-6">No hemos podido encontrar una combinación para este trayecto con los filtros aplicados.</p>
-                <a href="/" class="neo-link">← Intentar de nuevo</a>
-            </div>
+        window.addEventListener('load', function() {
+            var colors = ['#667eea', '#764ba2', '#f093fb', '#48bb78', '#fc8181', '#fbbf24'];
+            for (var i = 0; i < 100; i++) {
+                var confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-20px';
+                confetti.style.zIndex = '9999';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                document.body.appendChild(confetti);
+                
+                var duration = (Math.random() * 3 + 2) + 's';
+                confetti.style.animation = 'confetti-fall ' + duration + ' linear forwards';
+                
+                setTimeout(function(el) {
+                    return function() { el.remove(); };
+                }(confetti), 5000);
+            }
+        });
+        
+        var style = document.createElement('style');
+        style.textContent = '@keyframes confetti-fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }';
+        document.head.appendChild(style);
         {% endif %}
-    </div>
+    </script>
 </body>
 </html>
