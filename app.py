@@ -309,6 +309,14 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
             else:
                 segmentos.append(dict(s))
         
+        # DEBUG: Imprimir información de entrada
+        print(f"\n  🔍 DEBUG calculate_route_times:")
+        for i, seg in enumerate(segmentos):
+            print(f"    Segmento {i}: {seg.get('Compania')} | {seg.get('Origen')} → {seg.get('Destino')}")
+            print(f"      Tipo: {seg.get('Tipo_Horario')} | Duración: {seg.get('Duracion_Trayecto_Min')} min")
+            if 'Salida_dt' in seg:
+                print(f"      Salida_dt: {seg.get('Salida_dt')} | Llegada_dt: {seg.get('Llegada_dt', 'NO TIENE')}")
+        
         TIEMPO_TRANSBORDO = timedelta(minutes=10)
         
         # Caso especial: ruta de un solo segmento con frecuencia
@@ -349,12 +357,15 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         # Encontrar índice ancla (primer segmento con horario fijo)
         anchor_index = next((i for i, s in enumerate(segmentos) if 'Salida_dt' in s and pd.notna(s.get('Salida_dt'))), -1)
         
+        print(f"    Ancla encontrada en índice: {anchor_index}")
+        
         if anchor_index != -1:
             # PASO 1: Asegurar que el ancla tiene Llegada_dt
             if 'Llegada_dt' not in segmentos[anchor_index] or pd.isna(segmentos[anchor_index].get('Llegada_dt')):
                 dur_min_ancla = float(segmentos[anchor_index].get('Duracion_Trayecto_Min', 0))
                 dur_ancla = timedelta(minutes=dur_min_ancla)
                 segmentos[anchor_index]['Llegada_dt'] = segmentos[anchor_index]['Salida_dt'] + dur_ancla
+                print(f"    Calculada Llegada_dt para ancla: {segmentos[anchor_index]['Llegada_dt']}")
             
             # PASO 2: Calcular hacia atrás desde el ancla
             llegada_siguiente_dt = segmentos[anchor_index]['Salida_dt']
@@ -363,23 +374,29 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
                 dur = timedelta(minutes=dur_min)
                 segmentos[i]['Llegada_dt'] = llegada_siguiente_dt - TIEMPO_TRANSBORDO
                 segmentos[i]['Salida_dt'] = segmentos[i]['Llegada_dt'] - dur
+                print(f"    Seg {i} (hacia atrás): Salida {segmentos[i]['Salida_dt']} → Llegada {segmentos[i]['Llegada_dt']}")
                 llegada_siguiente_dt = segmentos[i]['Salida_dt']
             
             # PASO 3: Calcular hacia adelante desde el ancla
             llegada_anterior_dt = segmentos[anchor_index]['Llegada_dt']
+            print(f"    Iniciando propagación hacia adelante desde llegada del ancla: {llegada_anterior_dt}")
             
             for i in range(anchor_index + 1, len(segmentos)):
                 dur_min = float(segmentos[i].get('Duracion_Trayecto_Min', 0))
                 dur = timedelta(minutes=dur_min)
                 
+                print(f"    Seg {i}: Duración extraída = {dur_min} min → {dur}")
+                
                 if pd.notna(llegada_anterior_dt):
                     segmentos[i]['Salida_dt'] = llegada_anterior_dt + TIEMPO_TRANSBORDO
                     segmentos[i]['Llegada_dt'] = segmentos[i]['Salida_dt'] + dur
+                    print(f"    Seg {i} (hacia adelante): Salida {segmentos[i]['Salida_dt']} → Llegada {segmentos[i]['Llegada_dt']}")
                     llegada_anterior_dt = segmentos[i]['Llegada_dt']
                 else:
                     segmentos[i]['Salida_dt'] = pd.NaT
                     segmentos[i]['Llegada_dt'] = pd.NaT
                     llegada_anterior_dt = pd.NaT
+                    print(f"    Seg {i}: NaT (llegada_anterior_dt era NaT)")
         else: 
             # Sin ancla: calcular desde el inicio
             llegada_anterior_dt = None
@@ -405,6 +422,7 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         
         # Validar que todos los segmentos tienen tiempos
         if any(pd.isna(s.get('Salida_dt')) or pd.isna(s.get('Llegada_dt')) for s in segmentos):
+            print("    ⚠️ Ruta descartada: algún segmento tiene NaT")
             return None
 
         primera_salida_dt = segmentos[0]['Salida_dt']
@@ -472,6 +490,8 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         llegada_final_dt_obj = segmentos[-1]['Llegada_dt']
         precio_total = sum(float(s.get('Precio', 0)) for s in segmentos)
 
+        print(f"    ✓ Ruta válida generada\n")
+        
         return {
             "segmentos": segmentos_formateados,
             "precio_total": precio_total,
