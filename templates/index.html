@@ -219,7 +219,24 @@
     <div class="w-full max-w-md">
         <div class="neo-card p-10">
             <!-- Header -->
-            <div class="text-center mb-8">
+            <div class="text-center mb-8 relative">
+                <!-- Botón de información (izquierda) -->
+                <button id="open-info-modal" type="button" class="neo-icon-button absolute -top-2 -left-2">
+                    <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+                
+                <!-- Botón de modo oscuro (derecha) -->
+                <button id="theme-toggle" type="button" class="neo-icon-button absolute -top-2 -right-2">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+                
                 <div class="neo-icon">🚀</div>
                 <h1 class="text-5xl font-extrabold neo-title mb-2">Mi Ruta</h1>
                 <p id="saludo" class="text-gray-600 font-medium"></p>
@@ -260,6 +277,58 @@
                 <div class="neo-phrase" id="phrase-card">
                     <p class="text-gray-700 font-medium leading-relaxed text-center" id="phrase-text">"{{ frase }}"</p>
                     <p class="text-gray-400 text-xs text-center mt-3">✨ Toca para cambiar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Información -->
+    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div id="info-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
+        <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Información Útil</h2>
+                <button type="button" id="close-info-modal" class="neo-button p-3 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4 info-modal-content">
+                <div class="info-item">
+                    <p class="font-bold text-gray-800 mb-2">Damas</p>
+                    <div class="flex justify-between text-sm">
+                        <a href="https://damas-sa.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
+                        <a href="tel:+34959256900" class="text-indigo-600 hover:underline font-medium">959 25 69 00</a>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <p class="font-bold text-gray-800 mb-2">Renfe</p>
+                    <div class="flex justify-between text-sm">
+                        <a href="https://www.renfe.com/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
+                        <a href="tel:+34912320320" class="text-indigo-600 hover:underline font-medium">912 320 320</a>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <p class="font-bold text-gray-800 mb-2">Emtusa Huelva</p>
+                    <div class="flex justify-between text-sm">
+                        <a href="https://emtusahuelva.es/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-medium">Sitio Web</a>
+                        <a href="tel:+34959258121" class="text-indigo-600 hover:underline font-medium">959 25 81 21</a>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <p class="font-bold text-gray-800 mb-2">Mapa de Paradas (Huelva)</p>
+                    <a href="https://www.google.com/maps/search/paradas+de+autobus+huelva/@37.266,-6.95,15z" target="_blank" rel="noopener noreferrer" class="block text-indigo-600 hover:underline text-sm font-medium">Ver en Google Maps</a>
+                </div>
+                
+                <div class="info-item">
+                    <p class="font-bold text-gray-800 mb-2">Campus del Carmen</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-medium">Ver en Mapa</a>
+                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline font-medium">Ver Foto</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -364,6 +433,33 @@
     </div>
 
     <script>
+        // Tema oscuro/claro
+        var themeToggleBtn = document.getElementById('theme-toggle');
+        var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        
+        // Inicializar tema
+        if (localStorage.getItem('color-theme') === 'dark' || (!localStorage.getItem('color-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+        
+        // Toggle tema
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        });
+        
         // Modales
         function setupModal(openBtnId, closeBtnId, modalId, applyBtnId) {
             const openBtn = document.getElementById(openBtnId);
@@ -394,6 +490,7 @@
         }
         
         setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
+        setupModal('open-info-modal', 'close-info-modal', 'info-modal', null);
 
         // Time pickers
         function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
