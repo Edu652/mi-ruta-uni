@@ -242,6 +242,25 @@
                 <p id="saludo" class="text-gray-600 font-medium"></p>
             </div>
 
+            <!-- Widget del Clima -->
+            <div id="weather-widget" class="weather-widget hidden">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="weather-icon" id="weather-icon">🌤️</div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700" id="weather-temp">--°C</p>
+                            <p class="text-xs text-gray-500" id="weather-desc">Cargando clima...</p>
+                        </div>
+                    </div>
+                    <div id="rain-alert" class="hidden">
+                        <div class="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 px-3 py-2 rounded-lg">
+                            <span class="text-2xl">☔</span>
+                            <span class="text-xs font-bold text-blue-800 dark:text-blue-200">¡Lleva paraguas!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Form -->
             <form id="main-form" action="/buscar" method="post" class="space-y-6">
                 <div>
@@ -280,6 +299,12 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Overlay de carga -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-rocket">🚀</div>
+        <p class="loading-text">Buscando las mejores rutas...</p>
     </div>
 
     <!-- Modal de Información -->
@@ -433,31 +458,37 @@
     </div>
 
     <script>
-        // Tema oscuro/claro
+        // Tema oscuro/claro - CORREGIDO
         var themeToggleBtn = document.getElementById('theme-toggle');
         var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
         
-        // Inicializar tema
-        if (localStorage.getItem('color-theme') === 'dark' || (!localStorage.getItem('color-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.body.classList.add('dark-mode');
-            themeToggleLightIcon.classList.remove('hidden');
-        } else {
-            themeToggleDarkIcon.classList.remove('hidden');
+        // Función para aplicar tema
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggleDarkIcon.classList.add('hidden');
+                themeToggleLightIcon.classList.remove('hidden');
+            } else {
+                document.body.classList.remove('dark-mode');
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
         }
         
-        // Toggle tema
+        // Inicializar tema
+        var currentTheme = localStorage.getItem('color-theme');
+        if (!currentTheme) {
+            // Si no hay preferencia guardada, usar preferencia del sistema
+            currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        applyTheme(currentTheme);
+        
+        // Toggle tema al hacer click
         themeToggleBtn.addEventListener('click', function() {
-            themeToggleDarkIcon.classList.toggle('hidden');
-            themeToggleLightIcon.classList.toggle('hidden');
-            
-            if (document.body.classList.contains('dark-mode')) {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('color-theme', 'light');
-            } else {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('color-theme', 'dark');
-            }
+            var newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+            localStorage.setItem('color-theme', newTheme);
+            applyTheme(newTheme);
         });
         
         // Modales
@@ -569,6 +600,68 @@
         const horaActual = new Date().getHours();
         let saludoTexto = horaActual < 12 ? "Buenos días" : horaActual < 21 ? "Buenas tardes" : "Buenas noches";
         document.getElementById("saludo").innerHTML = saludoTexto + ', <span class="font-bold text-indigo-600">Noa</span>';
+        
+        // Obtener clima
+        function getWeather() {
+            // Coordenadas de Mairena del Aljarafe
+            const lat = 37.3667;
+            const lon = -6.0667;
+            
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,weather_code,precipitation&timezone=Europe/Madrid')
+                .then(response => response.json())
+                .then(data => {
+                    const temp = Math.round(data.current.temperature_2m);
+                    const weatherCode = data.current.weather_code;
+                    const precipitation = data.current.precipitation;
+                    
+                    // Actualizar temperatura
+                    document.getElementById('weather-temp').textContent = temp + '°C';
+                    
+                    // Determinar icono y descripción
+                    let icon = '☀️';
+                    let desc = 'Soleado';
+                    
+                    if (weatherCode >= 80 || precipitation > 0) {
+                        icon = '🌧️';
+                        desc = 'Lluvia';
+                        document.getElementById('rain-alert').classList.remove('hidden');
+                    } else if (weatherCode >= 61) {
+                        icon = '🌦️';
+                        desc = 'Posible lluvia';
+                        document.getElementById('rain-alert').classList.remove('hidden');
+                    } else if (weatherCode >= 51) {
+                        icon = '🌦️';
+                        desc = 'Llovizna';
+                    } else if (weatherCode >= 45) {
+                        icon = '🌫️';
+                        desc = 'Niebla';
+                    } else if (weatherCode >= 3) {
+                        icon = '☁️';
+                        desc = 'Nublado';
+                    } else if (weatherCode >= 2) {
+                        icon = '⛅';
+                        desc = 'Parcialmente nublado';
+                    }
+                    
+                    document.getElementById('weather-icon').textContent = icon;
+                    document.getElementById('weather-desc').textContent = desc;
+                    document.getElementById('weather-widget').classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.log('No se pudo obtener el clima:', error);
+                });
+        }
+        
+        // Cargar clima al iniciar
+        getWeather();
+        
+        // Animación de carga y confetti
+        document.getElementById('main-form').addEventListener('submit', function(e) {
+            // Mostrar overlay de carga
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            
+            // El formulario se enviará normalmente, la página de resultados mostrará el confetti
+        });
     </script>
 </body>
 </html>
