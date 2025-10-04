@@ -152,6 +152,47 @@
             font-size: 0.7rem;
             font-weight: 700;
         }
+        
+        /* Botón compartir */
+        .share-button {
+            background: linear-gradient(145deg, #48bb78, #38a169);
+            box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
+            border-radius: 15px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .share-button:hover {
+            box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;
+            transform: scale(0.98);
+        }
+        
+        .share-button:active {
+            box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
+        }
+        
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen p-4">
