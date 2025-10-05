@@ -61,6 +61,120 @@
             color: #667eea;
             text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
         }
+        
+        /* Space Invaders Game */
+        #game-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0e27 0%, #1a1e3e 100%);
+            z-index: 10000;
+            overflow: hidden;
+        }
+        #game-modal.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #game-canvas {
+            border: 3px solid #667eea;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+            background: #000;
+            max-width: 95vw;
+            max-height: 60vh;
+        }
+        .game-header {
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .game-score {
+            font-size: 24px;
+            color: #4ECDC4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.8);
+        }
+        .game-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s;
+            z-index: 10001;
+        }
+        .game-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        .game-instructions {
+            color: #999;
+            font-size: 14px;
+            margin-top: 15px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Controles móviles */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 20px;
+            z-index: 10001;
+        }
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+            }
+            .game-instructions {
+                display: none;
+            }
+            #game-canvas {
+                max-height: 50vh;
+            }
+        }
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(102, 126, 234, 0.3);
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+            font-weight: bold;
+        }
+        .control-btn:active {
+            background: rgba(102, 126, 234, 0.6);
+            transform: scale(0.95);
+        }
+        .shoot-btn {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #FF6B6B;
+        }
+        .shoot-btn:active {
+            background: rgba(255, 107, 107, 0.6);
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
@@ -235,6 +349,25 @@
             </div>
         </div>
     </div>
+    
+    <!-- SPACE INVADERS GAME MODAL -->
+    <div id="game-modal">
+        <button class="game-close" onclick="closeGame()">✕ CERRAR</button>
+        <div class="game-header">
+            <h1 style="font-size: 48px; margin: 0; text-shadow: 0 0 20px #667eea;">🚀 SPACE INVADERS 🚀</h1>
+            <p class="game-score">PUNTUACIÓN: <span id="score">0</span></p>
+        </div>
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div class="game-instructions">
+            ← → MOVER | ESPACIO DISPARAR | ESC SALIR
+        </div>
+        <div class="mobile-controls">
+            <div class="control-btn" id="btn-left">◀</div>
+            <div class="control-btn shoot-btn" id="btn-shoot">🔥</div>
+            <div class="control-btn" id="btn-right">▶</div>
+        </div>
+    </div>
+    
     <script>
 function setupModal(a,b,c,d){const e=document.getElementById(a),f=document.getElementById(b),g=document.getElementById(c),h=g.querySelector('.modal-overlay'),i=g.querySelector('.modal-container'),j=d?document.getElementById(d):null;function k(){g.classList.remove('hidden');setTimeout(()=>{h.classList.remove('opacity-0');i.classList.remove('opacity-0','scale-95')},10)}function l(){h.classList.add('opacity-0');i.classList.add('opacity-0','scale-95');setTimeout(()=>g.classList.add('hidden'),300)}e.addEventListener('click',k);f.addEventListener('click',l);if(j)j.addEventListener('click',l);h.addEventListener('click',l)}setupModal('open-filters-modal','close-filters-modal','filters-modal','apply-filters');setupModal('btn-info','close-info-modal','info-modal',null);function setupTimePicker(a,b,c,d,e,f,g,h){const i=document.getElementById(a),j=document.getElementById(b),k=document.getElementById(c),l=document.getElementById(d),m=document.getElementById(e),n=document.getElementById(f),o=Array.from(k.querySelectorAll('.wheel-item')),p=Array.from(l.querySelectorAll('.wheel-item'));function q(a,b,c){clearTimeout(a.scrollTimeout);a.scrollTimeout=setTimeout(()=>{const d=40,e=a.scrollTop,f=Math.round(e/d);if(c[f]){b.value=c[f].textContent.trim();c.forEach((a,b)=>{a.classList.toggle('is-selected',b===f)})}},150)}k.addEventListener('scroll',()=>q(k,m,o));l.addEventListener('scroll',()=>q(l,n,p));i.addEventListener('change',function(){if(this.checked){j.classList.remove('hidden');m.disabled=false;n.disabled=false;k.scrollTop=40*g;l.scrollTop=40*(h/5);setTimeout(()=>{k.dispatchEvent(new Event('scroll'));l.dispatchEvent(new Event('scroll'))},200)}else{j.classList.add('hidden');m.disabled=true;n.disabled=true}})}setupTimePicker('salir_despues_check','selectores_hora_salida','hour-wheel-salida','minute-wheel-salida','salir_despues_hora','salir_despues_minuto',7,0);setupTimePicker('llegar_antes_check','selectores_hora_llegada','hour-wheel-llegada','minute-wheel-llegada','llegar_antes_hora','llegar_antes_minuto',9,0);var frasesData={{frases|tojson|safe}};var fraseActual="{{frase}}";var frases=frasesData||["El esfuerzo de hoy es el éxito de mañana."];var fraseActualIndex=frases.indexOf(fraseActual);if(fraseActualIndex===-1)fraseActualIndex=0;document.getElementById('phrase-card').addEventListener('click',function(){const a=document.getElementById('phrase-text');let b;do{b=Math.floor(Math.random()*frases.length)}while(b===fraseActualIndex&&frases.length>1);fraseActualIndex=b;a.style.opacity='0.3';setTimeout(()=>{a.textContent='"'+frases[fraseActualIndex]+'"';a.style.opacity='1'},200)});const horaActual=new Date().getHours();let saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches";document.getElementById("saludo").innerHTML=saludoTexto+', <span class="font-bold text-indigo-600 noa-clickable" id="noa-name">Noa</span>';
 
@@ -256,14 +389,17 @@ rocketIcon.addEventListener('click', function() {
         clearTimeout(rocketClickTimer);
         rocketClicks = 0;
         
-        // Animación elegante
+        // Animación elegante del cohete
         rocketIcon.classList.add('rocket-activating');
         
         setTimeout(() => {
             rocketIcon.classList.remove('rocket-activating');
             rocketIcon.style.transform = '';
             rocketIcon.style.opacity = '1';
-        }, 5000);
+            
+            // ¡ABRIR EL JUEGO!
+            openGame();
+        }, 3200); // Después de que brille y empiece a flotar
     }
 });
 
@@ -325,6 +461,270 @@ setTimeout(() => {
         });
     }
 }, 100);
+
+// ========== SPACE INVADERS GAME 🎮 ==========
+let gameActive = false;
+let canvas, ctx, score, player, enemies, bullets, enemyBullets, keys, gameLoop;
+
+function openGame() {
+    document.getElementById('game-modal').classList.add('active');
+    initGame();
+}
+
+function closeGame() {
+    document.getElementById('game-modal').classList.remove('active');
+    gameActive = false;
+    if (gameLoop) cancelAnimationFrame(gameLoop);
+    
+    // Limpiar event listeners
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keyup', handleKeyUp);
+    
+    // Resetear teclas
+    keys = {};
+}
+
+function initGame() {
+    canvas = document.getElementById('game-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Hacer canvas responsive
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        canvas.width = Math.min(window.innerWidth * 0.95, 600);
+        canvas.height = Math.min(window.innerHeight * 0.5, 450);
+    } else {
+        canvas.width = 800;
+        canvas.height = 600;
+    }
+    
+    score = 0;
+    document.getElementById('score').textContent = score;
+    
+    // Jugador
+    player = {
+        x: canvas.width / 2 - 20,
+        y: canvas.height - 60,
+        width: 40,
+        height: 30,
+        speed: isMobile ? 7 : 5,
+        color: '#4ECDC4'
+    };
+    
+    // Enemigos (ajustados al tamaño del canvas)
+    enemies = [];
+    const rows = isMobile ? 3 : 4;
+    const cols = isMobile ? 6 : 8;
+    const enemyWidth = isMobile ? 30 : 40;
+    const enemyHeight = isMobile ? 25 : 30;
+    const spacing = canvas.width / (cols + 1);
+    
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            enemies.push({
+                x: col * spacing + spacing / 2,
+                y: row * 50 + 40,
+                width: enemyWidth,
+                height: enemyHeight,
+                alive: true
+            });
+        }
+    }
+    
+    bullets = [];
+    enemyBullets = [];
+    keys = {};
+    gameActive = true;
+    
+    // Controles de teclado
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    
+    // Controles táctiles
+    setupMobileControls();
+    
+    update();
+}
+
+function handleKeyDown(e) {
+    keys[e.key] = true;
+    if (e.key === ' ' && gameActive) {
+        e.preventDefault();
+        shoot();
+    }
+    if (e.key === 'Escape') {
+        closeGame();
+    }
+}
+
+function handleKeyUp(e) {
+    keys[e.key] = false;
+}
+
+function setupMobileControls() {
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+    const btnShoot = document.getElementById('btn-shoot');
+    
+    // Prevenir scroll en móvil
+    [btnLeft, btnRight, btnShoot].forEach(btn => {
+        btn.addEventListener('touchstart', (e) => e.preventDefault());
+    });
+    
+    // Botón izquierda
+    btnLeft.addEventListener('touchstart', () => keys['ArrowLeft'] = true);
+    btnLeft.addEventListener('touchend', () => keys['ArrowLeft'] = false);
+    btnLeft.addEventListener('mousedown', () => keys['ArrowLeft'] = true);
+    btnLeft.addEventListener('mouseup', () => keys['ArrowLeft'] = false);
+    
+    // Botón derecha
+    btnRight.addEventListener('touchstart', () => keys['ArrowRight'] = true);
+    btnRight.addEventListener('touchend', () => keys['ArrowRight'] = false);
+    btnRight.addEventListener('mousedown', () => keys['ArrowRight'] = true);
+    btnRight.addEventListener('mouseup', () => keys['ArrowRight'] = false);
+    
+    // Botón disparar
+    btnShoot.addEventListener('touchstart', () => {
+        if (gameActive) shoot();
+    });
+    btnShoot.addEventListener('click', () => {
+        if (gameActive) shoot();
+    });
+}
+
+function shoot() {
+    bullets.push({
+        x: player.x + player.width / 2 - 2,
+        y: player.y,
+        width: 4,
+        height: 15,
+        speed: 7
+    });
+}
+
+function enemyShoot() {
+    const aliveEnemies = enemies.filter(e => e.alive);
+    if (aliveEnemies.length > 0 && Math.random() < 0.02) {
+        const enemy = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+        enemyBullets.push({
+            x: enemy.x + enemy.width / 2 - 2,
+            y: enemy.y + enemy.height,
+            width: 4,
+            height: 15,
+            speed: 4
+        });
+    }
+}
+
+function update() {
+    if (!gameActive) return;
+    
+    // Limpiar canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Mover jugador
+    if (keys['ArrowLeft'] && player.x > 0) {
+        player.x -= player.speed;
+    }
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+        player.x += player.speed;
+    }
+    
+    // Dibujar jugador (nave espacial)
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = '#FF6B6B';
+    ctx.fillRect(player.x + 5, player.y + player.height, 10, 8);
+    ctx.fillRect(player.x + player.width - 15, player.y + player.height, 10, 8);
+    
+    // Dibujar enemigos
+    enemies.forEach(enemy => {
+        if (enemy.alive) {
+            ctx.fillStyle = '#FF6B6B';
+            ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            ctx.fillStyle = '#FFA07A';
+            ctx.fillRect(enemy.x + 5, enemy.y + 5, 10, 10);
+            ctx.fillRect(enemy.x + 25, enemy.y + 5, 10, 10);
+        }
+    });
+    
+    // Mover y dibujar balas del jugador
+    bullets = bullets.filter(bullet => {
+        bullet.y -= bullet.speed;
+        
+        // Comprobar colisión con enemigos
+        let hit = false;
+        enemies.forEach(enemy => {
+            if (enemy.alive && 
+                bullet.x < enemy.x + enemy.width &&
+                bullet.x + bullet.width > enemy.x &&
+                bullet.y < enemy.y + enemy.height &&
+                bullet.y + bullet.height > enemy.y) {
+                enemy.alive = false;
+                hit = true;
+                score += 10;
+                document.getElementById('score').textContent = score;
+            }
+        });
+        
+        if (!hit && bullet.y > 0) {
+            ctx.fillStyle = '#F7DC6F';
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            return true;
+        }
+        return false;
+    });
+    
+    // Disparos enemigos
+    enemyShoot();
+    enemyBullets = enemyBullets.filter(bullet => {
+        bullet.y += bullet.speed;
+        
+        // Comprobar colisión con jugador
+        if (bullet.x < player.x + player.width &&
+            bullet.x + bullet.width > player.x &&
+            bullet.y < player.y + player.height &&
+            bullet.y + bullet.height > player.y) {
+            // Game Over
+            gameActive = false;
+            const fontSize = canvas.width < 400 ? 32 : 48;
+            const smallFont = canvas.width < 400 ? 16 : 24;
+            ctx.fillStyle = '#fff';
+            ctx.font = `${fontSize}px Courier New`;
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+            ctx.font = `${smallFont}px Courier New`;
+            ctx.fillText('Puntuación: ' + score, canvas.width / 2, canvas.height / 2 + 40);
+            ctx.fillText('Toca CERRAR para salir', canvas.width / 2, canvas.height / 2 + 70);
+            return false;
+        }
+        
+        if (bullet.y < canvas.height) {
+            ctx.fillStyle = '#BB8FCE';
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            return true;
+        }
+        return false;
+    });
+    
+    // Verificar victoria
+    const aliveCount = enemies.filter(e => e.alive).length;
+    if (aliveCount === 0) {
+        gameActive = false;
+        ctx.fillStyle = '#4ECDC4';
+        ctx.font = '48px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('¡VICTORIA!', canvas.width / 2, canvas.height / 2);
+        ctx.font = '24px Courier New';
+        ctx.fillText('Puntuación: ' + score, canvas.width / 2, canvas.height / 2 + 40);
+        ctx.fillText('Presiona ESC para salir', canvas.width / 2, canvas.height / 2 + 80);
+    }
+    
+    if (gameActive) {
+        gameLoop = requestAnimationFrame(update);
+    }
+}
     </script>
 </body>
 </html>
