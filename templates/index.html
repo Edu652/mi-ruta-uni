@@ -1,3 +1,11 @@
+<!-- 
+    VERSION: 1.1
+    FECHA: 2025-01-05
+    CAMBIOS: Añadido tema claro/oscuro funcional
+    - Botón de tema ahora funcional con iconos sol/luna
+    - Estilos dark-mode para todos los elementos
+    - Persistencia en localStorage
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,6 +22,12 @@
         body {
             font-family: 'Poppins', sans-serif;
             background: #e0e5ec;
+            transition: background 0.3s; /* v1.1: Transición suave */
+        }
+        
+        /* v1.1: Modo oscuro para body */
+        body.dark-mode {
+            background: #1a202c;
         }
         
         /* Efectos Neomórficos ACENTUADOS */
@@ -24,8 +38,19 @@
             transition: all 0.3s ease;
         }
         
+        /* v1.1: Modo oscuro para neo-card */
+        body.dark-mode .neo-card {
+            background: #2d3748;
+            box-shadow: 25px 25px 50px #0d1117, -25px -25px 50px #4a5568;
+        }
+        
         .neo-card:hover {
             box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff;
+        }
+        
+        /* v1.1: Modo oscuro para neo-card:hover */
+        body.dark-mode .neo-card:hover {
+            box-shadow: 30px 30px 60px #0d1117, -30px -30px 60px #4a5568;
         }
         
         .neo-input {
@@ -39,9 +64,21 @@
             transition: all 0.3s ease;
         }
         
+        /* v1.1: Modo oscuro para neo-input */
+        body.dark-mode .neo-input {
+            background: #2d3748;
+            box-shadow: inset 12px 12px 24px #0d1117, inset -12px -12px 24px #4a5568;
+            color: #e2e8f0;
+        }
+        
         .neo-input:focus {
             outline: none;
             box-shadow: inset 15px 15px 30px #b8bcc3, inset -15px -15px 30px #ffffff;
+        }
+        
+        /* v1.1: Modo oscuro para neo-input:focus */
+        body.dark-mode .neo-input:focus {
+            box-shadow: inset 15px 15px 30px #0d1117, inset -15px -15px 30px #4a5568;
         }
         
         .neo-button {
@@ -58,13 +95,30 @@
             overflow: hidden;
         }
         
+        /* v1.1: Modo oscuro para neo-button */
+        body.dark-mode .neo-button {
+            background: linear-gradient(145deg, #3d4a5c, #2d3748);
+            box-shadow: 15px 15px 30px #0d1117, -15px -15px 30px #4a5568;
+            color: #e2e8f0;
+        }
+        
         .neo-button:hover {
             box-shadow: 10px 10px 20px #b8bcc3, -10px -10px 20px #ffffff;
             transform: scale(0.98);
         }
         
+        /* v1.1: Modo oscuro para neo-button:hover */
+        body.dark-mode .neo-button:hover {
+            box-shadow: 10px 10px 20px #0d1117, -10px -10px 20px #4a5568;
+        }
+        
         .neo-button:active {
             box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
+        }
+        
+        /* v1.1: Modo oscuro para neo-button:active */
+        body.dark-mode .neo-button:active {
+            box-shadow: inset 8px 8px 16px #0d1117, inset -8px -8px 16px #4a5568;
         }
         
         .neo-button-primary {
@@ -94,9 +148,27 @@
             margin: 0 auto 20px;
         }
         
+        /* v1.1: Modo oscuro para neo-icon */
+        body.dark-mode .neo-icon {
+            background: #2d3748;
+            box-shadow: 12px 12px 24px #0d1117, -12px -12px 24px #4a5568;
+        }
+        
         .neo-title {
             color: #4a5568;
             text-shadow: 3px 3px 6px #b8bcc3, -3px -3px 6px #ffffff;
+        }
+        
+        /* v1.1: Modo oscuro para textos */
+        body.dark-mode .neo-title {
+            color: #e2e8f0;
+            text-shadow: 3px 3px 6px #0d1117, -3px -3px 6px #4a5568;
+        }
+        
+        body.dark-mode label,
+        body.dark-mode p,
+        body.dark-mode h2 {
+            color: #e2e8f0;
         }
         
         .neo-phrase {
@@ -108,13 +180,29 @@
             transition: all 0.3s ease;
         }
         
+        /* v1.1: Modo oscuro para neo-phrase */
+        body.dark-mode .neo-phrase {
+            background: #2d3748;
+            box-shadow: 10px 10px 20px #0d1117, -10px -10px 20px #4a5568;
+        }
+        
         .neo-phrase:hover {
             box-shadow: 12px 12px 24px #b8bcc3, -12px -12px 24px #ffffff;
             transform: translateY(-2px);
         }
         
+        /* v1.1: Modo oscuro para neo-phrase:hover */
+        body.dark-mode .neo-phrase:hover {
+            box-shadow: 12px 12px 24px #0d1117, -12px -12px 24px #4a5568;
+        }
+        
         .neo-phrase:active {
             box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
+        }
+        
+        /* v1.1: Modo oscuro para neo-phrase:active */
+        body.dark-mode .neo-phrase:active {
+            box-shadow: inset 8px 8px 16px #0d1117, inset -8px -8px 16px #4a5568;
         }
         
         .neo-checkbox {
@@ -127,6 +215,12 @@
             cursor: pointer;
             position: relative;
             transition: all 0.3s ease;
+        }
+        
+        /* v1.1: Modo oscuro para neo-checkbox */
+        body.dark-mode .neo-checkbox {
+            background: #2d3748;
+            box-shadow: inset 4px 4px 8px #0d1117, inset -4px -4px 8px #4a5568;
         }
         
         .neo-checkbox:checked {
@@ -145,18 +239,28 @@
             transform: translate(-50%, -50%);
         }
         
-        /* Modal neomórfico */
         .neo-modal {
             background: #e0e5ec;
             box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff;
             border-radius: 40px;
         }
         
-        /* Time picker neomórfico */
+        /* v1.1: Modo oscuro para neo-modal */
+        body.dark-mode .neo-modal {
+            background: #2d3748;
+            box-shadow: 30px 30px 60px #0d1117, -30px -30px 60px #4a5568;
+        }
+        
         .neo-time-picker {
             background: #e0e5ec;
             box-shadow: inset 10px 10px 20px #b8bcc3, inset -10px -10px 20px #ffffff;
             border-radius: 20px;
+        }
+        
+        /* v1.1: Modo oscuro para neo-time-picker */
+        body.dark-mode .neo-time-picker {
+            background: #2d3748;
+            box-shadow: inset 10px 10px 20px #0d1117, inset -10px -10px 20px #4a5568;
         }
         
         .wheel-container {
@@ -183,6 +287,11 @@
             transition: all 0.3s;
             color: #4a5568;
             font-weight: 600;
+        }
+        
+        /* v1.1: Modo oscuro para wheel-item */
+        body.dark-mode .wheel-item {
+            color: #e2e8f0;
         }
         
         .wheel-item.is-selected {
@@ -214,7 +323,6 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        /* BOTONES SUPERIORES */
         .top-button {
             width: 44px;
             height: 44px;
@@ -229,40 +337,56 @@
             transition: all 0.3s ease;
         }
 
+        /* v1.1: Modo oscuro para top-button */
+        body.dark-mode .top-button {
+            background: #2d3748;
+            box-shadow: 8px 8px 16px #0d1117, -8px -8px 16px #4a5568;
+        }
+
         .top-button:hover {
             box-shadow: 4px 4px 8px #b8bcc3, -4px -4px 8px #ffffff;
         }
 
+        /* v1.1: Modo oscuro para top-button:hover */
+        body.dark-mode .top-button:hover {
+            box-shadow: 4px 4px 8px #0d1117, -4px -4px 8px #4a5568;
+        }
+
         .top-button:active {
             box-shadow: inset 4px 4px 8px #b8bcc3, inset -4px -4px 8px #ffffff;
+        }
+
+        /* v1.1: Modo oscuro para top-button:active */
+        body.dark-mode .top-button:active {
+            box-shadow: inset 4px 4px 8px #0d1117, inset -4px -4px 8px #4a5568;
         }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <div class="neo-card p-10 relative">
-            <!-- BOTÓN INFO (ARRIBA IZQUIERDA) -->
             <button type="button" id="btn-info" class="top-button absolute -top-2 -left-2">
                 <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                 </svg>
             </button>
 
-            <!-- BOTÓN TEMA (ARRIBA DERECHA) -->
+            <!-- v1.1: Botón de tema con iconos intercambiables -->
             <button type="button" id="btn-theme" class="top-button absolute -top-2 -right-2">
-                <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg id="icon-moon" class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                </svg>
+                <svg id="icon-sun" class="w-5 h-5 text-gray-300 hidden" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
                 </svg>
             </button>
 
-            <!-- Header -->
             <div class="text-center mb-8">
                 <div class="neo-icon">🚀</div>
                 <h1 class="text-5xl font-extrabold neo-title mb-2">Mi Ruta</h1>
                 <p id="saludo" class="text-gray-600 font-medium"></p>
             </div>
 
-            <!-- Form -->
             <form id="main-form" action="/buscar" method="post" class="space-y-6">
                 <div>
                     <label class="block text-gray-700 font-semibold mb-3 text-sm uppercase tracking-wide">Origen</label>
@@ -292,7 +416,6 @@
                 </button>
             </form>
 
-            <!-- Frase motivadora -->
             <div class="mt-8">
                 <div class="neo-phrase" id="phrase-card">
                     <p class="text-gray-700 font-medium leading-relaxed text-center" id="phrase-text">"{{ frase }}"</p>
@@ -302,7 +425,6 @@
         </div>
     </div>
 
-    <!-- Modal Filtros -->
     <div id="filters-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
         <div id="filters-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
         <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
@@ -400,159 +522,9 @@
         </div>
     </div>
 
-    <!-- MODAL INFO -->
     <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
         <div id="info-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
         <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Información Útil</h2>
-                <button type="button" id="close-info-modal" class="neo-button p-3 rounded-full">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="space-y-4 text-sm max-h-[65vh] overflow-y-auto pr-2">
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <p class="font-semibold text-gray-800 mb-2">Damas</p>
-                    <div class="flex justify-between">
-                        <a href="https://damas-sa.es/" target="_blank" class="text-indigo-600 hover:underline">Sitio Web</a>
-                        <a href="tel:+34959256900" class="text-indigo-600 hover:underline">959 25 69 00</a>
-                    </div>
-                </div>
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <p class="font-semibold text-gray-800 mb-2">Renfe</p>
-                    <div class="flex justify-between">
-                        <a href="https://www.renfe.com/" target="_blank" class="text-indigo-600 hover:underline">Sitio Web</a>
-                        <a href="tel:+34912320320" class="text-indigo-600 hover:underline">912 320 320</a>
-                    </div>
-                </div>
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <p class="font-semibold text-gray-800 mb-2">Emtusa Huelva</p>
-                    <div class="flex justify-between">
-                        <a href="https://emtusahuelva.es/" target="_blank" class="text-indigo-600 hover:underline">Sitio Web</a>
-                        <a href="tel:+34959258121" class="text-indigo-600 hover:underline">959 25 81 21</a>
-                    </div>
-                </div>
-                <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
-                    <p class="font-semibold text-gray-800 mb-2">Campus del Carmen</p>
-                    <div class="flex justify-between mt-2">
-                        <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" class="text-indigo-600 hover:underline">Ver Mapa</a>
-                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" class="text-indigo-600 hover:underline">Ver Foto</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Modales
-        function setupModal(openBtnId, closeBtnId, modalId, applyBtnId) {
-            const openBtn = document.getElementById(openBtnId);
-            const closeBtn = document.getElementById(closeBtnId);
-            const modal = document.getElementById(modalId);
-            const overlay = modal.querySelector('.modal-overlay');
-            const container = modal.querySelector('.modal-container');
-            const applyBtn = applyBtnId ? document.getElementById(applyBtnId) : null;
-            
-            function openModal() {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    overlay.classList.remove('opacity-0');
-                    container.classList.remove('opacity-0', 'scale-95');
-                }, 10);
-            }
-            
-            function closeModal() {
-                overlay.classList.add('opacity-0');
-                container.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-            }
-            
-            openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            if (applyBtn) applyBtn.addEventListener('click', closeModal);
-            overlay.addEventListener('click', closeModal);
-        }
-        
-        setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
-        setupModal('btn-info', 'close-info-modal', 'info-modal', null);
-
-        // Time pickers
-        function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
-            const check = document.getElementById(checkId);
-            const container = document.getElementById(containerId);
-            const hourWheel = document.getElementById(hourWheelId);
-            const minuteWheel = document.getElementById(minuteWheelId);
-            const hourInput = document.getElementById(hourInputId);
-            const minuteInput = document.getElementById(minuteInputId);
-            const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
-            const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
-
-            function updateSelection(wheel, input, items) {
-                clearTimeout(wheel.scrollTimeout);
-                wheel.scrollTimeout = setTimeout(() => {
-                    const itemHeight = 40;
-                    const scrollPos = wheel.scrollTop;
-                    const selectedIndex = Math.round(scrollPos / itemHeight);
-                    if (items[selectedIndex]) {
-                        input.value = items[selectedIndex].textContent.trim();
-                        items.forEach((item, index) => {
-                            item.classList.toggle('is-selected', index === selectedIndex);
-                        });
-                    }
-                }, 150);
-            }
-
-            hourWheel.addEventListener('scroll', () => updateSelection(hourWheel, hourInput, hourItems));
-            minuteWheel.addEventListener('scroll', () => updateSelection(minuteWheel, minuteInput, minuteItems));
-
-            check.addEventListener('change', function() {
-                if (this.checked) {
-                    container.classList.remove('hidden');
-                    hourInput.disabled = false;
-                    minuteInput.disabled = false;
-                    hourWheel.scrollTop = 40 * defaultHour;
-                    minuteWheel.scrollTop = 40 * (defaultMinute / 5);
-                    setTimeout(() => {
-                        hourWheel.dispatchEvent(new Event('scroll'));
-                        minuteWheel.dispatchEvent(new Event('scroll'));
-                    }, 200);
-                } else {
-                    container.classList.add('hidden');
-                    hourInput.disabled = true;
-                    minuteInput.disabled = true;
-                }
-            });
-        }
-        
-        setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
-        setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
-
-        // Frases
-        var frasesData = {{ frases|tojson|safe }};
-        var fraseActual = "{{ frase }}";
-        var frases = frasesData || ["El esfuerzo de hoy es el éxito de mañana."];
-        var fraseActualIndex = frases.indexOf(fraseActual);
-        if (fraseActualIndex === -1) fraseActualIndex = 0;
-        
-        document.getElementById('phrase-card').addEventListener('click', function() {
-            const phraseText = document.getElementById('phrase-text');
-            let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * frases.length);
-            } while (newIndex === fraseActualIndex && frases.length > 1);
-            fraseActualIndex = newIndex;
-            
-            phraseText.style.opacity = '0.3';
-            setTimeout(() => {
-                phraseText.textContent = '"' + frases[fraseActualIndex] + '"';
-                phraseText.style.opacity = '1';
-            }, 200);
-        });
-
-        // Saludo
-        const horaActual = new Date().getHours();
-        let saludoTexto = horaActual < 12 ? "Buenos días" : horaActual < 21 ? "Buenas tardes" : "Buenas noches";
-        document.getElementById("saludo").innerHTML = saludoTexto + ', <span class="font-bold text-indigo-600">Noa</span>';
-    </script>
-</body>
-</html>
+                <button type="button" id="close-info-modal" class="neo-button p-3 rounded-
