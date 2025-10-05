@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +8,28 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#e0e5ec">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         
         body {
             font-family: 'Poppins', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Estilos para modo claro */
+        body:not(.dark) {
             background: #e0e5ec;
         }
         
-        /* Efectos Neomórficos ACENTUADOS */
+        /* Estilos para modo oscuro */
+        body.dark {
+            background: #1a202c;
+        }
+        
+        /* Efectos Neomórficos para modo claro */
         .neo-card {
             background: #e0e5ec;
             box-shadow: 25px 25px 50px #a3a7ae, -25px -25px 50px #ffffff;
@@ -24,8 +37,17 @@
             transition: all 0.3s ease;
         }
         
+        .dark .neo-card {
+            background: #2d3748;
+            box-shadow: 25px 25px 50px #1a202c, -25px -25px 50px #3d4a5c;
+        }
+        
         .neo-card:hover {
             box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff;
+        }
+        
+        .dark .neo-card:hover {
+            box-shadow: 30px 30px 60px #1a202c, -30px -30px 60px #3d4a5c;
         }
         
         .neo-input {
@@ -39,9 +61,19 @@
             transition: all 0.3s ease;
         }
         
+        .dark .neo-input {
+            background: #2d3748;
+            box-shadow: inset 12px 12px 24px #1a202c, inset -12px -12px 24px #3d4a5c;
+            color: #e2e8f0;
+        }
+        
         .neo-input:focus {
             outline: none;
             box-shadow: inset 15px 15px 30px #b8bcc3, inset -15px -15px 30px #ffffff;
+        }
+        
+        .dark .neo-input:focus {
+            box-shadow: inset 15px 15px 30px #1a202c, inset -15px -15px 30px #3d4a5c;
         }
         
         .neo-button {
@@ -54,8 +86,12 @@
             color: #4a5568;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+        }
+        
+        .dark .neo-button {
+            background: linear-gradient(145deg, #3d4a5c, #2d3748);
+            box-shadow: 15px 15px 30px #1a202c, -15px -15px 30px #3d4a5c;
+            color: #e2e8f0;
         }
         
         .neo-button:hover {
@@ -63,8 +99,16 @@
             transform: scale(0.98);
         }
         
+        .dark .neo-button:hover {
+            box-shadow: 10px 10px 20px #1a202c, -10px -10px 20px #3d4a5c;
+        }
+        
         .neo-button:active {
             box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
+        }
+        
+        .dark .neo-button:active {
+            box-shadow: inset 8px 8px 16px #1a202c, inset -8px -8px 16px #3d4a5c;
         }
         
         .neo-button-primary {
@@ -73,8 +117,16 @@
             box-shadow: 15px 15px 30px #b8bcc3, -15px -15px 30px #ffffff, inset 2px 2px 5px rgba(255,255,255,0.3);
         }
         
+        .dark .neo-button-primary {
+            box-shadow: 15px 15px 30px #1a202c, -15px -15px 30px #3d4a5c, inset 2px 2px 5px rgba(255,255,255,0.3);
+        }
+        
         .neo-button-primary:hover {
             box-shadow: 20px 20px 40px #b8bcc3, -20px -20px 40px #ffffff, inset 2px 2px 5px rgba(255,255,255,0.3);
+        }
+        
+        .dark .neo-button-primary:hover {
+            box-shadow: 20px 20px 40px #1a202c, -20px -20px 40px #3d4a5c, inset 2px 2px 5px rgba(255,255,255,0.3);
         }
         
         .neo-button-primary:active {
@@ -94,9 +146,19 @@
             margin: 0 auto 20px;
         }
         
+        .dark .neo-icon {
+            background: #2d3748;
+            box-shadow: 12px 12px 24px #1a202c, -12px -12px 24px #3d4a5c;
+        }
+        
         .neo-title {
             color: #4a5568;
             text-shadow: 3px 3px 6px #b8bcc3, -3px -3px 6px #ffffff;
+        }
+        
+        .dark .neo-title {
+            color: #e2e8f0;
+            text-shadow: 3px 3px 6px #1a202c, -3px -3px 6px #3d4a5c;
         }
         
         .neo-phrase {
@@ -108,13 +170,26 @@
             transition: all 0.3s ease;
         }
         
+        .dark .neo-phrase {
+            background: #2d3748;
+            box-shadow: 10px 10px 20px #1a202c, -10px -10px 20px #3d4a5c;
+        }
+        
         .neo-phrase:hover {
             box-shadow: 12px 12px 24px #b8bcc3, -12px -12px 24px #ffffff;
             transform: translateY(-2px);
         }
         
+        .dark .neo-phrase:hover {
+            box-shadow: 12px 12px 24px #1a202c, -12px -12px 24px #3d4a5c;
+        }
+        
         .neo-phrase:active {
             box-shadow: inset 8px 8px 16px #b8bcc3, inset -8px -8px 16px #ffffff;
+        }
+        
+        .dark .neo-phrase:active {
+            box-shadow: inset 8px 8px 16px #1a202c, inset -8px -8px 16px #3d4a5c;
         }
         
         .neo-checkbox {
@@ -129,9 +204,18 @@
             transition: all 0.3s ease;
         }
         
+        .dark .neo-checkbox {
+            background: #2d3748;
+            box-shadow: inset 4px 4px 8px #1a202c, inset -4px -4px 8px #3d4a5c;
+        }
+        
         .neo-checkbox:checked {
             background: linear-gradient(145deg, #667eea, #5a6fd8);
             box-shadow: 4px 4px 8px #b8bcc3, -4px -4px 8px #ffffff;
+        }
+        
+        .dark .neo-checkbox:checked {
+            box-shadow: 4px 4px 8px #1a202c, -4px -4px 8px #3d4a5c;
         }
         
         .neo-checkbox:checked::after {
@@ -145,18 +229,26 @@
             transform: translate(-50%, -50%);
         }
         
-        /* Modal neomórfico */
         .neo-modal {
             background: #e0e5ec;
             box-shadow: 30px 30px 60px #a3a7ae, -30px -30px 60px #ffffff;
             border-radius: 40px;
         }
         
-        /* Time picker neomórfico */
+        .dark .neo-modal {
+            background: #2d3748;
+            box-shadow: 30px 30px 60px #1a202c, -30px -30px 60px #3d4a5c;
+        }
+        
         .neo-time-picker {
             background: #e0e5ec;
             box-shadow: inset 10px 10px 20px #b8bcc3, inset -10px -10px 20px #ffffff;
             border-radius: 20px;
+        }
+        
+        .dark .neo-time-picker {
+            background: #2d3748;
+            box-shadow: inset 10px 10px 20px #1a202c, inset -10px -10px 20px #3d4a5c;
         }
         
         .wheel-container {
@@ -185,11 +277,19 @@
             font-weight: 600;
         }
         
+        .dark .wheel-item {
+            color: #e2e8f0;
+        }
+        
         .wheel-item.is-selected {
             opacity: 1;
             transform: scale(1.2);
             color: #667eea;
             text-shadow: 2px 2px 4px #b8bcc3;
+        }
+        
+        .dark .wheel-item.is-selected {
+            text-shadow: 2px 2px 4px #1a202c;
         }
         
         .selection-indicator {
@@ -213,22 +313,82 @@
         .modal-container {
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
+        
+        /* Botones de tema e info */
+        .icon-button {
+            background: #e0e5ec;
+            box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .dark .icon-button {
+            background: #2d3748;
+            box-shadow: 8px 8px 16px #1a202c, -8px -8px 16px #3d4a5c;
+        }
+        
+        .icon-button:hover {
+            box-shadow: 4px 4px 8px #b8bcc3, -4px -4px 8px #ffffff;
+        }
+        
+        .dark .icon-button:hover {
+            box-shadow: 4px 4px 8px #1a202c, -4px -4px 8px #3d4a5c;
+        }
+        
+        .icon-button:active {
+            box-shadow: inset 4px 4px 8px #b8bcc3, inset -4px -4px 8px #ffffff;
+        }
+        
+        .dark .icon-button:active {
+            box-shadow: inset 4px 4px 8px #1a202c, inset -4px -4px 8px #3d4a5c;
+        }
     </style>
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
-        <div class="neo-card p-10">
+        <div class="neo-card p-10 relative">
+            <!-- Botón de información (arriba izquierda) -->
+            <button id="open-info-modal" type="button" class="icon-button absolute -top-2 -left-2">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+            </button>
+            
+            <!-- Botón de tema (arriba derecha) -->
+            <button id="theme-toggle" type="button" class="icon-button absolute -top-2 -right-2">
+                <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                </svg>
+                <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 5.05A1 1 0 016.465 3.636l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
+                </svg>
+            </button>
+            
             <!-- Header -->
             <div class="text-center mb-8">
                 <div class="neo-icon">🚀</div>
                 <h1 class="text-5xl font-extrabold neo-title mb-2">Mi Ruta</h1>
-                <p id="saludo" class="text-gray-600 font-medium"></p>
+                <p id="saludo" class="text-gray-600 dark:text-gray-400 font-medium"></p>
             </div>
 
             <!-- Form -->
             <form id="main-form" action="/buscar" method="post" class="space-y-6">
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm uppercase tracking-wide">Origen</label>
+                    <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-3 text-sm uppercase tracking-wide">Origen</label>
                     <select id="origen" name="origen" required class="neo-input w-full">
                         <option value="" disabled selected>Selecciona tu origen</option>
                         {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
@@ -236,7 +396,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm uppercase tracking-wide">Destino</label>
+                    <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-3 text-sm uppercase tracking-wide">Destino</label>
                     <select id="destino" name="destino" required class="neo-input w-full">
                         <option value="" disabled selected>Selecciona tu destino</option>
                         {% for lugar in lugares %}<option value="{{ lugar }}">{{ lugar }}</option>{% endfor %}
@@ -258,7 +418,7 @@
             <!-- Frase motivadora -->
             <div class="mt-8">
                 <div class="neo-phrase" id="phrase-card">
-                    <p class="text-gray-700 font-medium leading-relaxed text-center" id="phrase-text">"{{ frase }}"</p>
+                    <p class="text-gray-700 dark:text-gray-300 font-medium leading-relaxed text-center" id="phrase-text">"{{ frase }}"</p>
                     <p class="text-gray-400 text-xs text-center mt-3">✨ Toca para cambiar</p>
                 </div>
             </div>
@@ -270,7 +430,7 @@
         <div id="filters-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
         <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Filtros Avanzados</h2>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Filtros Avanzados</h2>
                 <button type="button" id="close-filters-modal" class="neo-button p-3 rounded-full">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -278,7 +438,7 @@
             
             <div class="space-y-5 max-h-[65vh] overflow-y-auto pr-2">
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-3 text-sm">Ver horarios para:</label>
+                    <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-3 text-sm">Ver horarios para:</label>
                     <select id="dia_semana_selector" name="dia_semana_selector" form="main-form" class="neo-input w-full">
                         <option value="hoy" selected>Hoy</option>
                         <option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option>
@@ -288,13 +448,13 @@
                 
                 <div class="flex items-center p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
                     <input form="main-form" id="desde_ahora" name="desde_ahora" type="checkbox" value="true" class="neo-checkbox">
-                    <label for="desde_ahora" class="ml-4 text-gray-700 font-medium">Buscar desde ahora</label>
+                    <label for="desde_ahora" class="ml-4 text-gray-700 dark:text-gray-300 font-medium">Buscar desde ahora</label>
                 </div>
 
                 <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
                     <div class="flex items-center mb-3">
                         <input form="main-form" id="salir_despues_check" name="salir_despues_check" type="checkbox" value="true" class="neo-checkbox">
-                        <label for="salir_despues_check" class="ml-4 text-gray-700 font-medium">Salir después de...</label>
+                        <label for="salir_despues_check" class="ml-4 text-gray-700 dark:text-gray-300 font-medium">Salir después de...</label>
                     </div>
                     <div id="selectores_hora_salida" class="hidden mt-4">
                         <div class="relative neo-time-picker p-4">
@@ -305,7 +465,7 @@
                                     {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
                                     <div class="h-[60px]"></div>
                                 </div>
-                                <span class="text-3xl font-bold mx-4 text-gray-600">:</span>
+                                <span class="text-3xl font-bold mx-4 text-gray-600 dark:text-gray-300">:</span>
                                 <div class="wheel-container" id="minute-wheel-salida">
                                     <div class="h-[60px]"></div>
                                     {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
@@ -321,7 +481,7 @@
                 <div class="p-4 rounded-xl" style="background: #e0e5ec; box-shadow: 8px 8px 16px #b8bcc3, -8px -8px 16px #ffffff;">
                     <div class="flex items-center mb-3">
                         <input form="main-form" id="llegar_antes_check" name="llegar_antes_check" type="checkbox" value="true" class="neo-checkbox">
-                        <label for="llegar_antes_check" class="ml-4 text-gray-700 font-medium">Llegar antes de...</label>
+                        <label for="llegar_antes_check" class="ml-4 text-gray-700 dark:text-gray-300 font-medium">Llegar antes de...</label>
                     </div>
                     <div id="selectores_hora_llegada" class="hidden mt-4">
                         <div class="relative neo-time-picker p-4">
@@ -332,7 +492,7 @@
                                     {% for h in range(24) %}<div class="wheel-item">{{ '%02d'|format(h) }}</div>{% endfor %}
                                     <div class="h-[60px]"></div>
                                 </div>
-                                <span class="text-3xl font-bold mx-4 text-gray-600">:</span>
+                                <span class="text-3xl font-bold mx-4 text-gray-600 dark:text-gray-300">:</span>
                                 <div class="wheel-container" id="minute-wheel-llegada">
                                     <div class="h-[60px]"></div>
                                     {% for m in range(0, 60, 5) %}<div class="wheel-item">{{ '%02d'|format(m) }}</div>{% endfor %}
@@ -348,11 +508,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex items-center p-3 rounded-xl" style="background: #e0e5ec; box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;">
                         <input form="main-form" id="evitar_sj" name="evitar_sj" type="checkbox" value="true" checked class="neo-checkbox mr-3">
-                        <label for="evitar_sj" class="text-gray-700 text-sm font-medium">Evitar Sta. Justa</label>
+                        <label for="evitar_sj" class="text-gray-700 dark:text-gray-300 text-sm font-medium">Evitar Sta. Justa</label>
                     </div>
                     <div class="flex items-center p-3 rounded-xl" style="background: #e0e5ec; box-shadow: 6px 6px 12px #b8bcc3, -6px -6px 12px #ffffff;">
                         <input form="main-form" id="evitar_pa" name="evitar_pa" type="checkbox" value="true" class="neo-checkbox mr-3">
-                        <label for="evitar_pa" class="text-gray-700 text-sm font-medium">Evitar Plz. Armas</label>
+                        <label for="evitar_pa" class="text-gray-700 dark:text-gray-300 text-sm font-medium">Evitar Plz. Armas</label>
                     </div>
                 </div>
             </div>
@@ -363,115 +523,8 @@
         </div>
     </div>
 
-    <script>
-        // Modales
-        function setupModal(openBtnId, closeBtnId, modalId, applyBtnId) {
-            const openBtn = document.getElementById(openBtnId);
-            const closeBtn = document.getElementById(closeBtnId);
-            const modal = document.getElementById(modalId);
-            const overlay = modal.querySelector('.modal-overlay');
-            const container = modal.querySelector('.modal-container');
-            const applyBtn = document.getElementById(applyBtnId);
-            
-            function openModal() {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    overlay.classList.remove('opacity-0');
-                    container.classList.remove('opacity-0', 'scale-95');
-                }, 10);
-            }
-            
-            function closeModal() {
-                overlay.classList.add('opacity-0');
-                container.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 300);
-            }
-            
-            openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            applyBtn.addEventListener('click', closeModal);
-            overlay.addEventListener('click', closeModal);
-        }
-        
-        setupModal('open-filters-modal', 'close-filters-modal', 'filters-modal', 'apply-filters');
-
-        // Time pickers
-        function setupTimePicker(checkId, containerId, hourWheelId, minuteWheelId, hourInputId, minuteInputId, defaultHour, defaultMinute) {
-            const check = document.getElementById(checkId);
-            const container = document.getElementById(containerId);
-            const hourWheel = document.getElementById(hourWheelId);
-            const minuteWheel = document.getElementById(minuteWheelId);
-            const hourInput = document.getElementById(hourInputId);
-            const minuteInput = document.getElementById(minuteInputId);
-            const hourItems = Array.from(hourWheel.querySelectorAll('.wheel-item'));
-            const minuteItems = Array.from(minuteWheel.querySelectorAll('.wheel-item'));
-
-            function updateSelection(wheel, input, items) {
-                clearTimeout(wheel.scrollTimeout);
-                wheel.scrollTimeout = setTimeout(() => {
-                    const itemHeight = 40;
-                    const scrollPos = wheel.scrollTop;
-                    const selectedIndex = Math.round(scrollPos / itemHeight);
-                    if (items[selectedIndex]) {
-                        input.value = items[selectedIndex].textContent.trim();
-                        items.forEach((item, index) => {
-                            item.classList.toggle('is-selected', index === selectedIndex);
-                        });
-                    }
-                }, 150);
-            }
-
-            hourWheel.addEventListener('scroll', () => updateSelection(hourWheel, hourInput, hourItems));
-            minuteWheel.addEventListener('scroll', () => updateSelection(minuteWheel, minuteInput, minuteItems));
-
-            check.addEventListener('change', function() {
-                if (this.checked) {
-                    container.classList.remove('hidden');
-                    hourInput.disabled = false;
-                    minuteInput.disabled = false;
-                    hourWheel.scrollTop = 40 * defaultHour;
-                    minuteWheel.scrollTop = 40 * (defaultMinute / 5);
-                    setTimeout(() => {
-                        hourWheel.dispatchEvent(new Event('scroll'));
-                        minuteWheel.dispatchEvent(new Event('scroll'));
-                    }, 200);
-                } else {
-                    container.classList.add('hidden');
-                    hourInput.disabled = true;
-                    minuteInput.disabled = true;
-                }
-            });
-        }
-        
-        setupTimePicker('salir_despues_check', 'selectores_hora_salida', 'hour-wheel-salida', 'minute-wheel-salida', 'salir_despues_hora', 'salir_despues_minuto', 7, 0);
-        setupTimePicker('llegar_antes_check', 'selectores_hora_llegada', 'hour-wheel-llegada', 'minute-wheel-llegada', 'llegar_antes_hora', 'llegar_antes_minuto', 9, 0);
-
-        // Frases
-        var frasesData = {{ frases|tojson|safe }};
-        var fraseActual = "{{ frase }}";
-        var frases = frasesData || ["El esfuerzo de hoy es el éxito de mañana."];
-        var fraseActualIndex = frases.indexOf(fraseActual);
-        if (fraseActualIndex === -1) fraseActualIndex = 0;
-        
-        document.getElementById('phrase-card').addEventListener('click', function() {
-            const phraseText = document.getElementById('phrase-text');
-            let newIndex;
-            do {
-                newIndex = Math.floor(Math.random() * frases.length);
-            } while (newIndex === fraseActualIndex && frases.length > 1);
-            fraseActualIndex = newIndex;
-            
-            phraseText.style.opacity = '0.3';
-            setTimeout(() => {
-                phraseText.textContent = '"' + frases[fraseActualIndex] + '"';
-                phraseText.style.opacity = '1';
-            }, 200);
-        });
-
-        // Saludo
-        const horaActual = new Date().getHours();
-        let saludoTexto = horaActual < 12 ? "Buenos días" : horaActual < 21 ? "Buenas tardes" : "Buenas noches";
-        document.getElementById("saludo").innerHTML = saludoTexto + ', <span class="font-bold text-indigo-600">Noa</span>';
-    </script>
-</body>
-</html>
+    <!-- Modal de Información -->
+    <div id="info-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div id="info-modal-overlay" class="absolute inset-0 bg-black/40 modal-overlay opacity-0"></div>
+        <div class="relative neo-modal w-full max-w-md p-8 modal-container transform scale-95 opacity-0">
+            <div class
