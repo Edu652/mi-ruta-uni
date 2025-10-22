@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados - Mi Ruta</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="manifest" href="{{ asset_url('manifest.json') }}">
     <meta name="theme-color" content="#e0e5ec">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"></noscript>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         
@@ -247,7 +252,7 @@
                         <!-- Icono -->
                         <div class="neo-icon-box flex-shrink-0">
                             {% if segmento.icono == 'LOGO_CONSORCIO' %}
-                                <img src="{{ url_for('static', filename='logo_junta.jpg') }}" alt="Logo" class="w-8 h-8 object-contain">
+                                <img src="{{ asset_url('logo_junta.jpg') }}" alt="Logo" class="w-8 h-8 object-contain" loading="lazy" decoding="async">
                             {% else %}
                                 {{ segmento.icono }}
                             {% endif %}
@@ -327,6 +332,12 @@
     </div>
 
     <script>
+    // Register service worker for this page as well
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
         function compartirWhatsApp(routeIndex) {
             const origen = "{{ origen }}";
             const destino = "{{ destino }}";
