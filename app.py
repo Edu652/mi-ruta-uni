@@ -1,5 +1,6 @@
 # Fichero: app.py (Versión corregida completa)
-from flask import Flask, render_template, request, url_for, send_from_directory
+from flask import Flask, render_template, request
+from flask_compress import Compress
 import pandas as pd
 import json
 import random
@@ -12,23 +13,36 @@ import os
 
 app = Flask(__name__)
 
-# Performance: enable aggressive static caching and response compression
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365  # 1 year for static assets
-
+# Performance: enable compression and strong static caching
+compress = Compress()
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year for static files
+app.config['COMPRESS_MIMETYPES'] = [
+    'text/html', 'text/css', 'application/javascript', 'text/javascript',
+    'application/json', 'image/svg+xml'
+]
 try:
-    from flask_compress import Compress
-    # Prefer Brotli if installed; Flask-Compress auto-detects
-    app.config['COMPRESS_ALGORITHM'] = ['br', 'gzip']
-    app.config['COMPRESS_LEVEL'] = 6
-    app.config['COMPRESS_BR_LEVEL'] = 5
-    app.config['COMPRESS_MIMETYPES'] = [
-        'text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript',
-        'text/javascript', 'image/svg+xml', 'application/octet-stream'
-    ]
-    Compress(app)
+    import brotli  # type: ignore  # noqa: F401
+    app.config['COMPRESS_ALGORITHM'] = 'br'
 except Exception:
-    # Compression is optional; continue without it if unavailable
-    pass
+    app.config['COMPRESS_ALGORITHM'] = 'gzip'
+app.config['COMPRESS_BR_LEVEL'] = 5
+compress.init_app(app)
+
+# Asset version for cache-busting of static files
+ASSET_VERSION = os.environ.get("ASSET_VERSION", "1")
+app.jinja_env.globals.update(ASSET_VERSION=ASSET_VERSION)
+
+@app.after_request
+def add_caching_headers(response):
+    try:
+        path = request.path or ''
+        if path.startswith('/static/'):
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        else:
+            response.headers['Cache-Control'] = 'no-store'
+    except Exception:
+        pass
+    return response
 
 # --- CONFIGURACIÓN ---
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1QConknaQ2O762EV3701kPtu2zsJBkYW6/export?format=csv&gid=151783393"
@@ -553,56 +567,6 @@ def calculate_route_times(ruta_series_list, desde_ahora_check, now):
         import traceback
         traceback.print_exc()
         return None
-
-# ----- Asset versioning helper (cache-busting for static URLs) -----
-def _asset_url(filename: str) -> str:
-    try:
-        static_folder = app.static_folder or 'static'
-        import os as _os
-        mtime = int(_os.path.getmtime(_os.path.join(static_folder, filename)))
-        return url_for('static', filename=filename, v=mtime)
-    except Exception:
-        return url_for('static', filename=filename)
-
-
-@app.context_processor
-def inject_asset_url():
-    return dict(asset_url=_asset_url)
-
-
-# ----- Service worker at root scope for full control -----
-@app.route('/sw.js')
-def service_worker():
-    response = send_from_directory('static', 'sw.js', mimetype='application/javascript')
-    # Ensure the service worker is always revalidated
-    response.cache_control.no_cache = True
-    response.headers['Service-Worker-Allowed'] = '/'
-    return response
-
-
-@app.after_request
-def add_cache_headers(response):
-    """Add sensible Cache-Control headers.
-    - Long cache for static assets except for service worker
-    - Avoid caching dynamic HTML pages
-    """
-    try:
-        path = request.path or ''
-        if path == '/sw.js' or path.endswith('/sw.js'):
-            response.cache_control.no_cache = True
-            response.cache_control.private = False
-            response.headers['Cache-Control'] = 'no-cache'
-        elif path.startswith('/static/'):
-            # Public, long-lived caching for static assets
-            response.cache_control.public = True
-            response.cache_control.max_age = 60 * 60 * 24 * 365
-        else:
-            # Dynamic pages: allow revalidation
-            if response.mimetype and 'text/html' in response.mimetype:
-                response.cache_control.no_cache = True
-    except Exception:
-        pass
-    return response
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
