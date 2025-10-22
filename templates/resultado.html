@@ -332,6 +332,12 @@
     </div>
 
     <script>
+    // Register service worker for this page as well
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
         function compartirWhatsApp(routeIndex) {
             const origen = "{{ origen }}";
             const destino = "{{ destino }}";

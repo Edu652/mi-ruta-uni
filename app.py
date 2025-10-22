@@ -1,5 +1,5 @@
 # Fichero: app.py (Versión corregida completa)
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory, url_for
 from flask_compress import Compress
 import pandas as pd
 import json
@@ -30,7 +30,11 @@ compress.init_app(app)
 
 # Asset version for cache-busting of static files
 ASSET_VERSION = os.environ.get("ASSET_VERSION", "1")
-app.jinja_env.globals.update(ASSET_VERSION=ASSET_VERSION)
+
+def asset_url(filename: str) -> str:
+    return url_for('static', filename=filename, v=ASSET_VERSION)
+
+app.jinja_env.globals.update(asset_url=asset_url, ASSET_VERSION=ASSET_VERSION)
 
 @app.after_request
 def add_caching_headers(response):
@@ -42,6 +46,15 @@ def add_caching_headers(response):
             response.headers['Cache-Control'] = 'no-store'
     except Exception:
         pass
+    return response
+
+# Serve service worker at root scope for full control
+@app.route('/sw.js')
+def service_worker():
+    response = send_from_directory('static', 'sw.js')
+    response.headers['Content-Type'] = 'application/javascript'
+    # Always revalidate SW so updates are picked up promptly
+    response.headers['Cache-Control'] = 'public, max-age=0, must-revalidate'
     return response
 
 # --- CONFIGURACIÓN ---
