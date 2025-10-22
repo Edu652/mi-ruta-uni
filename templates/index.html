@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Ruta</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="manifest" href="{{ asset_url('manifest.json') }}">
     <meta name="theme-color" content="#e0e5ec">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"></noscript>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -186,7 +192,7 @@
                 </svg>
             </button>
             <div class="text-center mb-8">
-                <div class="neo-icon" id="rocket-icon">🚀</div>
+            <div class="neo-icon" id="rocket-icon" aria-label="Abrir juego" title="Abrir juego">🚀</div>
                 <h1 class="text-5xl font-extrabold neo-title mb-2">Mi Ruta</h1>
                 <p id="saludo" class="text-gray-600 font-medium"></p>
             </div>
@@ -343,7 +349,7 @@
                     <p class="font-semibold text-gray-800 mb-2">Campus del Carmen</p>
                     <div class="flex justify-between mt-2">
                         <a href="https://www.google.com/maps/search/?api=1&query=Campus+del+Carmen+Huelva" target="_blank" class="text-indigo-600 hover:underline">Ver Mapa</a>
-                        <a href="{{ url_for('static', filename='foto campus.jpg') }}" target="_blank" class="text-indigo-600 hover:underline">Ver Foto</a>
+                        <a href="{{ asset_url('foto campus.jpg') }}" target="_blank" class="text-indigo-600 hover:underline">Ver Foto</a>
                     </div>
                 </div>
             </div>
@@ -351,7 +357,7 @@
     </div>
     
     <!-- SPACE INVADERS GAME MODAL -->
-    <div id="game-modal">
+    <div id="game-modal" aria-hidden="true">
         <button class="game-close" onclick="closeGame()">✕ CERRAR</button>
         <div class="game-header">
             <h1 style="font-size: 48px; margin: 0; text-shadow: 0 0 20px #667eea;">🚀 SPACE INVADERS 🚀</h1>
@@ -369,6 +375,12 @@
     </div>
     
     <script>
+// Register service worker early
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
 function setupModal(a,b,c,d){const e=document.getElementById(a),f=document.getElementById(b),g=document.getElementById(c),h=g.querySelector('.modal-overlay'),i=g.querySelector('.modal-container'),j=d?document.getElementById(d):null;function k(){g.classList.remove('hidden');setTimeout(()=>{h.classList.remove('opacity-0');i.classList.remove('opacity-0','scale-95')},10)}function l(){h.classList.add('opacity-0');i.classList.add('opacity-0','scale-95');setTimeout(()=>g.classList.add('hidden'),300)}e.addEventListener('click',k);f.addEventListener('click',l);if(j)j.addEventListener('click',l);h.addEventListener('click',l)}setupModal('open-filters-modal','close-filters-modal','filters-modal','apply-filters');setupModal('btn-info','close-info-modal','info-modal',null);function setupTimePicker(a,b,c,d,e,f,g,h){const i=document.getElementById(a),j=document.getElementById(b),k=document.getElementById(c),l=document.getElementById(d),m=document.getElementById(e),n=document.getElementById(f),o=Array.from(k.querySelectorAll('.wheel-item')),p=Array.from(l.querySelectorAll('.wheel-item'));function q(a,b,c){clearTimeout(a.scrollTimeout);a.scrollTimeout=setTimeout(()=>{const d=40,e=a.scrollTop,f=Math.round(e/d);if(c[f]){b.value=c[f].textContent.trim();c.forEach((a,b)=>{a.classList.toggle('is-selected',b===f)})}},150)}k.addEventListener('scroll',()=>q(k,m,o));l.addEventListener('scroll',()=>q(l,n,p));i.addEventListener('change',function(){if(this.checked){j.classList.remove('hidden');m.disabled=false;n.disabled=false;k.scrollTop=40*g;l.scrollTop=40*(h/5);setTimeout(()=>{k.dispatchEvent(new Event('scroll'));l.dispatchEvent(new Event('scroll'))},200)}else{j.classList.add('hidden');m.disabled=true;n.disabled=true}})}setupTimePicker('salir_despues_check','selectores_hora_salida','hour-wheel-salida','minute-wheel-salida','salir_despues_hora','salir_despues_minuto',7,0);setupTimePicker('llegar_antes_check','selectores_hora_llegada','hour-wheel-llegada','minute-wheel-llegada','llegar_antes_hora','llegar_antes_minuto',9,0);var frasesData={{frases|tojson|safe}};var fraseActual="{{frase}}";var frases=frasesData||["El esfuerzo de hoy es el éxito de mañana."];var fraseActualIndex=frases.indexOf(fraseActual);if(fraseActualIndex===-1)fraseActualIndex=0;document.getElementById('phrase-card').addEventListener('click',function(){const a=document.getElementById('phrase-text');let b;do{b=Math.floor(Math.random()*frases.length)}while(b===fraseActualIndex&&frases.length>1);fraseActualIndex=b;a.style.opacity='0.3';setTimeout(()=>{a.textContent='"'+frases[fraseActualIndex]+'"';a.style.opacity='1'},200)});const horaActual=new Date().getHours();let saludoTexto=horaActual<12?"Buenos días":horaActual<21?"Buenas tardes":"Buenas noches";document.getElementById("saludo").innerHTML=saludoTexto+', <span class="font-bold text-indigo-600 noa-clickable" id="noa-name">Noa</span>';
 
 // ========== EASTER EGG 1: COHETE DESPEGANDO 🚀 ==========

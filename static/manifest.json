@@ -3,6 +3,7 @@
   "short_name": "Mi Ruta",
   "description": "Una app para planificar rutas de transporte para Noa.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#4f46e5",
